@@ -9,7 +9,6 @@ class OpCode:
     label: str
     length: bytes
     cycles: int
-    flags: tuple
     call: callable
     args: list
 
@@ -36,12 +35,12 @@ class CPU(object):
             'l': 0,
         }
 
-        # Boolean flag registers
-        self.flags = {
-            'zero': 0,
-            'subtract': 0,
-            'half_carry': 0,
-            'carry': 0
+        # Flag registers
+        self.flag = {
+            'z': 0,  # zero
+            's': 0,  # subtract
+            'h': 0,  # half-carry
+            'c': 0   # carry
         }
 
         self.instruction = False
@@ -50,7 +49,7 @@ class CPU(object):
         self.screen = screen
 
         self.opcodes = {
-            '0xff': OpCode("RST 38H", 1, 16, False, self.RST, [0x38])
+            '0xff': OpCode("RST 38H", 1, 16, self.RST, [0x38])
         }
 
     def load_rom(self, rom_file: str):
@@ -68,10 +67,12 @@ class CPU(object):
     def decode(self):
         # All instructions are 2 bytes long and are stored most-significant-byte first
         self.op_code = hex(self.mem[self.PC])
-        print(hex(self.PC), self.op_code)
         try:
             self.instruction = self.opcodes[self.op_code]
-            print(self.instruction)
+
+            print(hex(self.PC), "-", self.instruction)
+            print(self)
+            # getattr(self, self.instruction.call)(*self.instruction.args)
             self.instruction.call(*self.instruction.args)
         except Exception as e:
             # stop on op code error
@@ -82,7 +83,7 @@ class CPU(object):
         '''Execute next CPU cycle'''
         self.decode()
         # self.debug()
-        self.PC += 2  # move program counter to next instruction
+        self.PC += 1  # move program counter to next instruction
 
     def RST(self, addr: int):
         '''Call address vec. This is a shorter and faster equivalent to CALL for suitable values of vec.'''
@@ -163,6 +164,14 @@ class CPU(object):
 
     def XOR(self):
         pass
+
+    def __str__(self):
+        return f"""
+            SP: {hex(self.SP)}({self.SP})   PC: {hex(self.PC)}({self.PC})
+            REGS: {self.reg}
+            FLAGS: {self.flag}
+            INST: {self.instruction}
+        """
 
 
 if __name__ == "__main__":
