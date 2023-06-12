@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "gameboy-emulator"
+version = "0.1.0"
+description = ""
+authors = ["wyattferguson <wyattf@gmail.com>"]
+readme = "README.md"
+packages = [{include = "gameboy_emulator"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pygame = "^2.4.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+# skip unused variables
+ignore = ["F841"]
