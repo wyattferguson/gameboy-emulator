@@ -5,9 +5,9 @@ from opcodes import OPCODE_TABLE, OpCode
 
 class CPU(object):
     def __init__(self):
-        self.PC: int = 0x0  # program counter
-        # self.SP: int = 0xFFFE  # stack pointer
-        self.mem = bytearray([0] * MEMORY)  # 64kb of memory
+        self.PC = 0x0  # program counter
+        # self.SP = 0xFFFE  # stack pointer
+        self.mem = [0] * MEMORY  # 64kb of memory
         self.mem[0:len(BIOS)] = BIOS  # load system bios
 
         # 8bit registers
@@ -20,12 +20,11 @@ class CPU(object):
             'F': 0,
             'H': 0,
             'L': 0,
-            'SP': 0xFFFE,  # stack pointer
             'AF': 0,
             'BC': 0,
             'HL': 0,
             'DE': 0,
-
+            'SP': 0xFFFE  # stack pointer
         }
 
         # Flag registers
@@ -38,6 +37,7 @@ class CPU(object):
 
         self.instruction: OpCode = False
         self.cycles: int = 0
+        self.args: list = []
 
     def load_rom(self, rom_file: str):
         '''Load .GB ROM into memory'''
@@ -49,32 +49,79 @@ class CPU(object):
         self.PC = PROGRAM_START  # program start in memory
         self.mem[self.PC:len(rom)] = rom  # copy rom to ram
 
+        # for x in range(100):
+        #     addr = self.PC + x
+        #     code = self.mem[addr]
+        #     print(addr, hex(addr), code)
+        #     OPCODE_TABLE[hex(code)]
+        # exit()
         rom_ptr.close()
 
-    def decode(self):
-        # All instructions are 2 bytes long and are stored most-significant-byte first
+    def fetch(self):
         op_code = hex(self.mem[self.PC])
         try:
             self.instruction = OPCODE_TABLE[op_code]
-
-            print(hex(self.PC), "-", self.instruction)
-            getattr(self, self.instruction.call)(*self.instruction.args)
-            # self.instruction.call(*self.instruction.args)
+            print(hex(self.PC), self.PC, "-", self.instruction, "-", op_code)
         except Exception as e:
-            # stop on op code error
-            print("NEW CODE:", e)
+            print("FETCH:", e)
+            exit()
+
+    def decode(self):
+        try:
+            self.args = self.instruction.args if self.instruction.args else self.instruction.flags
+            # if self.instruction.length > 1:
+            #     self.args += [self.mem[self.PC + i]
+            #                   for i in range(1, self.instruction.length)]
+            #     print("ARGS:", self.args)
+
+        except Exception as e:
+            print("DECODE:", e)
+            exit()
+
+    def execute(self):
+        try:
+            # print(self.args)
+            if self.args:
+                getattr(self, self.instruction.call)(*self.args)
+            else:
+                getattr(self, self.instruction.call)
+
+        except Exception as e:
+            print("EXECUTE:", e)
             exit()
 
     def cycle(self):
         '''Execute next CPU cycle'''
+        self.fetch()
         self.decode()
+        self.execute()
         # self.debug()
-        self.PC += self.instruction.length  # move program counter to next instruction
+
+        # move program counter to next instruction
+        self.PC += self.instruction.length
 
     def RST(self, addr: int):
         '''Store PC, move to addr'''
         self.mem[self.reg['SP']] = self.PC
-        self.PC = addr - 1
+        self.reg['SP'] -= 2
+        self.PC = addr
+
+    def NOP(self):
+        '''No Operation'''
+        pass
+
+    def JR(self, flag: str = False, flag_val: int = False):
+        '''Relative Jump to address'''
+        if not flag or self.flag[flag] == flag_val:
+            offset = self.mem[self.PC + 1]
+            self.PC += offset
+
+    def SET(self):
+        pass
+
+    def ROT(self):
+        '''Rotate byte'''
+        pass
 
     def CALL(self):
         pass
@@ -95,9 +142,9 @@ class CPU(object):
         '''Decrement Value'''
         self.reg[register] -= 1
 
-    def JMP(self):
+    def JMP(self, addr: int):
         '''Jump to Address'''
-        pass
+        self.PC = addr
 
     def POP(self):
         pass
@@ -114,19 +161,12 @@ class CPU(object):
         self.PC = self.mem[self.SP]
         pass
 
-    def ROTR(self):
-        '''Rotate byte'''
-        pass
-
     def SHIFT(self):
         '''Logical bit shift'''
         pass
 
     def STOP(self):
-        '''Enter CPU very low power mode. Also used to switch between double and normal speed CPU modes in GBC.'''
-        pass
-
-    def SET(self):
+        '''Halt CPU/LCD display until button pressed'''
         pass
 
     def SBC(self):
@@ -155,7 +195,7 @@ class CPU(object):
         pass
 
     def __str__(self):
-        status = (f"\nSP: {hex(self.SP)}({self.SP})   PC: {hex(self.PC)}({self.PC})\n"
+        status = (f"\nSP: {hex(self.reg['SP'])}({self.reg['SP']})   PC: {hex(self.PC)}({self.PC})\n"
                   f"REGS: {self.reg}\n"
                   f"FLAGS: {self.flag}\n"
                   f"CYCLES: {self.cycles}\n"
