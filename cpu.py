@@ -1,56 +1,43 @@
 
-from dataclasses import dataclass
-
 from config import BIOS, MEMORY, PROGRAM_START
-
-
-@dataclass(frozen=True)
-class OpCode:
-    label: str
-    length: bytes
-    cycles: int
-    call: callable
-    args: list
-
-    def __str__(self) -> str:
-        return f"{self.label} - {self.length} - {self.args}"
+from opcodes import OPCODE_TABLE, OpCode
 
 
 class CPU(object):
-    def __init__(self, screen):
-        self.PC = 0x0  # program counter
-        self.SP = 0xFFFE  # stack pointer
+    def __init__(self):
+        self.PC: int = 0x0  # program counter
+        # self.SP: int = 0xFFFE  # stack pointer
         self.mem = bytearray([0] * MEMORY)  # 64kb of memory
         self.mem[0:len(BIOS)] = BIOS  # load system bios
 
         # 8bit registers
         self.reg = {
-            'a': 0,
-            'b': 0,
-            'c': 0,
-            'd': 0,
-            'e': 0,
-            'f': 0,
-            'h': 0,
-            'l': 0,
+            'A': 0,
+            'B': 0,
+            'C': 0,
+            'D': 0,
+            'E': 0,
+            'F': 0,
+            'H': 0,
+            'L': 0,
+            'SP': 0xFFFE,  # stack pointer
+            'AF': 0,
+            'BC': 0,
+            'HL': 0,
+            'DE': 0,
+
         }
 
         # Flag registers
         self.flag = {
-            'z': 0,  # zero
-            's': 0,  # subtract
-            'h': 0,  # half-carry
-            'c': 0   # carry
+            'Z': 0,  # zero
+            'N': 0,  # subtract
+            'H': 0,  # half-carry
+            'C': 0   # carry
         }
 
-        self.instruction = False
-
-        self.cycles = 0
-        self.screen = screen
-
-        self.opcodes = {
-            '0xff': OpCode("RST 38H", 1, 16, self.RST, [0x38])
-        }
+        self.instruction: OpCode = False
+        self.cycles: int = 0
 
     def load_rom(self, rom_file: str):
         '''Load .GB ROM into memory'''
@@ -66,14 +53,13 @@ class CPU(object):
 
     def decode(self):
         # All instructions are 2 bytes long and are stored most-significant-byte first
-        self.op_code = hex(self.mem[self.PC])
+        op_code = hex(self.mem[self.PC])
         try:
-            self.instruction = self.opcodes[self.op_code]
+            self.instruction = OPCODE_TABLE[op_code]
 
             print(hex(self.PC), "-", self.instruction)
-            print(self)
-            # getattr(self, self.instruction.call)(*self.instruction.args)
-            self.instruction.call(*self.instruction.args)
+            getattr(self, self.instruction.call)(*self.instruction.args)
+            # self.instruction.call(*self.instruction.args)
         except Exception as e:
             # stop on op code error
             print("NEW CODE:", e)
@@ -83,30 +69,31 @@ class CPU(object):
         '''Execute next CPU cycle'''
         self.decode()
         # self.debug()
-        self.PC += 1  # move program counter to next instruction
+        self.PC += self.instruction.length  # move program counter to next instruction
 
     def RST(self, addr: int):
-        '''Call address vec. This is a shorter and faster equivalent to CALL for suitable values of vec.'''
-        print("Cool ADDRE", addr)
+        '''Store PC, move to addr'''
+        self.mem[self.reg['SP']] = self.PC
+        self.PC = addr - 1
 
     def CALL(self):
         pass
 
-    def LD(self):
-        '''Store value'''
-        pass
+    def LD(self, register: str, constant: int):
+        '''Store value in register'''
+        self.reg[register] = constant
 
     def HALT(self):
         '''Enter CPU low-power consumption mode until an interrupt occurs. '''
         pass
 
-    def INC(self):
+    def INC(self, register: str):
         '''Increment Value'''
-        pass
+        self.reg[register] += 1
 
-    def DEC(self):
+    def DEC(self, register):
         '''Decrement Value'''
-        pass
+        self.reg[register] -= 1
 
     def JMP(self):
         '''Jump to Address'''
@@ -118,11 +105,13 @@ class CPU(object):
     def PUSH(self):
         pass
 
-    def SWAP(self):
+    def SWAP(self, reg):
+        '''Swap the upper 4 and the lower 4 bits'''
         pass
 
     def RET(self):
         '''Return from subroutine'''
+        self.PC = self.mem[self.SP]
         pass
 
     def ROTR(self):
@@ -166,15 +155,17 @@ class CPU(object):
         pass
 
     def __str__(self):
-        return f"""
-            SP: {hex(self.SP)}({self.SP})   PC: {hex(self.PC)}({self.PC})
-            REGS: {self.reg}
-            FLAGS: {self.flag}
-            INST: {self.instruction}
-        """
+        status = (f"\nSP: {hex(self.SP)}({self.SP})   PC: {hex(self.PC)}({self.PC})\n"
+                  f"REGS: {self.reg}\n"
+                  f"FLAGS: {self.flag}\n"
+                  f"CYCLES: {self.cycles}\n"
+                  f"INST: {self.instruction}\n"
+                  )
+        return status
 
 
 if __name__ == "__main__":
-    cpu = CPU(False)
+    cpu = CPU()
     cpu.load_rom("./roms/2048.gb")
-    cpu.cycle()
+    while True:
+        cpu.cycle()
