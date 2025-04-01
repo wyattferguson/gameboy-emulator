@@ -41,7 +41,3 @@ OPCODE_TABLE = {
     '0x38': OpCode("JR C, e8", 2, 12, "JR", None, ("C", 1)),
     '0xff': OpCode("RST 38H", 1, 16, "RST", [0x38]),
 }
-
-EXT_OPCODE_TABLE = {
-    '0xff': OpCode("SET 7 A", 1, 8, "SET", None),
-}

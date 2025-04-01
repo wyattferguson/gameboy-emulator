@@ -1,23 +1,91 @@
-[tool.poetry]
-name = "gameboy-emulator"
-version = "0.1.0"
-description = ""
-authors = ["wyattferguson <wyattf@gmail.com>"]
+[project]
+name = "gbemu"
+dynamic = ["version"]
+description = "A gameboy emulator created with python"
+authors = [{ name = "Wyatt Ferguson", email = "wyattxdev@duck.com" }]
 readme = "README.md"
-packages = [{include = "gameboy_emulator"}]
+license = {text = "MIT license"}
+keywords = ["python"]
+requires-python = ">=3.12"
+dependencies = [
+    "pygame>=2.6.1",
+]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-pygame = "^2.4.0"
-
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python",
+    "Topic :: Utilities",
+    "License :: OSI Approved :: MIT License"
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.urls]
+homepage = "https://github.com/wyattferguson/gbemu"
+repository = "https://github.com/wyattferguson/gbemu.git"
+documentation = "https://github.com/wyattferguson/gbemu"
+issues = "https://github.com/wyattferguson/gbemu/issues"
+
+
+[dependency-groups]
+dev = [
+    "coverage>=7.6.11",
+    "mypy>=1.15.0",
+    "pytest>=8.3.4",
+    "ruff>=0.9.5",
+    "taskipy>=1.14.1",
+    "typeguard >=2.13.3",
+]
+
+[tool.hatch]
+version.path = "gbemu/__init__.py"
+build.targets.wheel.packages = ["gbemu"]
+
+[tool.taskipy.tasks]
+format = "ruff format ./gbemu/"
+lint = "ruff check --fix ./gbemu/ && mypy ./gbemu/"
+typecheck = "mypy ./gbemu/"
+tests = "pytest --verbose --color=yes tests && coverage report -m"
+run = "uv run ./gbemu/gbemu.py"
+
 
 [tool.ruff]
-line-length = 120
-target-version = "py310"
+line-length = 100
+indent-width = 4
+format.indent-style = "space"
+target-version = "py312"
+src = ["gbemu", "tests"]
 
-# skip unused variables
-ignore = ["F841"]
+[tool.ruff.lint]
+pydocstyle.convention = "google"
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "SIM", # flake8-simplify
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = ["F401"] # Disable fix for unused imports
+
+[tool.coverage.run]
+omit = [ "tests/*", "docs/*", "examples/*" ]
+source = [ "gbemu" ]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 100
+
+[tool.mypy]
+strict = true
+ignore_missing_imports = true
+warn_return_any = false
+exclude = ["docs", "tests", "examples"]

@@ -1,10 +1,10 @@
 
-from config import BIOS, MEMORY, PROGRAM_START
+from gbemu._config import BIOS, MEMORY, PROGRAM_START
 from opcodes import OPCODE_TABLE, OpCode
 
 
 class CPU(object):
-    def __init__(self):
+    def __init__(self) -> None:
         self.PC = 0x0  # program counter
         # self.SP = 0xFFFE  # stack pointer
         self.mem = [0] * MEMORY  # 64kb of memory
@@ -39,7 +39,7 @@ class CPU(object):
         self.cycles: int = 0
         self.args: list = []
 
-    def load_rom(self, rom_file: str):
+    def load_rom(self, rom_file: str) -> None:
         '''Load .GB ROM into memory'''
         print(f"Loading Rom - {rom_file}")
 

@@ -1,0 +1,18 @@
+import pygame as pg
+
+from ._config import BLACK, DISPLAY_SCALER, SCREEN_HEIGHT, SCREEN_WIDTH
+
+class Screen():
+    def __init__(self) -> None:
+        pg.init()
+        pg.display.set_caption("Gameboy Emulator")
+        self.screen_size = (SCREEN_WIDTH * DISPLAY_SCALER,
+                            SCREEN_HEIGHT * DISPLAY_SCALER)
+        self.screen = pg.display.set_mode(self.screen_size)
+
+    def update(self) -> None:
+        pg.display.update()
+
+    def clear_screen(self) -> None:
+        """black out entire screen"""
+        self.screen.fill(BLACK)
