@@ -8,6 +8,7 @@ license = {text = "MIT license"}
 keywords = ["python"]
 requires-python = ">=3.12"
 dependencies = [
+    "click>=8.1.8",
     "pygame>=2.6.1",
 ]
 
@@ -40,7 +41,6 @@ dev = [
     "pytest>=8.3.4",
     "ruff>=0.9.5",
     "taskipy>=1.14.1",
-    "typeguard >=2.13.3",
 ]
 
 [tool.hatch]
@@ -52,7 +52,7 @@ format = "ruff format ./gbemu/"
 lint = "ruff check --fix ./gbemu/ && mypy ./gbemu/"
 typecheck = "mypy ./gbemu/"
 tests = "pytest --verbose --color=yes tests && coverage report -m"
-run = "uv run ./gbemu/gbemu.py"
+run = "uv run ./gbemu/gbemu.py --rom ./roms/cpu_instrs.gb"
 
 
 [tool.ruff]
