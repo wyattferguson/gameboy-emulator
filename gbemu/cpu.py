@@ -1,16 +1,18 @@
-from gbemu._config import BIOS, MEMORY, PROGRAM_START
+from gbemu._config import BIOS, DEFAULT_ROM, MEMORY, PROGRAM_START
 from opcodes import OPCODE_TABLE, OpCode
 
 
 class CPU:
-    def __init__(self) -> None:
+    def __init__(self, debug: bool = False) -> None:
+        self.debug = debug
         self.PC = PROGRAM_START  # program counter
+        self.SP = 0xFFFE  # stack pointer
         # self.SP = 0xFFFE  # stack pointer
         self.mem = [0] * MEMORY  # 64kb of memory
         self.mem[0 : len(BIOS)] = BIOS  # load system bios
 
-        # 8bit registers
         self.reg = {
+            # 8bit registers
             "A": 0,
             "B": 0,
             "C": 0,
@@ -19,11 +21,11 @@ class CPU:
             "F": 0,
             "H": 0,
             "L": 0,
+            # combined 16bit registers
             "AF": 0,
             "BC": 0,
             "HL": 0,
             "DE": 0,
-            "SP": 0xFFFE,  # stack pointer
         }
 
         # Flag registers
@@ -37,6 +39,22 @@ class CPU:
         self.instruction: OpCode = False
         self.cycles: int = 0
         self.args: list = []
+
+    def load_rom(self, rom_file: str) -> None:
+        """Load ROM file into memory"""
+        print(f"Loading Rom - {rom_file}")
+
+        with open(rom_file, "rb") as rom_ptr:
+            # read the rom file and convert to list of bytes
+            rom = bytearray(rom_ptr.read())
+            # convert to list of integers
+        self.mem[self.PC : len(rom)] = rom  # copy rom to ram
+        # for x in range(100):
+        #     addr = self.PC + x
+        #     code = self.mem[addr]
+        #     print(addr, hex(addr), code)
+        #     OPCODE_TABLE[hex(code)]
+        # exit()
 
     def fetch(self):
         op_code = hex(self.mem[self.PC])
@@ -186,8 +204,8 @@ class CPU:
         return status
 
 
-if __name__ == "__main__":
-    cpu = CPU()
-    cpu.load_rom("./roms/2048.gb")
-    while True:
-        cpu.cycle()
+# if __name__ == "__main__":
+#     cpu = CPU()
+#     cpu.load_rom("./roms/2048.gb")
+#     while True:
+#         cpu.cycle()
