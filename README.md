@@ -2,11 +2,15 @@
 
 ## Installation
 
-## Usage Examples
+## How to use
 
 ## References
 
 - [Gameboy Test Roms (https://github.com/retrio/gb-test-roms)](https://github.com/retrio/gb-test-roms)
+- [GB ASM Tutorial (https://gbdev.io/gb-asm-tutorial)](https://gbdev.io/gb-asm-tutorial)
+- [GB Opcode Table (https://gbdev.io/gb-opcodes/optables/)](https://gbdev.io/gb-opcodes/optables/)
+- [Pan Docs (https://gbdev.io/pandocs/Specifications.html)](https://gbdev.io/pandocs/Specifications.html)
+- [Game Boy: Complete Technical Reference (https://gekkio.fi/files/gb-docs/gbctr.pdf)](https://gekkio.fi/files/gb-docs/gbctr.pdf)
 
 ## License
 
