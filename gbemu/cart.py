@@ -5,7 +5,7 @@ from ._exceptions import CartReadError, CartWriteError, RomError
 class Cart:
     def __init__(self, filename: str = DEFAULT_ROM) -> None:
         self.filename = filename
-        self.rom: bytearray = bytearray()
+        self.rom = bytearray()
         self.load()
         self.manufacturer_code = self.rom[0x13F:0x142].strip(b"\x00").decode()
         self.copyright_logo = self.rom[0x104:0x134]
@@ -22,13 +22,13 @@ class Cart:
 
         # logo copyright check
         if self.copyright_logo != NINTENDO_LOGO:
-            raise RomError(f"Invalid ROM copyright logo: {self.filename}")
+            raise RomError(f"Invalid ROM copyright: {self.filename}")
 
     def load(self) -> None:
+        """Load ROM file into memory and verify checksum."""
         try:
             with open(self.filename, "rb") as f:
                 self.rom = bytearray(f.read())
-
                 header_checksum = self.rom[0x14D]
 
                 # calculate ROM checksum
@@ -43,19 +43,14 @@ class Cart:
             raise RomError(f"Error loading ROM: {self.filename} - {e}") from e
 
     def read(self, address: int = 0x0):
-        """
-        Read a byte from the cartridge at the specified address.
-        """
+        """Read a byte from the cartridge at the specified address."""
         if address < 0 or address >= len(self.rom):
             raise CartReadError(f"Attempted to read out of bounds. Address: {address}")
 
         return self.rom[address]
 
     def write(self, address: int = 0x0, value: int = 0):
-        """
-        Write a byte to the cartridge at the specified address.
-        """
-        # Implement writing logic here
+        """Write a byte to the cartridge at the specified address."""
         if address < 0 or address >= len(self.rom):
             raise CartWriteError(
                 f"Attempted to write out of bounds. Address: {address}, Value: {value}"
