@@ -9,7 +9,7 @@ class Cart:
         self.load()
         self.manufacturer_code = self.rom[0x13F:0x142].strip(b"\x00").decode()
         self.copyright_logo = self.rom[0x104:0x134]
-        self.title = self.rom[0x134:0x143].strip(b"\x00").decode()
+        self.title = self.rom[0x134:0x143].strip(b"\x00").decode("ASCII")
         self.cgb_flag = self.rom[0x143]
         self.sgb_flag = self.rom[0x146]
         self.license_code = self.rom[0x144:0x146]
@@ -57,3 +57,15 @@ class Cart:
             )
 
         self.rom[address] = value
+
+    def __str__(self):
+        return (
+            "Cartridge Info:\n"
+            f"Title: {self.title}\n"
+            f"Manufacturer Code: {self.manufacturer_code}\n"
+            f"License Code: {self.license_code}\n"
+            f"ROM Size: {self.rom_size} KB\n"
+            f"RAM Size: {self.ram_size} KB\n"
+            f"Cart Type: {self.cart_type}\n"
+            f"Version: {self.version}\n"
+        )
