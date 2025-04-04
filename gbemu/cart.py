@@ -37,7 +37,7 @@ class Cart:
                     checksum = checksum - self.rom[address] - 1
 
                 # compare header checksum with lower 8 bits of calculated checksum
-                if header_checksum != (checksum & 0x00FF):
+                if header_checksum != (checksum & 0xFF):
                     raise RomError(f"Header checksum mismatch for ROM: {self.filename}")
         except Exception as e:
             raise RomError(f"Error loading ROM: {self.filename} - {e}") from e
