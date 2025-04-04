@@ -20,8 +20,5 @@ class RomError(gbemuException):
     pass
 
 
-class CartReadError(gbemuException):
-    pass
-
-class CartWriteError(gbemuException):
+class CartError(gbemuException):
     pass

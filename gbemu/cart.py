@@ -1,5 +1,5 @@
 from ._config import CART_TYPE, DEFAULT_ROM, NINTENDO_LOGO
-from ._exceptions import CartReadError, CartWriteError, RomError
+from ._exceptions import CartError, RomError
 
 
 class Cart:
@@ -45,16 +45,14 @@ class Cart:
     def read(self, address: int = 0x0):
         """Read a byte from the cartridge at the specified address."""
         if address < 0 or address >= len(self.rom):
-            raise CartReadError(f"Attempted to read out of bounds. Address: {address}")
+            raise CartError(f"Attempted to read out of bounds. Address: {address}")
 
         return self.rom[address]
 
     def write(self, address: int = 0x0, value: int = 0):
         """Write a byte to the cartridge at the specified address."""
         if address < 0 or address >= len(self.rom):
-            raise CartWriteError(
-                f"Attempted to write out of bounds. Address: {address}, Value: {value}"
-            )
+            raise CartError(f"Attempted to write out of bounds. Address: {address}, Value: {value}")
 
         self.rom[address] = value
 

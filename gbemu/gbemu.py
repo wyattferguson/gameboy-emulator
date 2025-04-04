@@ -16,4 +16,5 @@ class Gbemu:
         """Run the emulator."""
         # self.cpu.load_rom(self.rom)
         print("Running GBEmu...")
+        print(self.cart)
         # self.cart.load()
