@@ -1,3 +1,4 @@
+DEFAULT_ROM = "./roms/puzzle.gb"
 MEMORY: int = 65536  # 64kb of totally memory
 PROGRAM_START: int = 0x100  # rom load location
 
@@ -21,14 +22,94 @@ BIOS:list[int] = [
     0xF5, 0x06, 0x19, 0x78, 0x86, 0x23, 0x05, 0x20, 0xFB, 0x86, 0x20, 0xFE, 0x3E, 0x01, 0xE0, 0x50
 ]
 
-DEFAULT_ROM = "./roms/2048.gb"
+NINTENDO_LOGO:bytearray = bytes([
+    0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B,
+    0x03, 0x73, 0x00, 0x83, 0x00, 0x0C, 0x00, 0x0D,
+    0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E,
+    0xDC, 0xCC, 0x6E, 0xE6, 0xDD, 0xDD, 0xD9, 0x99,
+    0xBB, 0xBB, 0x67, 0x63, 0x6E, 0x0E, 0xEC, 0xCC,
+    0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E
+])
 
+# fmt: on
 # screen config
-SCREEN_WIDTH:int = 160
-SCREEN_HEIGHT:int = 144
-DISPLAY_SCALER:int = 5
-DELAY:int = 1
+SCREEN_WIDTH: int = 160
+SCREEN_HEIGHT: int = 144
+DISPLAY_SCALER: int = 5
+DELAY: int = 1
 
 # colors
-WHITE:tuple = (255, 255, 255)
-BLACK:tuple = (0, 0, 0)
+WHITE: tuple = (255, 255, 255)
+BLACK: tuple = (0, 0, 0)
+
+# cartridge info lookup tables
+
+CART_TYPE: dict[int, str] = {
+    0x00: "ROM ONLY",
+    0x01: "MBC1",
+    0x02: "MBC1+RAM",
+    0x03: "MBC1+RAM+BATTERY",
+    0x05: "MBC2",
+    0x06: "MBC2+BATTERY",
+    0x08: "ROM+RAM",
+    0x09: "ROM+RAM+BATTERY",
+    0x0B: "MMM01",
+    0x0C: "MMM01+RAM",
+    0x0D: "MMM01+RAM+BATTERY",
+    0x0F: "MBC3+TIMER+BATTERY",
+    0x10: "MBC3+TIMER+RAM+BATTERY",
+    0x11: "MBC3",
+    0x12: "MBC3+RAM",
+    0x13: "MBC3+RAM+BATTERY",
+    0x19: "MBC5",
+    0x1A: "MBC5+RAM",
+    0x1B: "MBC5+RAM+BATTERY",
+    0x1C: "MBC5+RUMBLE",
+    0x1D: "MBC5+RUMBLE+RAM",
+    0x1E: "MBC5+RUMBLE+RAM+BATTERY",
+    0x20: "MBC6",
+    0x22: "MBC7+SENSOR+RUMBLE+RAM+BATTERY",
+    0xFC: "POCKET CAMERA",
+    0xFD: "BANDAI TAMA5",
+    0xFE: "HuC3",
+    0xFF: "HuC1+RAM+BATTERY",
+}
+
+CGB_FLAG: dict[int, str] = {
+    0x00: "GB",
+    0x80: "CGB",
+    0xC0: "CGB+DMG",
+}
+
+DESINATION_CODE: dict[int, str] = {
+    0x00: "Japan",
+    0x01: "Non-Japan",
+}
+
+# LICENSEE_CODE: dict[int, str] = {
+#     0x00: "None",
+#     0x01: "Nintendo R&D1",
+#     0x08: "Capcom",
+#     0x13: "Electronic Arts",
+#     0x18: "Hudson Soft",
+#     0x19: "b-ai",
+#     0x1A: "KSS",
+#     0x1C: "Pow",
+#     0x1D: "Nihon Bussan",
+#     0x1F: "Bandai",
+#     0x24: "Konami",
+#     0x25: "Hector",
+#     0x28: "Taito",
+#     0x29: "M-Network",
+#     0x2A: "Sunsoft",
+#     0x30: "Capcom",
+#     0x31: "Taito",
+#     0x32: "Koei",
+#     0x33: "Tokuma Shoten Intermedia",
+#     0x34: "Namco",
+#     0x35: "Sega",
+#     0x37: "Naxat Soft",
+#     0x38: "Bandai",
+#     0x39: "Taito",
+#     0x3C: "Koei",
+# }

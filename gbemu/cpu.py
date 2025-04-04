@@ -1,5 +1,5 @@
-from gbemu._config import BIOS, DEFAULT_ROM, MEMORY, PROGRAM_START
-from opcodes import OPCODE_TABLE, OpCode
+from ._config import BIOS, MEMORY, PROGRAM_START
+from .opcodes import OPCODE_TABLE, OpCode
 
 
 class CPU:
@@ -11,7 +11,7 @@ class CPU:
         self.mem = [0] * MEMORY  # 64kb of memory
         self.mem[0 : len(BIOS)] = BIOS  # load system bios
 
-        self.reg = {
+        self.registers = {
             # 8bit registers
             "A": 0,
             "B": 0,
@@ -29,7 +29,7 @@ class CPU:
         }
 
         # Flag registers
-        self.flag = {
+        self.flags = {
             "Z": 0,  # zero
             "N": 0,  # subtract
             "H": 0,  # half-carry
@@ -39,22 +39,6 @@ class CPU:
         self.instruction: OpCode = False
         self.cycles: int = 0
         self.args: list = []
-
-    def load_rom(self, rom_file: str) -> None:
-        """Load ROM file into memory"""
-        print(f"Loading Rom - {rom_file}")
-
-        with open(rom_file, "rb") as rom_ptr:
-            # read the rom file and convert to list of bytes
-            rom = bytearray(rom_ptr.read())
-            # convert to list of integers
-        self.mem[self.PC : len(rom)] = rom  # copy rom to ram
-        # for x in range(100):
-        #     addr = self.PC + x
-        #     code = self.mem[addr]
-        #     print(addr, hex(addr), code)
-        #     OPCODE_TABLE[hex(code)]
-        # exit()
 
     def fetch(self):
         op_code = hex(self.mem[self.PC])
@@ -202,10 +186,3 @@ class CPU:
             f"INST: {self.instruction}\n"
         )
         return status
-
-
-# if __name__ == "__main__":
-#     cpu = CPU()
-#     cpu.load_rom("./roms/2048.gb")
-#     while True:
-#         cpu.cycle()

@@ -1,8 +1,7 @@
 import click
 
-from gbemu import gbemu
-
 from ._config import DEFAULT_ROM
+from .gbemu import Gbemu
 
 
 @click.command()
@@ -22,4 +21,4 @@ from ._config import DEFAULT_ROM
 )
 def run(rom: str = DEFAULT_ROM, debug: bool = False) -> None:
     """Run the Kanban application."""
-    gb = gbemu(rom=rom, debug=debug)
+    Gbemu(rom=rom, debug=debug).run()

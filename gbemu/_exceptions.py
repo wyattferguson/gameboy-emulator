@@ -18,3 +18,10 @@ class ExecuteError(gbemuException):
 
 class RomError(gbemuException):
     pass
+
+
+class CartReadError(gbemuException):
+    pass
+
+class CartWriteError(gbemuException):
+    pass

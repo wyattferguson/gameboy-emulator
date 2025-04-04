@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "gbemu"
 dynamic = ["version"]
@@ -23,16 +27,11 @@ classifiers = [
     "License :: OSI Approved :: MIT License"
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project.urls]
 homepage = "https://github.com/wyattferguson/gbemu"
 repository = "https://github.com/wyattferguson/gbemu.git"
 documentation = "https://github.com/wyattferguson/gbemu"
 issues = "https://github.com/wyattferguson/gbemu/issues"
-
 
 [dependency-groups]
 dev = [
@@ -43,6 +42,9 @@ dev = [
     "taskipy>=1.14.1",
 ]
 
+[project.scripts]
+gbemu = "gbemu.__main__:run"
+
 [tool.hatch]
 version.path = "gbemu/__init__.py"
 build.targets.wheel.packages = ["gbemu"]
@@ -52,7 +54,7 @@ format = "ruff format ./gbemu/"
 lint = "ruff check --fix ./gbemu/ && mypy ./gbemu/"
 typecheck = "mypy ./gbemu/"
 tests = "pytest --verbose --color=yes tests && coverage report -m"
-run = "uv run ./gbemu/gbemu.py --rom ./roms/cpu_instrs.gb"
+run = "gbemu"
 
 
 [tool.ruff]
