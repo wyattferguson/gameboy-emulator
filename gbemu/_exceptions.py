@@ -22,3 +22,7 @@ class RomError(gbemuException):
 
 class CartError(gbemuException):
     pass
+
+
+class RamError(gbemuException):
+    pass

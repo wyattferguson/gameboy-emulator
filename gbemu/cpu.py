@@ -1,15 +1,16 @@
-from ._config import BIOS, MEMORY, PROGRAM_START
+from ._config import PROGRAM_START
+from ._exceptions import DecodeError, ExecuteError, FetchError
 from .opcodes import OPCODE_TABLE, OpCode
+from .ram import RAM
 
 
 class CPU:
-    def __init__(self, debug: bool = False) -> None:
+    def __init__(self, ram: RAM, debug: bool = False) -> None:
         self.debug = debug
         self.PC = PROGRAM_START  # program counter
         self.SP = 0xFFFE  # stack pointer
         # self.SP = 0xFFFE  # stack pointer
-        self.mem = [0] * MEMORY  # 64kb of memory
-        self.mem[0 : len(BIOS)] = BIOS  # load system bios
+        self.ram = ram
 
         self.registers = {
             # 8bit registers
@@ -46,8 +47,9 @@ class CPU:
             self.instruction = OPCODE_TABLE[op_code]
             print(hex(self.PC), self.PC, "-", self.instruction, "-", op_code)
         except Exception as e:
-            print("FETCH:", e)
-            exit()
+            raise FetchError(
+                f"Error fetching instruction: PC = {self.PC} OPCODE = {op_code} - {e}"
+            ) from e
 
     def decode(self):
         try:
@@ -58,8 +60,9 @@ class CPU:
             #     print("ARGS:", self.args)
 
         except Exception as e:
-            print("DECODE:", e)
-            exit()
+            raise DecodeError(
+                f"Error decoding instr: PC={self.PC} SP={self.SP} INSTR={self.instruction} - {e}"
+            ) from e
 
     def execute(self):
         try:
@@ -70,8 +73,7 @@ class CPU:
                 getattr(self, self.instruction.call)
 
         except Exception as e:
-            print("EXECUTE:", e)
-            exit()
+            raise ExecuteError(f"Error executing: {self.instruction} - {e}") from e
 
     def cycle(self):
         """Execute next CPU cycle"""
@@ -85,8 +87,8 @@ class CPU:
 
     def RST(self, addr: int):
         """Store PC, move to addr"""
-        self.mem[self.reg["SP"]] = self.PC
-        self.reg["SP"] -= 2
+        self.mem[self.SP] = self.PC
+        self.SP -= 2
         self.PC = addr
 
     def NOP(self):
@@ -95,7 +97,7 @@ class CPU:
 
     def JR(self, flag: str = False, flag_val: int = False):
         """Relative Jump to address"""
-        if not flag or self.flag[flag] == flag_val:
+        if not flag or self.flags[flag] == flag_val:
             offset = self.mem[self.PC + 1]
             self.PC += offset
 
@@ -111,7 +113,7 @@ class CPU:
 
     def LD(self, register: str, constant: int):
         """Store value in register"""
-        self.reg[register] = constant
+        self.registers[register] = constant
 
     def HALT(self):
         """Enter CPU low-power consumption mode until an interrupt occurs."""
@@ -119,11 +121,11 @@ class CPU:
 
     def INC(self, register: str):
         """Increment Value"""
-        self.reg[register] += 1
+        self.registers[register] += 1
 
     def DEC(self, register):
         """Decrement Value"""
-        self.reg[register] -= 1
+        self.registers[register] -= 1
 
     def JMP(self, addr: int):
         """Jump to Address"""
@@ -135,7 +137,7 @@ class CPU:
     def PUSH(self):
         pass
 
-    def SWAP(self, reg):
+    def SWAP(self, register: str):
         """Swap the upper 4 and the lower 4 bits"""
         pass
 
@@ -178,11 +180,12 @@ class CPU:
         pass
 
     def __str__(self):
-        status = (
-            f"\nSP: {hex(self.reg['SP'])}({self.reg['SP']})   PC: {hex(self.PC)}({self.PC})\n"
-            f"REGS: {self.reg}\n"
-            f"FLAGS: {self.flag}\n"
+        return (
+            "CPU State:\n"
+            f"PC: {hex(self.PC)}({self.PC})\n"
+            f"SP: {hex(self.SP)}({self.SP})\n"
+            f"REGS: {self.registers}\n"
+            f"FLAGS: {self.flags}\n"
             f"CYCLES: {self.cycles}\n"
             f"INST: {self.instruction}\n"
         )
-        return status

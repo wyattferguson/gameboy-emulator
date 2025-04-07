@@ -1,6 +1,7 @@
 from ._config import DEFAULT_ROM
 from .cart import Cart
 from .cpu import CPU
+from .ram import RAM
 from .screen import Screen
 
 
@@ -9,12 +10,11 @@ class Gbemu:
         self.debug = debug
         self.rom = rom
         self.cart = Cart(self.rom)
+        self.ram = RAM(self.cart)
         # self.screen = Screen()
-        # self.cpu = CPU(self.debug)  # CPU instance will be created in the run method
+        self.cpu = CPU(self.ram, self.debug)  # CPU instance will be created in the run method
 
     def run(self) -> None:
         """Run the emulator."""
-        # self.cpu.load_rom(self.rom)
         print("Running GBEmu...")
         print(self.cart)
-        # self.cart.load()

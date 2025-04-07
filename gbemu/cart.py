@@ -6,11 +6,10 @@ from .cart_tables import CART_TYPE, CGB_FLAG, DESINATION_CODE, NEW_LICENSEE, OLD
 class Cart:
     def __init__(self, filename: str = DEFAULT_ROM) -> None:
         self.filename = filename
-        self.rom = bytearray()
-        self.load()
+        self.rom = self.load()
+
         try:
             self.manufacturer_code = self.rom[0x13F:0x142].strip(b"\x00").decode()
-            self.copyright_logo = self.rom[0x104:0x134]
             self.title = self.rom[0x134:0x143].strip(b"\x00").decode("ASCII")
             self.cgb_flag = CGB_FLAG.get(f"{self.rom[0x143] & 0xF0}", "Unknown")
             self.sgb_flag = self.rom[0x146]
@@ -27,21 +26,22 @@ class Cart:
         except Exception as e:
             raise CartError(f"Error decoding cartridge header: {self.filename} - {e}") from e
 
-    def load(self) -> None:
+    def load(self) -> bytearray:
         """Load ROM file into memory and verify checksum."""
         try:
             with open(self.filename, "rb") as f:
-                self.rom = bytearray(f.read())
-                header_checksum = self.rom[0x14D]
+                rom = bytearray(f.read())
+                header_checksum = rom[0x14D]
 
                 # calculate ROM checksum
                 checksum = 0
                 for address in range(0x134, 0x14D):
-                    checksum = checksum - self.rom[address] - 1
+                    checksum = checksum - rom[address] - 1
 
                 # compare header checksum with lower 8 bits of calculated checksum
                 if header_checksum != (checksum & 0xFF):
                     raise RomError(f"Header checksum mismatch for ROM: {self.filename}")
+                return rom
         except Exception as e:
             raise RomError(f"Error loading ROM: {self.filename} - {e}") from e
 

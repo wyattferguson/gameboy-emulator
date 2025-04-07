@@ -1,5 +1,5 @@
-DEFAULT_ROM = "./roms/adventure.gbc"
-MEMORY: int = 65536  # 64kb of totally memory
+DEFAULT_ROM = "./roms/puzzle.gb"
+MEMORY_SIZE: int = 32768  # 32kb of totally memory
 PROGRAM_START: int = 0x100  # rom load location
 
 # fmt: off
@@ -28,7 +28,3 @@ SCREEN_WIDTH: int = 160
 SCREEN_HEIGHT: int = 144
 DISPLAY_SCALER: int = 5
 DELAY: int = 1
-
-# colors
-WHITE: tuple = (255, 255, 255)
-BLACK: tuple = (0, 0, 0)
