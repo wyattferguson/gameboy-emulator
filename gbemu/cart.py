@@ -1,5 +1,6 @@
-from ._config import CART_TYPE, DEFAULT_ROM, NINTENDO_LOGO
+from ._config import DEFAULT_ROM
 from ._exceptions import CartError, RomError
+from .cart_tables import CART_TYPE, CGB_FLAG, DESINATION_CODE, NEW_LICENSEE, OLD_LICENSEE, RAM_SIZE
 
 
 class Cart:
@@ -7,22 +8,24 @@ class Cart:
         self.filename = filename
         self.rom = bytearray()
         self.load()
-        self.manufacturer_code = self.rom[0x13F:0x142].strip(b"\x00").decode()
-        self.copyright_logo = self.rom[0x104:0x134]
-        self.title = self.rom[0x134:0x143].strip(b"\x00").decode("ASCII")
-        self.cgb_flag = self.rom[0x143]
-        self.sgb_flag = self.rom[0x146]
-        self.license_code = self.rom[0x144:0x146]
-        self.cart_type = CART_TYPE[self.rom[0x147]]
-        self.rom_size = 32 * (1 << self.rom[0x148])
-        self.ram_size = self.rom[0x149]
-        self.destination_code = self.rom[0x14A]
-        self.old_license_code = self.rom[0x14B]
-        self.version = self.rom[0x14C]
-
-        # logo copyright check
-        if self.copyright_logo != NINTENDO_LOGO:
-            raise RomError(f"Invalid ROM copyright: {self.filename}")
+        try:
+            self.manufacturer_code = self.rom[0x13F:0x142].strip(b"\x00").decode()
+            self.copyright_logo = self.rom[0x104:0x134]
+            self.title = self.rom[0x134:0x143].strip(b"\x00").decode("ASCII")
+            self.cgb_flag = CGB_FLAG.get(f"{self.rom[0x143] & 0xF0}", "Unknown")
+            self.sgb_flag = self.rom[0x146]
+            self.cart_type = CART_TYPE[self.rom[0x147]]
+            self.rom_size = 32 * (1 << self.rom[0x148])
+            self.ram_size = RAM_SIZE[self.rom[0x149]]
+            self.destination = DESINATION_CODE[self.rom[0x14A]]
+            self.version = self.rom[0x14C]
+            self.licensee = (
+                NEW_LICENSEE[f"{self.rom[0x144:0x146].decode()}"]
+                if self.rom[0x14B] == "33"
+                else OLD_LICENSEE[f"{self.rom[0x14B]}"]
+            )
+        except Exception as e:
+            raise CartError(f"Error decoding cartridge header: {self.filename} - {e}") from e
 
     def load(self) -> None:
         """Load ROM file into memory and verify checksum."""
@@ -59,11 +62,14 @@ class Cart:
     def __str__(self):
         return (
             "Cartridge Info:\n"
+            f"Filenamne: {self.filename}\n"
             f"Title: {self.title}\n"
             f"Manufacturer Code: {self.manufacturer_code}\n"
-            f"License Code: {self.license_code}\n"
+            f"Licensee: {self.licensee}\n"
+            f"CGB Flag: {self.cgb_flag}\n"
             f"ROM Size: {self.rom_size} KB\n"
-            f"RAM Size: {self.ram_size} KB\n"
+            f"RAM Size: {self.ram_size}\n"
             f"Cart Type: {self.cart_type}\n"
             f"Version: {self.version}\n"
+            f"Desination Code: {self.destination}\n"
         )
