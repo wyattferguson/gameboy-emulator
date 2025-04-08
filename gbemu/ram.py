@@ -13,21 +13,14 @@ class RAM:
         self._memory[0 : len(cart.rom)] = cart.rom
         self._cart = cart
 
-    @property
-    def memory(self) -> int:
-        # print(f"Address: {address} - Value: {self._memory[address]}")
-        # if address < 0 or address >= self.size:
-        #     raise RamError(f"Address {address} is out of bounds.")
-        # if not isinstance(address, int):
-        #     raise TypeError("Address must be an integer.")
-        return self._memory
-
-    @memory.setter
-    def memory(self, address: int, value: int) -> None:
+    def __getitem__(self, address: int) -> hex:
         if address < 0 or address >= self.size:
             raise RamError(f"Address {address} is out of bounds.")
-        if not isinstance(address, int):
-            raise TypeError("Address must be an integer.")
+        return self._memory[address]
+
+    def __setitem__(self, address: int, value: int) -> None:
+        if address < 0 or address >= self.size:
+            raise RamError(f"Address {address} is out of bounds.")
         self._memory[address] = value
 
     def __str__(self):
