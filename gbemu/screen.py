@@ -1,6 +1,6 @@
 import pygame as pg
 
-from ._config import BLACK, DISPLAY_SCALER, SCREEN_HEIGHT, SCREEN_WIDTH
+from ._config import DISPLAY_SCALER, SCREEN_HEIGHT, SCREEN_WIDTH
 
 
 class Screen:
@@ -15,4 +15,4 @@ class Screen:
 
     def clear_screen(self) -> None:
         """black out entire screen"""
-        self.screen.fill(BLACK)
+        self.screen.fill((0, 0, 0))

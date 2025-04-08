@@ -1,6 +1,6 @@
 from ._config import PROGRAM_START
 from ._exceptions import DecodeError, ExecuteError, FetchError
-from .opcodes import OPCODE_TABLE, OpCode
+from .opcodes import OPCODES, OpCode
 from .ram import RAM
 
 
@@ -9,7 +9,6 @@ class CPU:
         self.debug = debug
         self.PC = PROGRAM_START  # program counter
         self.SP = 0xFFFE  # stack pointer
-        # self.SP = 0xFFFE  # stack pointer
         self.ram = ram
 
         self.registers = {
@@ -37,43 +36,61 @@ class CPU:
             "C": 0,  # carry
         }
 
-        self.instruction: OpCode = False
+        self.instruction: OpCode | None = None
         self.cycles: int = 0
         self.args: list = []
 
     def fetch(self):
-        op_code = hex(self.mem[self.PC])
+        op_code = self.ram.memory[self.PC]
+        print(f"OPCODE: {hex(op_code)} - {op_code}")
         try:
-            self.instruction = OPCODE_TABLE[op_code]
-            print(hex(self.PC), self.PC, "-", self.instruction, "-", op_code)
-        except Exception as e:
-            raise FetchError(
-                f"Error fetching instruction: PC = {self.PC} OPCODE = {op_code} - {e}"
-            ) from e
+            self.instruction = OPCODES[op_code]
+            print("Found: ", hex(self.PC), self.PC, "-", self.instruction, "-", op_code)
+        except Exception:
+            # raise FetchError(
+            #     f"Error fetching instruction: PC = {self.PC} OPCODE = {op_code} - {e}"
+            # ) from e
+            print("Not Found: ", hex(self.PC), self.PC, "-", op_code)
+            exit()
 
     def decode(self):
         try:
-            self.args = self.instruction.args if self.instruction.args else self.instruction.flags
-            # if self.instruction.length > 1:
-            #     self.args += [self.mem[self.PC + i]
-            #                   for i in range(1, self.instruction.length)]
-            #     print("ARGS:", self.args)
+            self.args = []
+            # self.args = self.instruction.args if self.instruction.args else self.instruction.flags
+            # Combine two 8-bit values into a 16-bit value if needed
+            if self.instruction.length == 3:
+                b = bytes([self.ram.memory[self.PC + 1], self.ram.memory[self.PC + 2]])
+                self.args = [int.from_bytes(b, byteorder="little")]
+                print("LEN 3:", self.args)
+            elif self.instruction.length > 1:
+                self.args += [
+                    hex(self.ram.memory[self.PC + i]) for i in range(0, self.instruction.length)
+                ]
+                print("ARGS:", self.args)
+            else:
+                print("No ARGS")
 
         except Exception as e:
-            raise DecodeError(
-                f"Error decoding instr: PC={self.PC} SP={self.SP} INSTR={self.instruction} - {e}"
-            ) from e
+            # raise DecodeError(
+            #     f"Error decoding instr: PC={self.PC} SP={self.SP} INSTR={self.instruction} - {e}"
+            # ) from e
+            print("Decode Error: ", e)
+            exit()
 
     def execute(self):
         try:
             # print(self.args)
             if self.args:
+                print("Running: ", self.instruction.call, self.args)
                 getattr(self, self.instruction.call)(*self.args)
             else:
-                getattr(self, self.instruction.call)
+                print("Running: ", self.instruction.call)
+                getattr(self, self.instruction.call)()
 
         except Exception as e:
-            raise ExecuteError(f"Error executing: {self.instruction} - {e}") from e
+            # raise ExecuteError(f"Error executing: {self.instruction} - {e}") from e
+            print("Execute Error: ", e)
+            exit()
 
     def cycle(self):
         """Execute next CPU cycle"""
@@ -82,23 +99,22 @@ class CPU:
         self.execute()
         # self.debug()
 
-        # move program counter to next instruction
-        self.PC += self.instruction.length
+        self.cycles += self.instruction.cycles
 
     def RST(self, addr: int):
         """Store PC, move to addr"""
-        self.mem[self.SP] = self.PC
+        self.ram.memory[self.SP] = self.PC
         self.SP -= 2
         self.PC = addr
 
     def NOP(self):
         """No Operation"""
-        pass
+        self.PC += 1
 
     def JR(self, flag: str = False, flag_val: int = False):
         """Relative Jump to address"""
         if not flag or self.flags[flag] == flag_val:
-            offset = self.mem[self.PC + 1]
+            offset = self.ram.memory[self.PC + 1]
             self.PC += offset
 
     def SET(self):
@@ -132,7 +148,12 @@ class CPU:
         self.PC = addr
 
     def POP(self):
-        pass
+        print(f"POP SP: {hex(self.SP)}")
+        if len(self.ram.memory) < self.SP:
+            self.SP += 2
+            self.PC = self.ram.memory[self.SP]
+        else:
+            raise Exception("Stack underflow")
 
     def PUSH(self):
         pass
@@ -143,8 +164,7 @@ class CPU:
 
     def RET(self):
         """Return from subroutine"""
-        self.PC = self.mem[self.SP]
-        pass
+        self.PC = self.ram.memory[self.SP]
 
     def SHIFT(self):
         """Logical bit shift"""

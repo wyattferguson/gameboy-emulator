@@ -12,9 +12,14 @@ class Gbemu:
         self.cart = Cart(self.rom)
         self.ram = RAM(self.cart)
         # self.screen = Screen()
-        self.cpu = CPU(self.ram, self.debug)  # CPU instance will be created in the run method
+        self.cpu = CPU(self.ram, self.debug)
 
     def run(self) -> None:
         """Run the emulator."""
-        print("Running GBEmu...")
         print(self.cart)
+        # print(self.ram)
+        print("MEMORY:")
+        print(self.ram)
+        print("GAME CYCLE:")
+        while True:
+            self.cpu.cycle()

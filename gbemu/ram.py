@@ -7,38 +7,33 @@ class RAM:
     def __init__(self, cart: Cart, size: int = MEMORY_SIZE) -> None:
         """Initialize RAM with a given size."""
         self.size = size
-        self._memory = bytearray(self.size)
-        self._memory[0 : len(BIOS)] = BIOS  # load system bios
+        self._memory = [0] * self.size
+        # self._memory[0 : len(BIOS)] = BIOS  # load system bios
         # copy rom into memory for now
-        self._memory[PROGRAM_START : PROGRAM_START + len(cart.rom)] = cart.rom
+        self._memory[0 : len(cart.rom)] = cart.rom
         self._cart = cart
 
     @property
-    def memory(self) -> bytearray:
+    def memory(self) -> int:
+        # print(f"Address: {address} - Value: {self._memory[address]}")
+        # if address < 0 or address >= self.size:
+        #     raise RamError(f"Address {address} is out of bounds.")
+        # if not isinstance(address, int):
+        #     raise TypeError("Address must be an integer.")
         return self._memory
 
     @memory.setter
-    def memory(self, address: int, value: bytearray) -> None:
-        # if not isinstance(value, bytearray):
-        #     raise TypeError("Memory must be a bytearray.")
-        # if len(value) > self.size:
-        #     raise RamError(
-        #         f"Write Error: Address {address} out of bounds for RAM size {self.size}."
-        #     )
+    def memory(self, address: int, value: int) -> None:
+        if address < 0 or address >= self.size:
+            raise RamError(f"Address {address} is out of bounds.")
+        if not isinstance(address, int):
+            raise TypeError("Address must be an integer.")
         self._memory[address] = value
 
-    # def read(self, address: int | list[int, int]) -> int:
-    #     """Read a byte from RAM at the specified address."""
-    #     if isinstance(address, list):
-    #         return [self._memory[a] for a in address if 0 <= a < self.size]
-    #     if address < 0 or address >= self.size:
-    #         raise RamError(f"Read Error: Address {address} out of bounds for RAM size {self.size}.")
-    #     return self._memory[address]
-
-    # def write(self, address: int, value: int) -> None:
-    #     """Write a byte to RAM at the specified address."""
-    #     if address < 0 or address >= self.size:
-    #         raise RamError(
-    #             f"Write Error: Address {address} out of bounds for RAM size {self.size}."
-    #         )
-    #     self._memory[address] = value
+    def __str__(self):
+        # print memory in 16 byte chunks
+        chunk_size: int = 16
+        return "\n".join(
+            " ".join(f"{byte:02x}" for byte in self._memory[i : i + chunk_size])
+            for i in range(PROGRAM_START, PROGRAM_START + 16, chunk_size)
+        )
