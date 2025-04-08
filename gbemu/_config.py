@@ -1,6 +1,7 @@
 DEFAULT_ROM = "./roms/puzzle.gb"
 MEMORY_SIZE: int = 65535  # 32kb of totally memory
 PROGRAM_START: int = 0x100  # rom load location
+SP_START: int = 0xFFFE  # stack pointer start location
 
 # fmt: off
 BIOS:list[int] = [

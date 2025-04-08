@@ -26,7 +26,8 @@ class RAM:
     def __str__(self):
         # print memory in 16 byte chunks
         chunk_size: int = 16
+        print_rows: int = 4
         return "\n".join(
             " ".join(f"{byte:02x}" for byte in self._memory[i : i + chunk_size])
-            for i in range(PROGRAM_START, PROGRAM_START + 16, chunk_size)
+            for i in range(PROGRAM_START, PROGRAM_START + (chunk_size * print_rows), chunk_size)
         )

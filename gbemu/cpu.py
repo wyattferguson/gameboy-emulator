@@ -1,4 +1,4 @@
-from ._config import PROGRAM_START
+from ._config import PROGRAM_START, SP_START
 from ._exceptions import DecodeError, ExecuteError, FetchError
 from .opcodes import OPCODES, OpCode
 from .ram import RAM
@@ -8,11 +8,10 @@ class CPU:
     def __init__(self, ram: RAM, debug: bool = False) -> None:
         self.debug = debug
         self.PC = PROGRAM_START  # program counter
-        self.SP = 0xFFFE  # stack pointer
+        self.SP = SP_START  # stack pointer
         self.ram = ram
 
         self.registers = {
-            # 8bit registers
             "A": 0,
             "B": 0,
             "C": 0,
@@ -22,7 +21,6 @@ class CPU:
             "HL": 0,
         }
 
-        # Flag registers
         self.flags = {
             "Z": 0,  # zero
             "N": 0,  # subtract

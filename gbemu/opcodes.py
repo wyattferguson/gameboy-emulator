@@ -14,13 +14,6 @@ class OpCode:
         return f"{self.label} - {self.length} - {self.args} - {self.flags}"
 
 
-# Opcodes whose argument should be added with 0xff00
-prefix_opcodes = (0xCB, 0x10)
-
-# Extended opcodes. Use this table after the opcode 0xcb has been encountered
-# from the preceding table. BYte lengths here are EXCLUSIVE the preceding
-# prefix opcode.
-
 OPCODES: dict[hex, OpCode] = {
     "0x0": OpCode("NOP", 1, 4, "NOP"),
     "0x1f": OpCode("RRA", 1, 4, "RRA", flags=("C")),  # STOPPED HERE
