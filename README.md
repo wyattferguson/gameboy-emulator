@@ -1,8 +1,15 @@
-# :rocket: gbemu - A gameboy emulator created with python
+# :rocket: gbemu - Python Gameboy Emulator
 
 ## Installation
 
 ## How to use
+
+## Included Roms
+
+- 2048.gb - A 2048 clone I made, full source is availible in the [Github Repo](https://github.com/wyattferguson/2048-gb)
+- hello.gb - A very simple rom that just boots and display a sprite hello message.
+- `roms/tests/` a collection of roms with different specific bugs, these are run during testing with pytest.
+- `roms/verification/` is full test roms that run through all the systems opcodes and timings to verify accuracy.
 
 ## References
 
