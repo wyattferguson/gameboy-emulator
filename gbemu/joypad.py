@@ -8,11 +8,14 @@ class Joypad:
     def __init__(self, ram: RAM):
         self.ram = ram
         self.ram[JOYPAD_MEM] = 0xFF  # Set all buttons to not pressed
+        self.dpad_pressed = False
 
     def flip(self, bits: int, dpad: bool = False) -> None:
         """Set pressed buttons."""
         # Reset dpad / button flags
-        self.ram[JOYPAD_MEM] = (self.ram[JOYPAD_MEM] | 0xF0) ^ 0x10 if dpad else 0x20
+        if self.dpad_pressed != dpad:
+            self.ram[JOYPAD_MEM] = 0xFF
+            self.dpad_pressed = dpad
         # Flip the bits of the pressed buttons
         self.ram[JOYPAD_MEM] ^= bits
 
