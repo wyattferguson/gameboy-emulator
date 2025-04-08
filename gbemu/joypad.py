@@ -14,7 +14,7 @@ class Joypad:
         """Set pressed buttons."""
         # Reset dpad / button flags
         if self.dpad_pressed != dpad:
-            self.ram[JOYPAD_MEM] = 0xFF ^ (0b0001_0000 if dpad else 0b0010_0000)
+            self.ram[JOYPAD_MEM] = 0xEF if dpad else 0xDF
             self.dpad_pressed = dpad
         # Flip the bits of the pressed buttons
         self.ram[JOYPAD_MEM] ^= bits
