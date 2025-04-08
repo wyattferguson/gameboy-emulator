@@ -45,3 +45,14 @@ class Joypad:
                         self.flip(0x0100)
                     case _:
                         pass
+
+    def __str__(self):
+        return (
+            f"Joypad State:\n"
+            f"JOYPAD: {self.ram[JOYPAD_MEM]}\n"
+            f"Up/Select : {(self.ram[JOYPAD_MEM] & 0b0100) == 0}\n"
+            f"Down/Start: {(self.ram[JOYPAD_MEM] & 0b1000) == 0}\n"
+            f"Right/A: {(self.ram[JOYPAD_MEM] & 0b0001) == 0}\n"
+            f"Left/B: {(self.ram[JOYPAD_MEM] & 0b0010) == 0}\n"
+            f"{'D-Pad' if self.dpad_pressed else 'Button'} Pressed\n"
+        )
