@@ -1,6 +1,6 @@
+from ._cart_tables import CART_TYPE, CGB_FLAG, DESINATION_CODE, NEW_LICENSEE, OLD_LICENSEE, RAM_SIZE
 from ._config import DEFAULT_ROM
 from ._exceptions import CartError, RomError
-from .cart_tables import CART_TYPE, CGB_FLAG, DESINATION_CODE, NEW_LICENSEE, OLD_LICENSEE, RAM_SIZE
 
 
 class Cart:
