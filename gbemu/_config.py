@@ -1,8 +1,7 @@
 DEFAULT_ROM = "./roms/puzzle.gb"
 MEMORY_SIZE: int = 65535  # 32kb of totally memory
-PROGRAM_START: int = 0x100  # rom load location
+PC_START: int = 0x100  # rom load location
 SP_START: int = 0xFFFE  # stack pointer start location
-JOYPAD_MEM: int = 0xFF00  # joypad start location
 
 # fmt: off
 BIOS:list[int] = [
@@ -30,3 +29,6 @@ SCREEN_WIDTH: int = 160
 SCREEN_HEIGHT: int = 144
 DISPLAY_SCALER: int = 5
 DELAY: int = 1
+
+# memory address mappings
+M_JOYPAD: int = 0xFF00

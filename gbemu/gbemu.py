@@ -1,4 +1,5 @@
 from ._config import DEFAULT_ROM
+from .audio import Audio
 from .cart import Cart
 from .cpu import CPU
 from .joypad import Joypad
@@ -14,6 +15,7 @@ class Gbemu:
         self.ram = RAM(self.cart)
         # self.joypad = Joypad(self.ram)
         # self.screen = Screen()
+        # self.audio = Audio()
         self.cpu = CPU(self.ram, self.debug)
 
     def run(self) -> None:

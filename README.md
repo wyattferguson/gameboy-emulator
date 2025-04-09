@@ -13,6 +13,7 @@
 
 ## References
 
+- [GBDev CPU Instuction Set(https://gbdev.gg8.se/wiki/articles/CPU_Instruction_Set)](https://gbdev.gg8.se/wiki/articles/CPU_Instruction_Set)
 - [Gameboy Test Roms (https://github.com/retrio/gb-test-roms)](https://github.com/retrio/gb-test-roms)
 - [GB ASM Tutorial (https://gbdev.io/gb-asm-tutorial)](https://gbdev.io/gb-asm-tutorial)
 - [GB Opcode Table (https://gbdev.io/gb-opcodes/optables/)](https://gbdev.io/gb-opcodes/optables/)

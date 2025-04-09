@@ -1,4 +1,4 @@
-from ._config import PROGRAM_START, SP_START
+from ._config import PC_START, SP_START
 from ._exceptions import DecodeError, ExecuteError, FetchError
 from .opcodes import OPCODES, OpCode
 from .ram import RAM
@@ -7,11 +7,11 @@ from .ram import RAM
 class CPU:
     def __init__(self, ram: RAM, debug: bool = False) -> None:
         self.debug = debug
-        self.PC = PROGRAM_START  # program counter
+        self.PC = PC_START  # program counter
         self.SP = SP_START  # stack pointer
         self.ram = ram
 
-        self.registers = {
+        self.reg = {
             "A": 0,
             "B": 0,
             "C": 0,
@@ -107,21 +107,21 @@ class CPU:
 
     def LD_HR(self, register: str):
         """Load H register with value from register"""
-        new_hl = (self.registers["HL"] & 0x00FF) | (self.registers[register] << 8)
+        new_hl = (self.reg["HL"] & 0x00FF) | (self.reg[register] << 8)
         self.LD("HL", new_hl)
 
     def LD_HM(self, register: str):
         """Load H register with value from register"""
         self.LD("HL", register)
-        self.registers["HL"] -= 1
+        self.reg["HL"] -= 1
 
     def LD(self, register: str, value: int | str):
         """Store value in register"""
         if isinstance(value, str):
-            value = self.registers[value]
+            value = self.reg[value]
 
         print(f"LD {register} {value}")
-        self.registers[register] = value
+        self.reg[register] = value
         self.PC += self.instruction.length
 
     def HALT(self):
@@ -130,11 +130,11 @@ class CPU:
 
     def INC(self, register: str):
         """Increment Value"""
-        self.registers[register] += 1
+        self.reg[register] += 1
 
     def DEC(self, register):
         """Decrement Value"""
-        self.registers[register] -= 1
+        self.reg[register] -= 1
 
     def JMP(self, addr: int):
         """Jump to Address"""
@@ -191,7 +191,7 @@ class CPU:
 
     def XOR(self, register_a: int, register_b: int):
         """Bitwise XOR"""
-        z = self.registers[register_a] ^ self.registers[register_b]
+        z = self.reg[register_a] ^ self.reg[register_b]
         self.flags["Z"] = 1 if z == 0 else 0
         self.PC += self.instruction.length
 
@@ -200,7 +200,7 @@ class CPU:
             "CPU State:\n"
             f"PC: {hex(self.PC)}({self.PC})\n"
             f"SP: {hex(self.SP)}({self.SP})\n"
-            f"REGS: {self.registers}\n"
+            f"REGS: {self.reg}\n"
             f"FLAGS: {self.flags}\n"
             f"CYCLES: {self.cycles}\n"
             f"INST: {self.instruction}\n"
