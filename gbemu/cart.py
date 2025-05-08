@@ -20,7 +20,7 @@ class Cart:
             self.version = self.rom[0x14C]
             self.licensee = (
                 NEW_LICENSEE[f"{self.rom[0x144:0x146].decode()}"]
-                if self.rom[0x14B] == "33"
+                if self.rom[0x14B] == 33
                 else OLD_LICENSEE[f"{self.rom[0x14B]}"]
             )
         except Exception as e:
@@ -45,21 +45,21 @@ class Cart:
         except Exception as e:
             raise RomError(f"Error loading ROM: {self.filename} - {e}") from e
 
-    def read(self, address: int = 0x0):
+    def read(self, address: int = 0x0) -> int:
         """Read a byte from the cartridge at the specified address."""
         if address < 0 or address >= len(self.rom):
             raise CartError(f"Attempted to read out of bounds. Address: {address}")
 
         return self.rom[address]
 
-    def write(self, address: int = 0x0, value: int = 0):
+    def write(self, address: int = 0x0, value: int = 0) -> None:
         """Write a byte to the cartridge at the specified address."""
         if address < 0 or address >= len(self.rom):
             raise CartError(f"Attempted to write out of bounds. Address: {address}, Value: {value}")
 
         self.rom[address] = value
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             "Cartridge Info:\n"
             f"Filenamne: {self.filename}\n"

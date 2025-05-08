@@ -1,3 +1,3 @@
 class Audio:
-    def __init__(self):
-        pass
+    def __init__(self) -> None:
+        self.volume: int = 100

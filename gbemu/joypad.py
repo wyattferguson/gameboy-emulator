@@ -46,7 +46,7 @@ class Joypad:
                     case _:
                         pass
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             f"Joypad State:\n"
             f"JOYPAD: {self.ram[M_JOYPAD]}\n"

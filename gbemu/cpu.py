@@ -28,11 +28,11 @@ class CPU:
             "C": 0,  # carry
         }
 
-        self.instruction: OpCode | None = None
+        self.instruction: OpCode
         self.cycles: int = 0
-        self.args: list | None = None
+        self.args: list[int] = []
 
-    def fetch(self):
+    def fetch(self) -> None:
         op_code = hex(self.ram[self.PC])
         try:
             self.instruction = OPCODES[op_code]
@@ -44,7 +44,7 @@ class CPU:
             print("\nNot Found: ", hex(self.PC), "-", op_code)
             exit()
 
-    def decode(self):
+    def decode(self) -> None:
         try:
             self.args = self.instruction.args if self.instruction.args else []
             if self.instruction.length > 1:
@@ -59,7 +59,7 @@ class CPU:
             print("Decode Error: ", e)
             exit()
 
-    def execute(self):
+    def execute(self) -> None:
         try:
             print("Execute: ", self.instruction.call)
             if self.args:
@@ -72,50 +72,50 @@ class CPU:
             print("Execute Error: ", e)
             exit()
 
-    def cycle(self):
+    def cycle(self) -> None:
         """Execute next CPU cycle"""
         self.fetch()
         self.decode()
         self.execute()
         self.cycles += self.instruction.cycles
 
-    def RST(self, addr: int):
+    def RST(self, addr: int) -> None:
         """Store PC, move to addr"""
         self.ram[self.SP] = self.PC
         self.SP -= 2
         self.PC = addr
 
-    def NOP(self):
+    def NOP(self) -> None:
         """No Operation"""
         self.PC += 1
 
-    def JR(self, offset: int = 0):
+    def JR(self, offset: int = 0) -> None:
         """Relative Jump to address"""
         # if not flag or self.flags[flag] == flag_val:
         self.PC += offset
         self.PC += self.instruction.length
 
-    def SET(self):
+    def SET(self) -> None:
         pass
 
-    def ROT(self):
+    def ROT(self) -> None:
         """Rotate byte"""
         pass
 
-    def CALL(self):
+    def CALL(self) -> None:
         pass
 
-    def LD_HR(self, register: str):
+    def LD_HR(self, register: str) -> None:
         """Load H register with value from register"""
         new_hl = (self.reg["HL"] & 0x00FF) | (self.reg[register] << 8)
         self.LD("HL", new_hl)
 
-    def LD_HM(self, register: str):
+    def LD_HM(self, register: str) -> None:
         """Load H register with value from register"""
         self.LD("HL", register)
         self.reg["HL"] -= 1
 
-    def LD(self, register: str, value: int | str):
+    def LD(self, register: str, value: int | str) -> None:
         """Store value in register"""
         if isinstance(value, str):
             value = self.reg[value]
@@ -124,23 +124,23 @@ class CPU:
         self.reg[register] = value
         self.PC += self.instruction.length
 
-    def HALT(self):
+    def HALT(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
         pass
 
-    def INC(self, register: str):
+    def INC(self, register: str) -> None:
         """Increment Value"""
         self.reg[register] += 1
 
-    def DEC(self, register):
+    def DEC(self, register) -> None:
         """Decrement Value"""
         self.reg[register] -= 1
 
-    def JMP(self, addr: int):
+    def JMP(self, addr: int) -> None:
         """Jump to Address"""
         self.PC = addr
 
-    def POP(self):
+    def POP(self) -> None:
         print(f"POP SP: {hex(self.SP)}")
         if len(self.ram) < self.SP:
             self.SP += 2
@@ -148,54 +148,54 @@ class CPU:
         else:
             raise Exception("Stack underflow")
 
-    def PUSH(self):
+    def PUSH(self) -> None:
         pass
 
-    def SWAP(self, register: str):
+    def SWAP(self, register: str) -> None:
         """Swap the upper 4 and the lower 4 bits"""
         pass
 
-    def RET(self):
+    def RET(self) -> None:
         """Return from subroutine"""
         self.PC = self.ram[self.SP]
 
-    def SHIFT(self):
+    def SHIFT(self) -> None:
         """Logical bit shift"""
         pass
 
-    def STOP(self):
+    def STOP(self) -> None:
         """Halt CPU/LCD display until button pressed"""
         pass
 
-    def SBC(self):
+    def SBC(self) -> None:
         """Subtract and carry"""
         pass
 
-    def SCF(self):
+    def SCF(self) -> None:
         """Set Carry Flag."""
         pass
 
-    def CP(self):
+    def CP(self) -> None:
         """Subtract Values"""
         pass
 
-    def ADD(self):
+    def ADD(self) -> None:
         pass
 
-    def AND(self):
+    def AND(self) -> None:
         """Bitwise AND"""
         pass
 
-    def OR(self):
+    def OR(self) -> None:
         pass
 
-    def XOR(self, register_a: int, register_b: int):
+    def XOR(self, register_a: int, register_b: int) -> None:
         """Bitwise XOR"""
         z = self.reg[register_a] ^ self.reg[register_b]
         self.flags["Z"] = 1 if z == 0 else 0
         self.PC += self.instruction.length
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (
             "CPU State:\n"
             f"PC: {hex(self.PC)}({self.PC})\n"
