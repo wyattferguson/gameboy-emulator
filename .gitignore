@@ -1,7 +1,13 @@
+# Mac files
+.DS_Store
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# alembic
+src/migrations/versions/*.py
 
 # C extensions
 *.so
@@ -16,7 +22,6 @@ eggs/
 .eggs/
 lib/
 lib64/
-parts/
 sdist/
 var/
 wheels/
@@ -25,6 +30,8 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.pdm.toml
+*.lock
 
 # PyInstaller
 *.manifest

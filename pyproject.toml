@@ -1,30 +1,36 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
 
 [project]
 name = "gbemu"
-dynamic = ["version"]
+version = "0.1.0"
 description = "A gameboy emulator created with python"
 authors = [{ name = "Wyatt Ferguson", email = "wyattxdev@duck.com" }]
 readme = "README.md"
-license = {text = "MIT license"}
+license = {file = "LICENSE"}
 keywords = ["python"]
-requires-python = ">=3.12"
-dependencies = [
-    "click>=8.1.8",
-    "pygame>=2.6.1",
-]
+requires-python = ">=3.13,<4"
 
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
     "Natural Language :: English",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Utilities",
-    "License :: OSI Approved :: MIT License"
+]
+
+dependencies = [
+    "click>=8.1.8",
+    "pygame>=2.6.1",
+]
+
+[dependency-groups]
+dev = [
+    "coverage>=7.8.2",
+    "ty>=0.0.17",
+    "pytest>=9.0.2",
+    "ruff>=0.15.1",
+    "taskipy>=1.14.1",
 ]
 
 [project.urls]
@@ -33,61 +39,56 @@ repository = "https://github.com/wyattferguson/gbemu.git"
 documentation = "https://github.com/wyattferguson/gbemu"
 issues = "https://github.com/wyattferguson/gbemu/issues"
 
-[dependency-groups]
-dev = [
-    "coverage>=7.6.11",
-    "mypy>=1.15.0",
-    "pytest>=8.3.4",
-    "ruff>=0.9.5",
-    "taskipy>=1.14.1",
-]
+[build-system]
+requires = ["uv_build>=0.10.4,<0.11.0"]
+build-backend = "uv_build"
 
 [project.scripts]
-gbemu = "gbemu.__main__:run"
-
-[tool.hatch]
-version.path = "gbemu/__init__.py"
-build.targets.wheel.packages = ["gbemu"]
+gbemu = "src.gbemu.__main__:run"
 
 [tool.taskipy.tasks]
-format = "ruff format ./gbemu/"
-lint = "ruff check --fix ./gbemu/ && mypy ./gbemu/"
-typecheck = "mypy ./gbemu/"
+format = "ruff format ./src/gbemu/"
+lint = "ruff check --fix ./src/gbemu/"
+type = { cmd = "ty check", help = "Typecheck code using ty" }
 tests = "pytest --verbose --color=yes tests && coverage report -m"
 run = "gbemu"
 
-
-[tool.ruff]
-line-length = 100
-indent-width = 4
-format.indent-style = "space"
-target-version = "py312"
-src = ["gbemu", "tests"]
-
 [tool.ruff.lint]
 pydocstyle.convention = "google"
-select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "B",  # flake8-bugbear
-    "SIM", # flake8-simplify
-    "C4",  # flake8-comprehensions
-    "UP",  # pyupgrade
+fixable = ["ALL"]
+select = ["ALL"]
+ignore = [
+    "FA102", # Flake8-future-annotations
+    "F401", # Disable fix for unused imports
+    "B904", # Allow raising exceptions without from e
+    "PLR0913", # too many arguments
+    "CPY", # Flake8-copyright
+    "T201", # Debugging print statements
+    "ERA", # Eradicate – detects commented-out code
+    "BLE001", # Catch-all exceptions
+    "D100", # missing docstring in public module
+    "D105", # undocumented magic method
+    "D107", # undocumented public init
+    "D203", # incorrect-blank-line-before-class
+    "D205", # line-between-summary-and-description
+    "D212", # multi-line-summary-first-line
+    "D400", # missing-trailing-period
+    "D407", # missing-dashed-underline-after-section
+    "S311", # rand-usage
+    "EM102", # f-string-exception
+    "EM101", # implicit-str-concatenation
+    "TRY003", # long-exception-messages
 ]
-ignore = ["F401"] # Disable fix for unused imports
+
+[tool.ty]
+src.root = "./src/gbemu"
+environment.python = "./.venv"
+terminal.output-format = "full"
 
 [tool.coverage.run]
 omit = [ "tests/*", "docs/*", "examples/*" ]
-source = [ "gbemu" ]
+source = [ "src/gbemu" ]
 
 [tool.coverage.report]
 show_missing = true
 fail_under = 100
-
-[tool.mypy]
-strict = true
-ignore_missing_imports = true
-warn_return_any = false
-exclude = ["docs", "tests", "examples"]
