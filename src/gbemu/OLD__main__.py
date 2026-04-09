@@ -1,7 +1,7 @@
 import click
 
-from ._config import DEFAULT_ROM
-from .gbemu import Gbemu
+from gbemu import Gbemu
+from gbemu.config import DEFAULT_ROM
 
 
 @click.command()

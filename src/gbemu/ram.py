@@ -1,6 +1,6 @@
-from ._config import BIOS, MEMORY_SIZE, PC_START
-from ._exceptions import RamError
-from .cart import Cart
+from gbemu.cart import Cart
+from gbemu.config import BIOS, MEMORY_SIZE, PC_START
+from gbemu.exceptions import RamError
 
 
 class RAM:

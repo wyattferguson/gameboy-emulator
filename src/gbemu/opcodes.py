@@ -15,15 +15,15 @@ class OpCode:
 
 
 OPCODES: dict[str, OpCode] = {
-    "0x0": OpCode("NOP", 1, 4, "NOP"),
-    "0x1f": OpCode("RRA", 1, 4, "RRA", flags=["C"]),  # STOPPED HERE
-    "0x6": OpCode("LD H, B", 1, 4, "LD_HR", args=["B"]),
-    "0x5": OpCode("LD D, B", 1, 4, "LD", args=["D", "B"]),
-    "0xe": OpCode("LDH [a8], A", 2, 12, "LD", args=["A"]),
-    "0x20": OpCode("JR NZ, i8", 2, 8, "JR"),  # FIX: 8/12 Timing(?)
-    "0x21": OpCode("LD HL, a16", 3, 12, "LD", args=["HL"]),
-    "0x32": OpCode("LD [HL-], A", 1, 8, "LD_HM", args=["A"]),
-    "0xc3": OpCode("JMP a16", 3, 16, "JMP"),
-    "0xe1": OpCode("POP HL", 1, 12, "POP"),
-    "0xaf": OpCode("XOR A, A", 1, 4, "XOR", args=["A", "A"], flags=["Z"]),
+    "0x0": OpCode("NOP", 1, 4, "nop"),
+    "0x1f": OpCode("RRA", 1, 4, "rra", flags=["C"]),  # STOPPED HERE
+    "0x6": OpCode("LD H, B", 1, 4, "ld_hr", args=["B"]),
+    "0x5": OpCode("LD D, B", 1, 4, "ld", args=["D", "B"]),
+    "0xe": OpCode("LDH [a8], A", 2, 12, "ld", args=["A"]),
+    "0x20": OpCode("JR NZ, i8", 2, 8, "jr"),  # FIX: 8/12 Timing(?)
+    "0x21": OpCode("LD HL, a16", 3, 12, "ld", args=["HL"]),
+    "0x32": OpCode("LD [HL-], A", 1, 8, "ld_hm", args=["A"]),
+    "0xc3": OpCode("JMP a16", 3, 16, "jmp"),
+    "0xe1": OpCode("POP HL", 1, 12, "pop"),
+    "0xaf": OpCode("XOR A, A", 1, 4, "xor", args=["A", "A"], flags=["Z"]),
 }

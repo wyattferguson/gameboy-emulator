@@ -1,10 +1,10 @@
-from ._config import DEFAULT_ROM
-from .audio import Audio
-from .cart import Cart
-from .cpu import CPU
-from .joypad import Joypad
-from .ram import RAM
-from .screen import Screen
+from gbemu.audio import Audio
+from gbemu.cart import Cart
+from gbemu.config import DEFAULT_ROM
+from gbemu.cpu import CPU
+from gbemu.joypad import Joypad
+from gbemu.ram import RAM
+from gbemu.screen import Screen
 
 
 class Gbemu:

@@ -1,6 +1,13 @@
-from ._cart_tables import CART_TYPE, CGB_FLAG, DESINATION_CODE, NEW_LICENSEE, OLD_LICENSEE, RAM_SIZE
-from ._config import DEFAULT_ROM
-from ._exceptions import CartError, RomError
+from gbemu.cart_tables import (
+    CART_TYPE,
+    CGB_FLAG,
+    DESINATION_CODE,
+    NEW_LICENSEE,
+    OLD_LICENSEE,
+    RAM_SIZE,
+)
+from gbemu.config import DEFAULT_ROM
+from gbemu.exceptions import CartError, RomError
 
 
 class Cart:

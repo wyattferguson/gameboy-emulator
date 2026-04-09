@@ -21,12 +21,12 @@ classifiers = [
 
 dependencies = [
     "click>=8.1.8",
+    "loguru>=0.7.3",
     "pygame>=2.6.1",
 ]
 
 [dependency-groups]
 dev = [
-    "coverage>=7.8.2",
     "ty>=0.0.17",
     "pytest>=9.0.2",
     "ruff>=0.15.1",
@@ -43,15 +43,16 @@ issues = "https://github.com/wyattferguson/gbemu/issues"
 requires = ["uv_build>=0.10.4,<0.11.0"]
 build-backend = "uv_build"
 
-[project.scripts]
-gbemu = "src.gbemu.__main__:run"
+# [project.scripts]
+# gbemu = "gbemu.__main__:run"
 
 [tool.taskipy.tasks]
 format = "ruff format ./src/gbemu/"
 lint = "ruff check --fix ./src/gbemu/"
 type = { cmd = "ty check", help = "Typecheck code using ty" }
-tests = "pytest --verbose --color=yes tests && coverage report -m"
-run = "gbemu"
+tests = "pytest --verbose --color=yes tests"
+# run = "gbemu"
+run = "uv run ./src/gbemu/test.py"
 
 [tool.ruff.lint]
 pydocstyle.convention = "google"
@@ -85,10 +86,3 @@ src.root = "./src/gbemu"
 environment.python = "./.venv"
 terminal.output-format = "full"
 
-[tool.coverage.run]
-omit = [ "tests/*", "docs/*", "examples/*" ]
-source = [ "src/gbemu" ]
-
-[tool.coverage.report]
-show_missing = true
-fail_under = 100

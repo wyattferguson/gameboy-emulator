@@ -1,7 +1,7 @@
 import pygame as pg
 
-from ._config import M_JOYPAD
-from .ram import RAM
+from gbemu.config import M_JOYPAD
+from gbemu.ram import RAM
 
 
 class Joypad:
@@ -22,7 +22,7 @@ class Joypad:
     def update(self) -> None:
         for event in pg.event.get():
             # Press ESCAPE to quit emulator
-            if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+            if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
                 pg.quit()
                 exit()
             elif event.type == pg.KEYDOWN or event.type == pg.KEYUP:

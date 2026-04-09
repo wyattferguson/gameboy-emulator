@@ -1,6 +1,6 @@
 import pygame as pg
 
-from ._config import DISPLAY_SCALER, SCREEN_HEIGHT, SCREEN_WIDTH
+from gbemu.config import DISPLAY_SCALER, SCREEN_HEIGHT, SCREEN_WIDTH
 
 
 class Screen:
@@ -14,5 +14,5 @@ class Screen:
         pg.display.update()
 
     def clear_screen(self) -> None:
-        """black out entire screen"""
+        """Black out entire screen"""
         self.screen.fill((0, 0, 0))
