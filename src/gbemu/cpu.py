@@ -7,8 +7,8 @@ from gbemu.ram import RAM
 class CPU:
     def __init__(self, ram: RAM, debug: bool = False) -> None:
         self.debug = debug
-        self.PC = PC_START  # program counter
-        self.SP = SP_START  # stack pointer
+        self.pc = PC_START  # program counter
+        self.sp = SP_START  # stack pointer
         self.ram = ram
 
         self.reg = {
@@ -33,28 +33,28 @@ class CPU:
         self.args: list[int] = []
 
     def fetch(self) -> None:
-        op_code = hex(self.ram[self.PC])
+        op_code = hex(self.ram[self.pc])
         try:
             self.instruction = OPCODES[op_code]
-            print("\nFetch: ", hex(self.PC), "-", self.instruction, "-", op_code)
+            print("\nFetch: ", hex(self.pc), "-", self.instruction, "-", op_code)
         except Exception:
             # raise FetchError(
-            #     f"Error fetching instruction: PC = {self.PC} OPCODE = {op_code} - {e}"
+            #     f"Error fetching instruction: PC = {self.pc} OPCODE = {op_code} - {e}"
             # ) from e
-            print("\nNot Found: ", hex(self.PC), "-", op_code)
+            print("\nNot Found: ", hex(self.pc), "-", op_code)
             exit()
 
     def decode(self) -> None:
         try:
             self.args = self.instruction.args or []
             if self.instruction.length > 1:
-                b = bytes([self.ram[self.PC + i] for i in range(1, self.instruction.length)])
+                b = bytes([self.ram[self.pc + i] for i in range(1, self.instruction.length)])
                 self.args.append(int.from_bytes(b, byteorder="little"))
 
             print(f"Decoded: {self.instruction}")
         except Exception as e:
             # raise DecodeError(
-            #     f"Error decoding instr: PC={self.PC} SP={self.SP} INSTR={self.instruction} - {e}"
+            #     f"Error decoding instr: PC={self.pc} SP={self.sp} INSTR={self.instruction} - {e}"
             # ) from e
             print("Decode Error: ", e)
             exit()
@@ -81,19 +81,19 @@ class CPU:
 
     def rst(self, addr: int) -> None:
         """Store PC, move to addr"""
-        self.ram[self.SP] = self.PC
-        self.SP -= 2
-        self.PC = addr
+        self.ram[self.sp] = self.pc
+        self.sp -= 2
+        self.pc = addr
 
     def nop(self) -> None:
         """No Operation"""
-        self.PC += 1
+        self.pc += 1
 
     def jr(self, offset: int = 0) -> None:
         """Relative Jump to address"""
         # if not flag or self.flags[flag] == flag_val:
-        self.PC += offset
-        self.PC += self.instruction.length
+        self.pc += offset
+        self.pc += self.instruction.length
 
     def set(self) -> None:
         pass
@@ -121,7 +121,7 @@ class CPU:
 
         print(f"LD {register} {value}")
         self.reg[register] = value
-        self.PC += self.instruction.length
+        self.pc += self.instruction.length
 
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
@@ -136,13 +136,13 @@ class CPU:
 
     def jmp(self, addr: int) -> None:
         """Jump to Address"""
-        self.PC = addr
+        self.pc = addr
 
     def pop(self) -> None:
-        print(f"POP SP: {hex(self.SP)}")
-        if len(self.ram) < self.SP:
-            self.SP += 2
-            self.PC = self.ram[self.SP]
+        print(f"POP SP: {hex(self.sp)}")
+        if len(self.ram) < self.sp:
+            self.sp += 2
+            self.pc = self.ram[self.sp]
         else:
             raise Exception("Stack underflow")
 
@@ -154,7 +154,7 @@ class CPU:
 
     def ret(self) -> None:
         """Return from subroutine"""
-        self.PC = self.ram[self.SP]
+        self.pc = self.ram[self.sp]
 
     def shift(self) -> None:
         """Logical bit shift"""
@@ -184,13 +184,13 @@ class CPU:
         """Bitwise XOR"""
         z = self.reg[register_a] ^ self.reg[register_b]
         self.flags["Z"] = 1 if z == 0 else 0
-        self.PC += self.instruction.length
+        self.pc += self.instruction.length
 
     def __str__(self) -> str:
         return (
             "CPU State:\n"
-            f"PC: {hex(self.PC)}({self.PC})\n"
-            f"SP: {hex(self.SP)}({self.SP})\n"
+            f"PC: {hex(self.pc)}({self.pc})\n"
+            f"SP: {hex(self.sp)}({self.sp})\n"
             f"REGS: {self.reg}\n"
             f"FLAGS: {self.flags}\n"
             f"CYCLES: {self.cycles}\n"
