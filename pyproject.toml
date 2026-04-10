@@ -47,12 +47,12 @@ build-backend = "uv_build"
 # gbemu = "gbemu.__main__:run"
 
 [tool.taskipy.tasks]
-format = "ruff format ./src/gbemu/"
-lint = "ruff check --fix ./src/gbemu/"
-type = { cmd = "ty check", help = "Typecheck code using ty" }
-tests = "pytest --verbose --color=yes tests"
+format = {cmd = "ruff format ./src/gbemu/", help = "Format code using ruff"}
+lint = {cmd = "ruff check --fix ./src/gbemu/", help = "Lint and auto-fix code using ruff"}
+type = {cmd = "ty check", help = "Typecheck code using ty" }
+tests = {cmd = "pytest --verbose --color=yes tests", help = "Run tests using pytest"}
 # run = "gbemu"
-run = "uv run ./src/gbemu/test.py"
+run = {cmd = "uv run ./src/gbemu/test.py", help = "Run the emulator"}
 
 [tool.ruff.lint]
 pydocstyle.convention = "google"
