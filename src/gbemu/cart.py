@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from loguru import logger
+
 from gbemu.cart_tables import (
     CART_TYPE,
     CGB_FLAG,
@@ -13,6 +15,8 @@ from gbemu.exceptions import CartError, RomError
 
 
 class Cart:
+    """GB Cartridge ."""
+
     def __init__(self, filename: str = DEFAULT_ROM) -> None:
         self.filename = filename
         self.rom = self.load()
@@ -29,7 +33,7 @@ class Cart:
             self.version = self.rom[0x14C]
             self.licensee = (
                 NEW_LICENSEE[f"{self.rom[0x144:0x146].decode()}"]
-                if self.rom[0x14B] == 33
+                if self.rom[0x14B] == 33  # noqa: PLR2004
                 else OLD_LICENSEE[f"{self.rom[0x14B]}"]
             )
         except Exception as e:
@@ -40,19 +44,23 @@ class Cart:
         try:
             with Path(self.filename).open("rb") as f:
                 rom = bytearray(f.read())
-                header_checksum = rom[0x14D]
-
-                # calculate ROM checksum
-                checksum = 0
-                for address in range(0x134, 0x14D):
-                    checksum = checksum - rom[address] - 1
-
-                # compare header checksum with lower 8 bits of calculated checksum
-                if header_checksum != (checksum & 0xFF):
-                    raise RomError(f"Header checksum mismatch for ROM: {self.filename}")
+                if not self._verify_checksum(rom):
+                    logger.error(f"ROM checksum failed for {self.filename}")
                 return rom
         except Exception as e:
             raise RomError(f"Error loading ROM: {self.filename} - {e}") from e
+
+    def _verify_checksum(self, rom: bytearray) -> bool:
+        """Calculate and verify the ROM checksum."""
+        header_checksum = rom[0x14D]
+
+        # calculate ROM checksum
+        checksum = 0
+        for address in range(0x134, 0x14D):
+            checksum = checksum - rom[address] - 1
+
+        # compare header checksum with lower 8 bits of calculated checksum
+        return header_checksum == (checksum & 0xFF)
 
     def read(self, address: int = 0x0) -> int:
         """Read a byte from the cartridge at the specified address."""
@@ -64,15 +72,14 @@ class Cart:
     def write(self, address: int = 0x0, value: int = 0) -> None:
         """Write a byte to the cartridge at the specified address."""
         if address < 0 or address >= len(self.rom):
-            msg = f"Attempted to write out of bounds. Address: {address}, Value: {value}"
-            raise CartError(msg)
+            raise CartError(f"Attempted to write out of bounds. Address: {address}, Value: {value}")
 
         self.rom[address] = value
 
     def __str__(self) -> str:
         return (
             "Cartridge Info:\n"
-            f"Filenamne: {self.filename}\n"
+            f"Filename: {self.filename}\n"
             f"Title: {self.title}\n"
             f"Manufacturer Code: {self.manufacturer_code}\n"
             f"Licensee: {self.licensee}\n"
