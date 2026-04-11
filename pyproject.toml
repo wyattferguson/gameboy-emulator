@@ -54,6 +54,23 @@ tests = {cmd = "pytest --verbose --color=yes tests", help = "Run tests using pyt
 # run = "gbemu"
 run = {cmd = "uv run ./src/gbemu/test.py", help = "Run the emulator"}
 
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".pytest_cache",
+    ".ruff_cache",
+    "build",
+    "dist",
+    "*.egg-info",
+    "htmlcov",
+    ".cache",
+]
+
 [tool.ruff.lint]
 pydocstyle.convention = "google"
 fixable = ["ALL"]
@@ -79,10 +96,21 @@ ignore = [
     "EM102", # f-string-exception
     "EM101", # implicit-str-concatenation
     "TRY003", # long-exception-messages
+    "FBT003", # bool argument in function call
+    "FBT002", # bool argument in lambda
+    "FBT001", # bool argument in function definition
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "PLC0415",  # Import outside top-level (tests often need scoped imports)
+    "PLR2004",  # Magic values (test assertions with status codes, etc.)
+    "F841",     # Unused variable (fixtures, etc.)
+    "PT001",    # Use @pytest.fixture() over @pytest.fixture
 ]
 
 [tool.ty]
-src.root = "./src/gbemu"
-environment.python = "./.venv"
 terminal.output-format = "full"
 
+[tool.ty.src]
+include = ["src/gbemu/**/*.py"]

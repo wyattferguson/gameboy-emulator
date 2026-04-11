@@ -1,12 +1,16 @@
-from gbemu.config import PC_START, SP_START
+import sys
+
+from loguru import logger
+
+from gbemu.config import DEBUG, PC_START, SP_START
 from gbemu.exceptions import DecodeError, ExecuteError, FetchError
 from gbemu.opcodes import OPCODES, OpCode
 from gbemu.ram import RAM
 
 
 class CPU:
-    def __init__(self, ram: RAM, debug: bool = False) -> None:
-        self.debug = debug
+    def __init__(self, ram: RAM) -> None:
+        self.debug = DEBUG
         self.pc = PC_START  # program counter
         self.sp = SP_START  # stack pointer
         self.ram = ram
@@ -32,36 +36,40 @@ class CPU:
         self.cycles: int = 0
         self.args: list[int] = []
 
-    def fetch(self) -> None:
+    def fetch(self) -> OpCode:
+        """Fetch instruction from memory at PC."""
         op_code = hex(self.ram[self.pc])
         try:
             self.instruction = OPCODES[op_code]
-            print("\nFetch: ", hex(self.pc), "-", self.instruction, "-", op_code)
+            logger.debug("\nFetch: ", hex(self.pc), "-", self.instruction, "-", op_code)
+            return self.instruction
         except Exception:
             # raise FetchError(
             #     f"Error fetching instruction: PC = {self.pc} OPCODE = {op_code} - {e}"
             # ) from e
-            print("\nNot Found: ", hex(self.pc), "-", op_code)
-            exit()
+            logger.debug("\nNot Found: ", hex(self.pc), "-", op_code)
+            sys.exit()
 
     def decode(self) -> None:
+        """Decode instruction and its arguments."""
         try:
             self.args = self.instruction.args or []
             if self.instruction.length > 1:
                 b = bytes([self.ram[self.pc + i] for i in range(1, self.instruction.length)])
                 self.args.append(int.from_bytes(b, byteorder="little"))
 
-            print(f"Decoded: {self.instruction}")
+            logger.debug(f"Decoded: {self.instruction}")
         except Exception as e:
             # raise DecodeError(
             #     f"Error decoding instr: PC={self.pc} SP={self.sp} INSTR={self.instruction} - {e}"
             # ) from e
-            print("Decode Error: ", e)
-            exit()
+            logger.debug("Decode Error: ", e)
+            sys.exit()
 
     def execute(self) -> None:
+        """Run instruction and update PC, SP, registers, and flags."""
         try:
-            print("Execute: ", self.instruction.call)
+            logger.debug("Execute: ", self.instruction.call)
             if self.args:
                 getattr(self, self.instruction.call)(*self.args)
             else:
@@ -69,28 +77,33 @@ class CPU:
 
         except Exception as e:
             # raise ExecuteError(f"Error executing: {self.instruction} - {e}") from e
-            print("Execute Error: ", e)
-            exit()
+            logger.debug("Execute Error: ", e)
+            sys.exit()
+
+    def insert_instruction(self, instruction: bytearray) -> None:
+        """Insert instruction into RAM at current PC."""
+        for i, byte in enumerate(instruction):
+            self.ram[self.pc + i] = byte
 
     def cycle(self) -> None:
-        """Execute next CPU cycle"""
+        """Execute next CPU cycle."""
         self.fetch()
         self.decode()
         self.execute()
-        self.cycles += self.instruction.cycles
+        # self.cycles += self.instruction.cycles
 
     def rst(self, addr: int) -> None:
-        """Store PC, move to addr"""
+        """Store PC, move to addr."""
         self.ram[self.sp] = self.pc
         self.sp -= 2
         self.pc = addr
 
     def nop(self) -> None:
-        """No Operation"""
+        """No Operation."""
         self.pc += 1
 
     def jr(self, offset: int = 0) -> None:
-        """Relative Jump to address"""
+        """Relative Jump to address."""
         # if not flag or self.flags[flag] == flag_val:
         self.pc += offset
         self.pc += self.instruction.length
@@ -99,27 +112,27 @@ class CPU:
         pass
 
     def rot(self) -> None:
-        """Rotate byte"""
+        """Rotate byte."""
 
     def call(self) -> None:
         pass
 
     def ld_hr(self, register: str) -> None:
-        """Load H register with value from register"""
+        """Load H register with value from register."""
         new_hl = (self.reg["HL"] & 0x00FF) | (self.reg[register] << 8)
         self.ld("HL", new_hl)
 
     def ld_hm(self, register: str) -> None:
-        """Load H register with value from register"""
+        """Load H register with value from register."""
         self.ld("HL", register)
         self.reg["HL"] -= 1
 
     def ld(self, register: str, value: int | str) -> None:
-        """Store value in register"""
+        """Store value in register."""
         if isinstance(value, str):
             value = self.reg[value]
 
-        print(f"LD {register} {value}")
+        logger.debug(f"LD {register} {value}")
         self.reg[register] = value
         self.pc += self.instruction.length
 
@@ -127,19 +140,19 @@ class CPU:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
 
     def inc(self, register: str) -> None:
-        """Increment Value"""
+        """Increment Value."""
         self.reg[register] += 1
 
     def dec(self, register) -> None:
-        """Decrement Value"""
+        """Decrement Value."""
         self.reg[register] -= 1
 
     def jmp(self, addr: int) -> None:
-        """Jump to Address"""
+        """Jump to Address."""
         self.pc = addr
 
     def pop(self) -> None:
-        print(f"POP SP: {hex(self.sp)}")
+        logger.debug(f"POP SP: {hex(self.sp)}")
         if len(self.ram) < self.sp:
             self.sp += 2
             self.pc = self.ram[self.sp]
@@ -150,38 +163,38 @@ class CPU:
         pass
 
     def swap(self, register: str) -> None:
-        """Swap the upper 4 and the lower 4 bits"""
+        """Swap the upper 4 and the lower 4 bits."""
 
     def ret(self) -> None:
-        """Return from subroutine"""
+        """Return from subroutine."""
         self.pc = self.ram[self.sp]
 
     def shift(self) -> None:
-        """Logical bit shift"""
+        """Logical bit shift."""
 
     def stop(self) -> None:
-        """Halt CPU/LCD display until button pressed"""
+        """Halt CPU/LCD display until button pressed."""
 
     def sbc(self) -> None:
-        """Subtract and carry"""
+        """Subtract and carry."""
 
     def scf(self) -> None:
         """Set Carry Flag."""
 
     def cp(self) -> None:
-        """Subtract Values"""
+        """Subtract Values."""
 
     def add(self) -> None:
         pass
 
     def and_(self) -> None:
-        """Bitwise AND"""
+        """Bitwise AND."""
 
     def or_(self) -> None:
         pass
 
     def xor(self, register_a: int, register_b: int) -> None:
-        """Bitwise XOR"""
+        """Bitwise XOR."""
         z = self.reg[register_a] ^ self.reg[register_b]
         self.flags["Z"] = 1 if z == 0 else 0
         self.pc += self.instruction.length

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from gbemu.cart_tables import (
     CART_TYPE,
     CGB_FLAG,
@@ -36,7 +38,7 @@ class Cart:
     def load(self) -> bytearray:
         """Load ROM file into memory and verify checksum."""
         try:
-            with open(self.filename, "rb") as f:
+            with Path(self.filename).open("rb") as f:
                 rom = bytearray(f.read())
                 header_checksum = rom[0x14D]
 
@@ -62,7 +64,8 @@ class Cart:
     def write(self, address: int = 0x0, value: int = 0) -> None:
         """Write a byte to the cartridge at the specified address."""
         if address < 0 or address >= len(self.rom):
-            raise CartError(f"Attempted to write out of bounds. Address: {address}, Value: {value}")
+            msg = f"Attempted to write out of bounds. Address: {address}, Value: {value}"
+            raise CartError(msg)
 
         self.rom[address] = value
 

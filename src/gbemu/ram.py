@@ -24,7 +24,7 @@ class RAM:
         self._memory[address] = value
 
     def __str__(self) -> str:
-        # print memory in 16 byte chunks
+        """Print memory in 16 byte chunks."""
         chunk_size: int = 16
         print_rows: int = 4
         return "\n".join(

@@ -1,11 +1,8 @@
-import sys
-
-from loguru import logger
-
 DEFAULT_ROM = "./roms/puzzle.gb"
 MEMORY_SIZE: int = 65535  # 32kb of totally memory
 PC_START: int = 0x100  # rom load location
 SP_START: int = 0xFFFE  # stack pointer start location
+DEBUG = True
 
 # fmt: off
 BIOS:list[int] = [
@@ -36,16 +33,3 @@ DELAY: int = 1
 
 # memory address mappings
 M_JOYPAD: int = 0xFF00
-
-
-def log_setup() -> None:
-    """Configure logging based on the environment."""
-    logger.remove()
-
-    logger.add(
-        sys.stderr,
-        format=(
-            "[<red>{time:HH:mm:ss}</red>] <green>{level}</green> "
-            "<yellow>({module})</yellow>: {message}"
-        ),
-    )

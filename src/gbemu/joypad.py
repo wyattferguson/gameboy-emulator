@@ -1,3 +1,5 @@
+import sys
+
 import pygame as pg
 
 from gbemu.config import M_JOYPAD
@@ -5,7 +7,7 @@ from gbemu.ram import RAM
 
 
 class Joypad:
-    def __init__(self, ram: RAM):
+    def __init__(self, ram: RAM) -> None:
         self.ram = ram
         self.ram[M_JOYPAD] = 0xFF  # Set all buttons to not pressed
         self.dpad_pressed = False
@@ -24,7 +26,7 @@ class Joypad:
             # Press ESCAPE to quit emulator
             if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
                 pg.quit()
-                exit()
+                sys.exit()
             elif event.type == pg.KEYDOWN or event.type == pg.KEYUP:
                 match event.key:
                     case pg.K_UP:
