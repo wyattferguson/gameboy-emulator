@@ -16,8 +16,14 @@ class OpCode:
 
 OPCODES: dict[str, OpCode] = {
     "0x0": OpCode("NOP", 1, 4, "nop"),
-    "0x1f": OpCode("RRA", 1, 4, "rra", flags=["C"]),  # STOPPED HERE
+    # "0x1f": OpCode("RRA", 1, 4, "rra", flags=["C"]),
     "0x3e": OpCode("LD A, d8", 2, 8, "ld", args=["A"]),
+    "0x40": OpCode("LD B, B", 1, 4, "ld_reg", args=["B", "B"]),
+    "0x41": OpCode("LD B, C", 1, 4, "ld_reg", args=["B", "C"]),
+    "0x42": OpCode("LD B, D", 1, 4, "ld_reg", args=["B", "D"]),
+    "0x43": OpCode("LD B, E", 1, 4, "ld_reg", args=["B", "E"]),
+    "0x44": OpCode("LD B, H", 1, 4, "ld_reg", args=["B", "H"]),
+    "0x45": OpCode("LD B, L", 1, 4, "ld_reg", args=["B", "L"]),
     # "0x6": OpCode("LD H, B", 1, 4, "ld_hr", args=["B"]),
     # "0x5": OpCode("LD D, B", 1, 4, "ld", args=["D", "B"]),
     # "0xe": OpCode("LDH [a8], A", 2, 12, "ld", args=["A"]),

@@ -23,3 +23,24 @@ def test_ld_a_d8() -> None:
 
     assert cpu.instruction == OPCODES["0x3e"]
     assert cpu.reg["A"] == 0x42
+
+
+@pytest.mark.parametrize(
+    ("dest", "src", "value", "opcode"),
+    [
+        ("B", "B", 0x32, 0x40),
+        ("B", "C", 0x35, 0x41),
+        ("B", "D", 0x37, 0x42),
+        ("B", "E", 0x39, 0x43),
+        ("B", "H", 0x3B, 0x44),
+        ("B", "L", 0x3D, 0x45),
+    ],
+)
+def test_ld_reg(dest: str, src: str, value: int, opcode: int) -> None:
+    cpu = CPU(RAM())
+    cpu.reg[src] = value
+    cpu.insert_instruction(bytearray([opcode]))
+    cpu.cycle()
+
+    assert cpu.instruction == OPCODES[f"0x{opcode:x}"]
+    assert cpu.reg[dest] == value

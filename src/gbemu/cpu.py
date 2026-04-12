@@ -116,6 +116,11 @@ class CPU:
     def call(self) -> None:
         pass
 
+    def ld_reg(self, dest: str, src: str) -> None:
+        """Load value from src register to dest register."""
+        self.reg[dest] = self.reg[src]
+        self.pc += self.instruction.length
+
     def ld_hr(self, register: str) -> None:
         """Load H register with value from register."""
         new_hl = (self.reg["HL"] & 0x00FF) | (self.reg[register] << 8)
