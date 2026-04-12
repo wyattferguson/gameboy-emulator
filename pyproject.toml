@@ -100,6 +100,7 @@ ignore = [
     "FBT003", # bool argument in function call
     "FBT002", # bool argument in lambda
     "FBT001", # bool argument in function definition
+    "PLR2004", # Magic values
 ]
 
 [tool.ruff.format]
@@ -109,7 +110,7 @@ indent-style = "space"
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [
     "PLC0415",  # Import outside top-level (tests often need scoped imports)
-    "PLR2004",  # Magic values (test assertions with status codes, etc.)
+    "PLR2004",  # Magic values
     "F841",     # Unused variable (fixtures, etc.)
     "PT001",    # Use @pytest.fixture() over @pytest.fixture
     "S101",    # Use of assert detected

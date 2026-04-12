@@ -7,7 +7,7 @@ class OpCode:
     length: int  # lengh of instuction in bytes
     cycles: int  # number of cpu cyles
     call: str  # CPU method name to call
-    args: list[str] | None = None  # give arguments to send to CPU method
+    args: list[str | bool] | None = None  # give arguments to send to CPU method
     flags: list[str] | None = None  # set CPU flags after execution
 
     def __str__(self) -> str:
@@ -90,4 +90,12 @@ OPCODES: dict[str, OpCode] = {
     "0x85": OpCode("ADD A, L", 1, 4, "add_reg", args=["A", "L"], flags=["Z", "N", "H", "C"]),
     "0x86": OpCode("ADD A, [HL]", 1, 8, "add_hl", args=["A"], flags=["Z", "N", "H", "C"]),
     "0x87": OpCode("ADD A, A", 1, 4, "add_reg", args=["A", "A"], flags=["Z", "N", "H", "C"]),
+    "0x88": OpCode("ADC A, B", 1, 4, "add_reg", args=["A", "B", True], flags=["Z", "N", "H", "C"]),
+    "0x89": OpCode("ADC A, C", 1, 4, "add_reg", args=["A", "C", True], flags=["Z", "N", "H", "C"]),
+    "0x8a": OpCode("ADC A, D", 1, 4, "add_reg", args=["A", "D", True], flags=["Z", "N", "H", "C"]),
+    "0x8b": OpCode("ADC A, E", 1, 4, "add_reg", args=["A", "E", True], flags=["Z", "N", "H", "C"]),
+    "0x8c": OpCode("ADC A, H", 1, 4, "add_reg", args=["A", "H", True], flags=["Z", "N", "H", "C"]),
+    "0x8d": OpCode("ADC A, L", 1, 4, "add_reg", args=["A", "L", True], flags=["Z", "N", "H", "C"]),
+    "0x8e": OpCode("ADC A, [HL]", 1, 8, "add_hl", args=["A", True], flags=["Z", "N", "H", "C"]),
+    "0x8f": OpCode("ADC A, A", 1, 4, "add_reg", args=["A", "A", True], flags=["Z", "N", "H", "C"]),
 }

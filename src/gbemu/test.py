@@ -1,18 +1,10 @@
 from gbemu.config import MEMORY_SIZE
 
 if __name__ == "__main__":
-    # a = 0b1111_1111
-    # b = 0b0000_0100
-    # print(f"A: {bin(a)}, B: {bin(b)}")
-
-    # print(f"A & B: {bin(a & b)}")
-    # print(f"A | B: {bin(a | b)}")
-
-    # for n in range(4):
-    #     a = a ^ b
-    #     print(f"A = {bin(a)}")
-
-    a = 0b1101_1111
-    b = 0b0011_00000
-    print(f"A: {bin(a)}, B: {bin(b)}")
-    print(MEMORY_SIZE)
+    a = 0xFF
+    b = 0xFF
+    c = 1
+    print(f"a: {a}/{bin(a)} b: {b}/{bin(b)} c: {c}/{bin(c)}")
+    print(f"a & 0xF: {a & 0xF}/{bin(a & 0xF)} b & 0xF: {b & 0xF}/{bin(b & 0xF)} c: {c}/{bin(c)}")
+    total = a + b + c
+    print(f"total: {total}/{bin(total)}/{hex(total)}")
