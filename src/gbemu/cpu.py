@@ -105,22 +105,13 @@ class CPU:
 
     def nop(self) -> None:
         """No Operation."""
-        self.pc += 1
+        self.pc += self.instruction.length
 
     def jr(self, offset: int = 0) -> None:
         """Relative Jump to address."""
         # if not flag or self.flags[flag] == flag_val:
         self.pc += offset
         self.pc += self.instruction.length
-
-    def set(self) -> None:
-        pass
-
-    def rot(self) -> None:
-        """Rotate byte."""
-
-    def call(self) -> None:
-        pass
 
     def ld_hr(self, register: str) -> None:
         """Load H register with value from register."""
@@ -145,8 +136,14 @@ class CPU:
         """Load value from memory at address in HL into register."""
         self.ld(reg, self.ram[self.hl()])
 
+    def ld_hl_r(self, reg: str) -> None:
+        """Load value from register into memory at address in HL."""
+        self.ram[self.hl()] = self.reg[reg]
+        self.pc += self.instruction.length
+
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
+        self.pc += self.instruction.length
 
     def inc(self, register: str) -> None:
         """Increment Value."""
