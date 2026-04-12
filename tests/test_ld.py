@@ -34,12 +34,40 @@ def test_ld_a_d8() -> None:
         ("B", "E", 0x39, 0x43),
         ("B", "H", 0x3B, 0x44),
         ("B", "L", 0x3D, 0x45),
+        ("B", "A", 0x3F, 0x47),
+        ("C", "B", 0x42, 0x48),
+        ("C", "C", 0x45, 0x49),
+        ("C", "D", 0x47, 0x4A),
+        ("C", "E", 0x49, 0x4B),
+        ("C", "H", 0x4B, 0x4C),
+        ("C", "L", 0x12, 0x4D),
+        ("C", "A", 0x13, 0x4F),
     ],
 )
 def test_ld_reg(dest: str, src: str, value: int, opcode: int) -> None:
     cpu = CPU(RAM())
     cpu.reg[src] = value
     cpu.insert_instruction(bytearray([opcode]))
+    cpu.cycle()
+
+    assert cpu.instruction == OPCODES[f"0x{opcode:x}"]
+    assert cpu.reg[dest] == value
+
+
+@pytest.mark.parametrize(
+    ("dest", "h", "l", "value", "opcode"),
+    [
+        ("B", 0x12, 0x34, 86, 0x46),
+        ("C", 0x12, 0x34, 34, 0x4E),
+    ],
+)
+def test_ld_hl(dest: str, h: int, l: int, value: int, opcode: int) -> None:
+    cpu = CPU(RAM())
+    hl = (h << 8) + l
+    cpu.ram[hl] = value
+    cpu.insert_instruction(bytearray([opcode]))  # LD B, [HL]
+    cpu.reg["H"] = h
+    cpu.reg["L"] = l
     cpu.cycle()
 
     assert cpu.instruction == OPCODES[f"0x{opcode:x}"]

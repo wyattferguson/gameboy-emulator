@@ -1,3 +1,4 @@
+import re
 import sys
 
 from loguru import logger
@@ -22,7 +23,8 @@ class CPU:
             "D": 0,
             "E": 0,
             "F": 0,
-            "HL": 0,
+            "H": 0,
+            "L": 0,
         }
 
         self.flags = {
@@ -35,6 +37,10 @@ class CPU:
         self.instruction: OpCode
         self.cycles: int = 0
         self.args: list[int] = []
+
+    def hl(self) -> int:
+        """Get value of HL register pair."""
+        return (self.reg["H"] << 8) + self.reg["L"]
 
     def fetch(self) -> None:
         """Fetch instruction from memory at PC."""
@@ -116,11 +122,6 @@ class CPU:
     def call(self) -> None:
         pass
 
-    def ld_reg(self, dest: str, src: str) -> None:
-        """Load value from src register to dest register."""
-        self.reg[dest] = self.reg[src]
-        self.pc += self.instruction.length
-
     def ld_hr(self, register: str) -> None:
         """Load H register with value from register."""
         new_hl = (self.reg["HL"] & 0x00FF) | (self.reg[register] << 8)
@@ -140,6 +141,10 @@ class CPU:
         self.reg[register] = value
         self.pc += self.instruction.length
 
+    def ld_hl(self, reg: str) -> None:
+        """Load value from memory at address in HL into register."""
+        self.ld(reg, self.ram[self.hl()])
+
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
 
@@ -147,7 +152,7 @@ class CPU:
         """Increment Value."""
         self.reg[register] += 1
 
-    def dec(self, register) -> None:
+    def dec(self, register: str) -> None:
         """Decrement Value."""
         self.reg[register] -= 1
 
@@ -162,40 +167,6 @@ class CPU:
             self.pc = self.ram[self.sp]
         else:
             raise Exception("Stack underflow")
-
-    def push(self) -> None:
-        pass
-
-    def swap(self, register: str) -> None:
-        """Swap the upper 4 and the lower 4 bits."""
-
-    def ret(self) -> None:
-        """Return from subroutine."""
-        self.pc = self.ram[self.sp]
-
-    def shift(self) -> None:
-        """Logical bit shift."""
-
-    def stop(self) -> None:
-        """Halt CPU/LCD display until button pressed."""
-
-    def sbc(self) -> None:
-        """Subtract and carry."""
-
-    def scf(self) -> None:
-        """Set Carry Flag."""
-
-    def cp(self) -> None:
-        """Subtract Values."""
-
-    def add(self) -> None:
-        pass
-
-    def and_(self) -> None:
-        """Bitwise AND."""
-
-    def or_(self) -> None:
-        pass
 
     def xor(self, register_a: int, register_b: int) -> None:
         """Bitwise XOR."""
