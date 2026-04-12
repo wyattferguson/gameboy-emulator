@@ -131,23 +131,18 @@ class CPU:
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
 
-    def add(self, register_a: str, register_b: str) -> None:
-        reg_sum: int = self.reg[register_a] + self.reg[register_b]
-
-        self.flags["Z"] = 1 if reg_sum == 0 else 0
-        self.flags["N"] = 0
-        self.flags["H"] = (
-            1 if (self.reg[register_a] & 0xF) + (self.reg[register_b] & 0xF) > 0xF else 0
-        )
-        self.flags["C"] = 1 if reg_sum > 0xFF else 0
-        self.reg[register_a] = reg_sum & 0xFF
+    def add_reg(self, register_a: str, register_b: str) -> None:
+        self.add(register_a, self.reg[register_b])
 
     def add_hl(self, register: str) -> None:
-        hl_sum: int = self.ram[self.hl()] + self.reg[register]
+        self.add(register, self.ram[self.hl()])
+
+    def add(self, dest: str, value: int) -> None:
+        total = self.reg[dest] + value
         self.flags["N"] = 0
-        self.flags["H"] = 1 if (self.hl() & 0xF) + (self.reg[register] & 0xF) > 0xF else 0
-        self.flags["C"] = 1 if hl_sum > 0xFF else 0
-        self.reg[register] = hl_sum & 0xFF
+        self.flags["H"] = 1 if (self.reg[dest] & 0xF) + (value & 0xF) > 0xF else 0
+        self.flags["C"] = 1 if total > 0xFF else 0
+        self.reg[dest] = total & 0xFF
 
     # def inc(self, register: str) -> None:
     #     """Increment Value."""
