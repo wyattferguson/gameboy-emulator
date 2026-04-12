@@ -96,21 +96,10 @@ class CPU:
         self.decode()
         self.execute()
         # self.cycles += self.instruction.cycles
-
-    def rst(self, addr: int) -> None:
-        """Store PC, move to addr."""
-        self.ram[self.sp] = self.pc
-        self.sp -= 2
-        self.pc = addr
+        self.pc += self.instruction.length
 
     def nop(self) -> None:
         """No Operation."""
-        self.pc += self.instruction.length
-
-    def jr(self, offset: int = 0) -> None:
-        """Relative Jump to address."""
-        # if not flag or self.flags[flag] == flag_val:
-        self.pc += offset
         self.pc += self.instruction.length
 
     def ld_hr(self, register: str) -> None:
@@ -130,7 +119,6 @@ class CPU:
 
         logger.debug(f"LD {register} {hex(value)}({value})")
         self.reg[register] = value
-        self.pc += self.instruction.length
 
     def ld_hl(self, reg: str) -> None:
         """Load value from memory at address in HL into register."""
@@ -139,37 +127,65 @@ class CPU:
     def ld_hl_r(self, reg: str) -> None:
         """Load value from register into memory at address in HL."""
         self.ram[self.hl()] = self.reg[reg]
-        self.pc += self.instruction.length
 
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
-        self.pc += self.instruction.length
 
-    def inc(self, register: str) -> None:
-        """Increment Value."""
-        self.reg[register] += 1
+    def add(self, register_a: str, register_b: str) -> None:
+        reg_sum: int = self.reg[register_a] + self.reg[register_b]
 
-    def dec(self, register: str) -> None:
-        """Decrement Value."""
-        self.reg[register] -= 1
+        self.flags["Z"] = 1 if reg_sum == 0 else 0
+        self.flags["N"] = 0
+        self.flags["H"] = (
+            1 if (self.reg[register_a] & 0xF) + (self.reg[register_b] & 0xF) > 0xF else 0
+        )
+        self.flags["C"] = 1 if reg_sum > 0xFF else 0
+        self.reg[register_a] = reg_sum & 0xFF
 
-    def jmp(self, addr: int) -> None:
-        """Jump to Address."""
-        self.pc = addr
+    def add_hl(self, register: str) -> None:
+        hl_sum: int = self.ram[self.hl()] + self.reg[register]
+        self.flags["N"] = 0
+        self.flags["H"] = 1 if (self.hl() & 0xF) + (self.reg[register] & 0xF) > 0xF else 0
+        self.flags["C"] = 1 if hl_sum > 0xFF else 0
+        self.reg[register] = hl_sum & 0xFF
 
-    def pop(self) -> None:
-        logger.debug(f"POP SP: {hex(self.sp)}({self.sp})")
-        if len(self.ram) < self.sp:
-            self.sp += 2
-            self.pc = self.ram[self.sp]
-        else:
-            raise Exception("Stack underflow")
+    # def inc(self, register: str) -> None:
+    #     """Increment Value."""
+    #     self.reg[register] += 1
 
-    def xor(self, register_a: int, register_b: int) -> None:
-        """Bitwise XOR."""
-        z = self.reg[register_a] ^ self.reg[register_b]
-        self.flags["Z"] = 1 if z == 0 else 0
-        self.pc += self.instruction.length
+    # def dec(self, register: str) -> None:
+    #     """Decrement Value."""
+    #     self.reg[register] -= 1
+
+    # def jmp(self, addr: int) -> None:
+    #     """Jump to Address."""
+    #     self.pc = addr
+
+    # def pop(self) -> None:
+    #     logger.debug(f"POP SP: {hex(self.sp)}({self.sp})")
+    #     if len(self.ram) < self.sp:
+    #         self.sp += 2
+    #         self.pc = self.ram[self.sp]
+    #     else:
+    #         raise Exception("Stack underflow")
+
+    # def xor(self, register_a: int, register_b: int) -> None:
+    #     """Bitwise XOR."""
+    #     z = self.reg[register_a] ^ self.reg[register_b]
+    #     self.flags["Z"] = 1 if z == 0 else 0
+    #     self.pc += self.instruction.length
+
+    # def rst(self, addr: int) -> None:
+    #     """Store PC, move to addr."""
+    #     self.ram[self.sp] = self.pc
+    #     self.sp -= 2
+    #     self.pc = addr
+
+    # def jr(self, offset: int = 0) -> None:
+    #     """Relative Jump to address."""
+    #     # if not flag or self.flags[flag] == flag_val:
+    #     self.pc += offset
+    #     self.pc += self.instruction.length
 
     def __str__(self) -> str:
         return (

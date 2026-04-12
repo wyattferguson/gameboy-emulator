@@ -115,6 +115,7 @@ indent-style = "space"
     "S101",    # Use of assert detected
     "D101",  # Missing docstring in public class
     "D103",  # Missing docstring in public function
+    "E741", # Ambiguous variable name 'l', 'O', or 'I'
 ]
 
 [tool.ty]
