@@ -36,18 +36,17 @@ class CPU:
         self.cycles: int = 0
         self.args: list[int] = []
 
-    def fetch(self) -> OpCode:
+    def fetch(self) -> None:
         """Fetch instruction from memory at PC."""
         op_code = hex(self.ram[self.pc])
         try:
             self.instruction = OPCODES[op_code]
-            logger.debug("\nFetch: ", hex(self.pc), "-", self.instruction, "-", op_code)
-            return self.instruction
+            logger.debug(f"Fetch: {hex(self.pc)} - {self.instruction}")
         except Exception:
             # raise FetchError(
             #     f"Error fetching instruction: PC = {self.pc} OPCODE = {op_code} - {e}"
             # ) from e
-            logger.debug("\nNot Found: ", hex(self.pc), "-", op_code)
+            logger.debug(f"Not Found: {hex(self.pc)} - {op_code}")
             sys.exit()
 
     def decode(self) -> None:
@@ -58,18 +57,18 @@ class CPU:
                 b = bytes([self.ram[self.pc + i] for i in range(1, self.instruction.length)])
                 self.args.append(int.from_bytes(b, byteorder="little"))
 
-            logger.debug(f"Decoded: {self.instruction}")
+            logger.debug(f"Decoded: {self.instruction}, {self.args}")
         except Exception as e:
             # raise DecodeError(
             #     f"Error decoding instr: PC={self.pc} SP={self.sp} INSTR={self.instruction} - {e}"
             # ) from e
-            logger.debug("Decode Error: ", e)
+            logger.debug(f"Decode Error: {e}")
             sys.exit()
 
     def execute(self) -> None:
         """Run instruction and update PC, SP, registers, and flags."""
         try:
-            logger.debug("Execute: ", self.instruction.call)
+            logger.debug(f"Execute: {self.instruction.call}, {self.args}")
             if self.args:
                 getattr(self, self.instruction.call)(*self.args)
             else:
@@ -77,7 +76,7 @@ class CPU:
 
         except Exception as e:
             # raise ExecuteError(f"Error executing: {self.instruction} - {e}") from e
-            logger.debug("Execute Error: ", e)
+            logger.debug(f"Execute Error: {e}")
             sys.exit()
 
     def insert_instruction(self, instruction: bytearray) -> None:
@@ -132,7 +131,7 @@ class CPU:
         if isinstance(value, str):
             value = self.reg[value]
 
-        logger.debug(f"LD {register} {value}")
+        logger.debug(f"LD {register} {hex(value)}({value})")
         self.reg[register] = value
         self.pc += self.instruction.length
 
@@ -152,7 +151,7 @@ class CPU:
         self.pc = addr
 
     def pop(self) -> None:
-        logger.debug(f"POP SP: {hex(self.sp)}")
+        logger.debug(f"POP SP: {hex(self.sp)}({self.sp})")
         if len(self.ram) < self.sp:
             self.sp += 2
             self.pc = self.ram[self.sp]

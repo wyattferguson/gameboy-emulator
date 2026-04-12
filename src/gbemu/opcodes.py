@@ -11,12 +11,13 @@ class OpCode:
     flags: list[str] | None = None  # set CPU flags after execution
 
     def __str__(self) -> str:
-        return f"{self.label} - {self.length} - {self.args} - {self.flags}"
+        return f"{self.label} {self.length} - {self.args} - {self.flags}"
 
 
 OPCODES: dict[str, OpCode] = {
     "0x0": OpCode("NOP", 1, 4, "nop"),
     "0x1f": OpCode("RRA", 1, 4, "rra", flags=["C"]),  # STOPPED HERE
+    "0x3e": OpCode("LD A, d8", 2, 8, "ld", args=["A"]),
     # "0x6": OpCode("LD H, B", 1, 4, "ld_hr", args=["B"]),
     # "0x5": OpCode("LD D, B", 1, 4, "ld", args=["D", "B"]),
     # "0xe": OpCode("LDH [a8], A", 2, 12, "ld", args=["A"]),

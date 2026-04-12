@@ -50,7 +50,7 @@ build-backend = "uv_build"
 format = {cmd = "ruff format ./src/gbemu/", help = "Format code using ruff"}
 lint = {cmd = "ruff check --fix ./src/gbemu/", help = "Lint and auto-fix code using ruff"}
 type = {cmd = "ty check", help = "Typecheck code using ty" }
-tests = {cmd = "pytest --verbose --color=yes tests", help = "Run tests using pytest"}
+tests = {cmd = "pytest --verbose -s --color=yes tests", help = "Run tests using pytest"}
 # run = "gbemu"
 run = {cmd = "uv run ./src/gbemu/test.py", help = "Run the emulator"}
 
@@ -112,6 +112,9 @@ indent-style = "space"
     "PLR2004",  # Magic values (test assertions with status codes, etc.)
     "F841",     # Unused variable (fixtures, etc.)
     "PT001",    # Use @pytest.fixture() over @pytest.fixture
+    "S101",    # Use of assert detected
+    "D101",  # Missing docstring in public class
+    "D103",  # Missing docstring in public function
 ]
 
 [tool.ty]
