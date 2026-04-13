@@ -1,5 +1,6 @@
 import re
 import sys
+from this import s
 
 from loguru import logger
 
@@ -76,6 +77,9 @@ class CPU:
         """Run instruction and update PC, SP, registers, and flags."""
         try:
             logger.debug(f"Execute: {self.instruction.call}, {self.args}")
+            if self.instruction.flags:
+                for flag, value in self.instruction.flags.items():
+                    self.flags[flag] = value
             if self.args:
                 getattr(self, self.instruction.call)(*self.args)
             else:
@@ -122,33 +126,35 @@ class CPU:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
 
     def add(self, dest: str, source: str, with_carry: bool = False) -> None:
-        carry = self.flags["C"] if with_carry else 0
-        value = self.ram[self.hl] if source == "HL" else self.reg[source]
-        total = self.reg[dest] + value + carry
+        """Add value from source to dest, optionally with carry."""
+        carry: int = self.flags["C"] if with_carry else 0
+        value: int = self.ram[self.hl] if source == "HL" else self.reg[source]
+        total: int = self.reg[dest] + value + carry
         self.flags["Z"] = 1 if (total & 0xFF) == 0 else 0
-        self.flags["N"] = 0
         self.flags["H"] = 1 if (self.reg[dest] & 0xF) + (value & 0xF) + carry > 0xF else 0
         self.flags["C"] = 1 if total > 0xFF else 0
         self.reg[dest] = total & 0xFF
 
     def sub(self, dest: str, source: str, with_carry: bool = False) -> None:
-        carry = self.flags["C"] if with_carry else 0
-        value = self.ram[self.hl] if source == "HL" else self.reg[source]
-        total = self.reg[dest] - value - carry
+        """Subtract value from source to dest, optionally with carry."""
+        carry: int = self.flags["C"] if with_carry else 0
+        value: int = self.ram[self.hl] if source == "HL" else self.reg[source]
+        total: int = self.reg[dest] - value - carry
         self.flags["Z"] = 1 if (total & 0xFF) == 0 else 0
-        self.flags["N"] = 1
         self.flags["H"] = 1 if (self.reg[dest] & 0xF) - (value & 0xF) - carry < 0 else 0
         self.flags["C"] = 1 if total < 0 else 0
         self.reg[dest] = total & 0xFF
 
     def and_op(self, register: str) -> None:
-        value = self.ram[self.hl] if register == "HL" else self.reg[register]
-        result = self.reg["A"] & value
-        self.flags["Z"] = 1 if result == 0 else 0
-        self.flags["N"] = 0
-        self.flags["H"] = 1
-        self.flags["C"] = 0
-        self.reg["A"] = result
+        """Bitwise AND."""
+        value: int = self.ram[self.hl] if register == "HL" else self.reg[register]
+        self.reg["A"] = self.reg["A"] & value
+        self.flags["Z"] = 1 if self.reg["A"] == 0 else 0
+
+    def xor(self, register_a: str, register_b: str) -> None:
+        """Bitwise XOR."""
+        self.reg[register_a] ^= self.reg[register_b]
+        self.flags["Z"] = 1 if self.reg[register_a] == 0 else 0
 
     # def inc(self, register: str) -> None:
     #     """Increment Value."""
@@ -169,12 +175,6 @@ class CPU:
     #         self.pc = self.ram[self.sp]
     #     else:
     #         raise Exception("Stack underflow")
-
-    # def xor(self, register_a: int, register_b: int) -> None:
-    #     """Bitwise XOR."""
-    #     z = self.reg[register_a] ^ self.reg[register_b]
-    #     self.flags["Z"] = 1 if z == 0 else 0
-    #     self.pc += self.instruction.length
 
     # def rst(self, addr: int) -> None:
     #     """Store PC, move to addr."""
