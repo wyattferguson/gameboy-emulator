@@ -4,16 +4,16 @@ from loguru import logger
 
 from gbemu.config import DEBUG, PC_START, SP_START
 from gbemu.exceptions import DecodeError, ExecuteError, FetchError
+from gbemu.mmu import MMU
 from gbemu.opcodes import OPCODES, OpCode
-from gbemu.ram import RAM
 
 
 class CPU:
-    def __init__(self, ram: RAM) -> None:
+    def __init__(self, mmu: MMU) -> None:
         self.debug = DEBUG
         self.pc = PC_START  # program counter
         self.sp = SP_START  # stack pointer
-        self.ram = ram
+        self.mmu = mmu
 
         self.reg = {
             "A": 0,
@@ -42,9 +42,15 @@ class CPU:
         """Get value of HL register pair."""
         return (self.reg["H"] << 8) + self.reg["L"]
 
+    @hl.setter
+    def hl(self, value: int) -> None:
+        """Set value of HL register pair."""
+        self.reg["H"] = (value >> 8) & 0xFF
+        self.reg["L"] = value & 0xFF
+
     def fetch(self) -> None:
         """Fetch instruction from memory at PC."""
-        op_code = hex(self.ram[self.pc])
+        op_code = hex(self.mmu[self.pc])
         try:
             self.instruction = OPCODES[op_code]
             logger.debug(f"Fetch: {hex(self.pc)} - {self.instruction}")
@@ -60,7 +66,7 @@ class CPU:
         try:
             self.args = self.instruction.args or []
             if self.instruction.length > 1:
-                b = bytes([self.ram[self.pc + i] for i in range(1, self.instruction.length)])
+                b = bytes([self.mmu[self.pc + i] for i in range(1, self.instruction.length)])
                 self.args.append(int.from_bytes(b, byteorder="little"))
 
             logger.debug(f"Decoded: {self.instruction}, {self.args}")
@@ -89,9 +95,9 @@ class CPU:
             sys.exit()
 
     def insert_instruction(self, instruction: bytearray) -> None:
-        """Insert instruction into RAM at current PC. Used for Testing."""
+        """Insert instruction into MMU at current PC. Used for Testing."""
         for i, byte in enumerate(instruction):
-            self.ram[self.pc + i] = byte
+            self.mmu[self.pc + i] = byte
 
     def cycle(self) -> None:
         """Execute next CPU cycle."""
@@ -104,20 +110,20 @@ class CPU:
         """No Operation."""
         self.pc += self.instruction.length
 
-    def ld(self, register: str, value: int | str) -> None:
+    def ld(self, register_a: str, register_b: int | str) -> None:
         """Store value in register."""
-        if isinstance(value, str):
-            value = self.reg[value]
+        if isinstance(register_b, str):
+            register_b = self.reg[register_b]
 
-        self.reg[register] = value
+        self.reg[register_a] = register_b
 
     def ld_hl(self, reg: str) -> None:
         """Load value from memory at address in HL into register."""
-        self.ld(reg, self.ram[self.hl])
+        self.ld(reg, self.mmu[self.hl])
 
     def ld_hl_reg(self, reg: str) -> None:
         """Load value from register into memory at address in HL."""
-        self.ram[self.hl] = self.reg[reg]
+        self.mmu[self.hl] = self.reg[reg]
 
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
@@ -125,7 +131,7 @@ class CPU:
     def add(self, dest: str, source: str, with_carry: bool = False) -> None:
         """Add value from source to dest, optionally with carry."""
         carry: int = self.flags["C"] if with_carry else 0
-        value: int = self.ram[self.hl] if source == "HL" else self.reg[source]
+        value: int = self.mmu[self.hl] if source == "HL" else self.reg[source]
         total: int = self.reg[dest] + value + carry
         self.flags["Z"] = 1 if (total & 0xFF) == 0 else 0
         self.flags["H"] = 1 if (self.reg[dest] & 0xF) + (value & 0xF) + carry > 0xF else 0
@@ -135,14 +141,14 @@ class CPU:
     def sub(self, register_a: str, register_b: str, with_carry: bool = False) -> None:
         """Subtract value from source to dest, optionally with carry."""
         carry: int = self.flags["C"] if with_carry else 0
-        value: int = self.ram[self.hl] if register_b == "HL" else self.reg[register_b]
+        value: int = self.mmu[self.hl] if register_b == "HL" else self.reg[register_b]
         result: int = self.reg[register_a] - value - carry
         self._set_sub_flags(result, self.reg[register_a], value, carry)
         self.reg[register_a] = result & 0xFF
 
     def bitwise(self, operation: str, register_a: str, register_b: str) -> None:
         """Perform bitwise operation (AND, XOR, OR)."""
-        value: int = self.ram[self.hl] if register_b == "HL" else self.reg[register_b]
+        value: int = self.mmu[self.hl] if register_b == "HL" else self.reg[register_b]
 
         if operation == "AND":
             self.reg[register_a] &= value
@@ -155,7 +161,7 @@ class CPU:
 
     def cp(self, register_a: str, register_b: str) -> None:
         """Compare registers."""
-        value: int = self.ram[self.hl] if register_b == "HL" else self.reg[register_b]
+        value: int = self.mmu[self.hl] if register_b == "HL" else self.reg[register_b]
         result: int = self.reg[register_a] - value
         self._set_sub_flags(result, self.reg[register_a], value)
 
@@ -177,17 +183,17 @@ class CPU:
         """Jump to Address."""
         self.pc = addr
 
-    # def pop(self) -> None:
-    #     logger.debug(f"POP SP: {hex(self.sp)}({self.sp})")
-    #     if len(self.ram) < self.sp:
-    #         self.sp += 2
-    #         self.pc = self.ram[self.sp]
-    #     else:
-    #         raise Exception("Stack underflow")
+    def pop(self) -> None:
+        logger.debug(f"POP SP: {hex(self.sp)}({self.sp})")
+        if len(self.mmu) < self.sp:
+            self.sp += 2
+            self.pc = self.mmu[self.sp]
+        else:
+            raise Exception("Stack underflow")
 
     # def rst(self, addr: int) -> None:
     #     """Store PC, move to addr."""
-    #     self.ram[self.sp] = self.pc
+    #     self.mmu[self.sp] = self.pc
     #     self.sp -= 2
     #     self.pc = addr
 

@@ -77,30 +77,30 @@ pydocstyle.convention = "google"
 fixable = ["ALL"]
 select = ["ALL"]
 ignore = [
-    "FA102", # Flake8-future-annotations
-    "F401", # Disable fix for unused imports
-    "B904", # Allow raising exceptions without from e
-    "PLR0913", # too many arguments
-    "CPY", # Flake8-copyright
-    "T201", # Debugging print statements
-    "ERA", # Eradicate – detects commented-out code
-    "BLE001", # Catch-all exceptions
-    "D100", # missing docstring in public module
-    "D105", # undocumented magic method
-    "D107", # undocumented public init
-    "D203", # incorrect-blank-line-before-class
-    "D205", # line-between-summary-and-description
-    "D212", # multi-line-summary-first-line
-    "D400", # missing-trailing-period
-    "D407", # missing-dashed-underline-after-section
-    "S311", # rand-usage
-    "EM102", # f-string-exception
-    "EM101", # implicit-str-concatenation
-    "TRY003", # long-exception-messages
-    "FBT003", # bool argument in function call
-    "FBT002", # bool argument in lambda
-    "FBT001", # bool argument in function definition
-    "PLR2004", # Magic values
+    "FA102",    # Flake8-future-annotations
+    "F401",     # Disable fix for unused imports
+    "B904",     # Allow raising exceptions without from e
+    "PLR0913",  # too many arguments
+    "CPY",      # Flake8-copyright
+    "T201",     # Debugging print statements
+    "ERA",      # Eradicate – detects commented-out code
+    "BLE001",   # Catch-all exceptions
+    "D100",     # missing docstring in public module
+    "D105",     # undocumented magic method
+    "D107",     # undocumented public init
+    "D203",     # incorrect-blank-line-before-class
+    "D205",     # line-between-summary-and-description
+    "D212",     # multi-line-summary-first-line
+    "D400",     # missing-trailing-period
+    "D407",     # missing-dashed-underline-after-section
+    "S311",     # rand-usage
+    "EM102",    # f-string-exception
+    "EM101",    # implicit-str-concatenation
+    "TRY003",   # long-exception-messages
+    "FBT003",   # bool argument in function call
+    "FBT002",   # bool argument in lambda
+    "FBT001",   # bool argument in function definition
+    "PLR2004",  # Magic values
 ]
 
 [tool.ruff.format]
@@ -113,10 +113,10 @@ indent-style = "space"
     "PLR2004",  # Magic values
     "F841",     # Unused variable (fixtures, etc.)
     "PT001",    # Use @pytest.fixture() over @pytest.fixture
-    "S101",    # Use of assert detected
-    "D101",  # Missing docstring in public class
-    "D103",  # Missing docstring in public function
-    "E741", # Ambiguous variable name 'l', 'O', or 'I'
+    "S101",     # Use of assert detected
+    "D101",     # Missing docstring in public class
+    "D103",     # Missing docstring in public function
+    "E741",     # Ambiguous variable name 'l', 'O', or 'I'
 ]
 
 [tool.ty]

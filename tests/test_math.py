@@ -1,8 +1,8 @@
 import pytest
 
 from gbemu.cpu import CPU
+from gbemu.mmu import MMU
 from gbemu.opcodes import OPCODES, OpCode
-from tests.conftest import RAM
 
 
 @pytest.mark.parametrize(
@@ -45,7 +45,7 @@ def test_reg_to_reg(
     result: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(RAM())
+    cpu = CPU(MMU())
     cpu.reg[dest] = dest_val
     cpu.reg[src] = src_val
     cpu.flags["C"] = carry
@@ -100,12 +100,12 @@ def test_hl_to_reg(
     result: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(RAM())
+    cpu = CPU(MMU())
     cpu.reg[dest] = dest_val
     cpu.reg["H"] = h
     cpu.reg["L"] = l
     cpu.flags["C"] = carry
-    cpu.ram[(h << 8) + l] = value
+    cpu.mmu[(h << 8) + l] = value
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
 

@@ -3,23 +3,23 @@ import sys
 import pygame as pg
 
 from gbemu.config import M_JOYPAD
-from gbemu.ram import RAM
+from gbemu.mmu import MMU
 
 
 class Joypad:
-    def __init__(self, ram: RAM) -> None:
-        self.ram = ram
-        self.ram[M_JOYPAD] = 0xFF  # Set all buttons to not pressed
+    def __init__(self, ram: MMU) -> None:
+        self.mmu = ram
+        self.mmu[M_JOYPAD] = 0xFF  # Set all buttons to not pressed
         self.dpad_pressed = False
 
     def flip(self, bits: int, dpad: bool = False) -> None:
         """Set pressed buttons."""
         # Reset dpad / button flags
         if self.dpad_pressed != dpad:
-            self.ram[M_JOYPAD] = 0xEF if dpad else 0xDF
+            self.mmu[M_JOYPAD] = 0xEF if dpad else 0xDF
             self.dpad_pressed = dpad
         # Flip the bits of the pressed buttons
-        self.ram[M_JOYPAD] ^= bits
+        self.mmu[M_JOYPAD] ^= bits
 
     def update(self) -> None:
         for event in pg.event.get():
@@ -51,10 +51,10 @@ class Joypad:
     def __str__(self) -> str:
         return (
             f"Joypad State:\n"
-            f"JOYPAD: {self.ram[M_JOYPAD]}\n"
-            f"Up/Select : {(self.ram[M_JOYPAD] & 0b0100) == 0}\n"
-            f"Down/Start: {(self.ram[M_JOYPAD] & 0b1000) == 0}\n"
-            f"Right/A: {(self.ram[M_JOYPAD] & 0b0001) == 0}\n"
-            f"Left/B: {(self.ram[M_JOYPAD] & 0b0010) == 0}\n"
+            f"JOYPAD: {self.mmu[M_JOYPAD]}\n"
+            f"Up/Select : {(self.mmu[M_JOYPAD] & 0b0100) == 0}\n"
+            f"Down/Start: {(self.mmu[M_JOYPAD] & 0b1000) == 0}\n"
+            f"Right/A: {(self.mmu[M_JOYPAD] & 0b0001) == 0}\n"
+            f"Left/B: {(self.mmu[M_JOYPAD] & 0b0010) == 0}\n"
             f"{'D-Pad' if self.dpad_pressed else 'Button'} Pressed\n"
         )

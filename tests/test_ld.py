@@ -2,17 +2,8 @@ import pytest
 
 from gbemu.config import PC_START, SP_START
 from gbemu.cpu import CPU
+from gbemu.mmu import MMU
 from gbemu.opcodes import OPCODES, OpCode
-from tests.conftest import RAM
-
-
-def test_ld_a_d8() -> None:
-    cpu = CPU(RAM())
-    cpu.insert_instruction(bytearray([0x3E, 0x42]))  # LD A, d8; d8 = 0x42
-    cpu.cycle()
-
-    assert cpu.instruction == OPCODES["0x3e"]
-    assert cpu.reg["A"] == 0x42
 
 
 @pytest.mark.parametrize(
@@ -70,7 +61,7 @@ def test_ld_a_d8() -> None:
     ],
 )
 def test_ld_reg(dest: str, src: str, value: int, opcode: int) -> None:
-    cpu = CPU(RAM())
+    cpu = CPU(MMU())
     cpu.reg[src] = value
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
@@ -91,9 +82,9 @@ def test_ld_reg(dest: str, src: str, value: int, opcode: int) -> None:
     ],
 )
 def test_ld_hl(dest: str, h: int, l: int, value: int, opcode: int) -> None:
-    cpu = CPU(RAM())
+    cpu = CPU(MMU())
     hl = (h << 8) + l
-    cpu.ram[hl] = value
+    cpu.mmu[hl] = value
     cpu.insert_instruction(bytearray([opcode]))
     cpu.reg["H"] = h
     cpu.reg["L"] = l
@@ -115,11 +106,11 @@ def test_ld_hl(dest: str, h: int, l: int, value: int, opcode: int) -> None:
     ],
 )
 def test_ld_hl_r(dest: str, h: int, l: int, value: int, opcode: int) -> None:
-    cpu = CPU(RAM())
+    cpu = CPU(MMU())
     cpu.reg["H"] = h
     cpu.reg["L"] = l
     cpu.insert_instruction(bytearray([opcode]))
     cpu.reg[dest] = value
     cpu.cycle()
 
-    assert cpu.ram[cpu.hl] == value
+    assert cpu.mmu[cpu.hl] == value

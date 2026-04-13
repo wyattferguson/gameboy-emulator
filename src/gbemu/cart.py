@@ -6,9 +6,9 @@ from gbemu.cart_tables import (
     CART_TYPE,
     CGB_FLAG,
     DESINATION_CODE,
+    MMU_SIZE,
     NEW_LICENSEE,
     OLD_LICENSEE,
-    RAM_SIZE,
 )
 from gbemu.config import DEFAULT_ROM
 from gbemu.exceptions import CartError, RomError
@@ -28,12 +28,12 @@ class Cart:
             self.sgb_flag = self.rom[0x146]
             self.cart_type = CART_TYPE[self.rom[0x147]]
             self.rom_size = 32 * (1 << self.rom[0x148])
-            self.ram_size = RAM_SIZE[self.rom[0x149]]
+            self.mmu_size = MMU_SIZE[self.rom[0x149]]
             self.destination = DESINATION_CODE[self.rom[0x14A]]
             self.version = self.rom[0x14C]
             self.licensee = (
                 NEW_LICENSEE[f"{self.rom[0x144:0x146].decode()}"]
-                if self.rom[0x14B] == 33  # noqa: PLR2004
+                if self.rom[0x14B] == 33
                 else OLD_LICENSEE[f"{self.rom[0x14B]}"]
             )
         except Exception as e:
@@ -85,7 +85,7 @@ class Cart:
             f"Licensee: {self.licensee}\n"
             f"CGB Flag: {self.cgb_flag}\n"
             f"ROM Size: {self.rom_size} KB\n"
-            f"RAM Size: {self.ram_size}\n"
+            f"MMU Size: {self.mmu_size}\n"
             f"Cart Type: {self.cart_type}\n"
             f"Version: {self.version}\n"
             f"Desination Code: {self.destination}\n"

@@ -1,8 +1,8 @@
 import pytest
 
 from gbemu.cpu import CPU
+from gbemu.mmu import MMU
 from gbemu.opcodes import OPCODES
-from tests.conftest import RAM
 
 
 @pytest.mark.parametrize(
@@ -37,10 +37,10 @@ def test_cp(
     c_flag: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(RAM())
+    cpu = CPU(MMU())
     cpu.reg["A"] = a_value
     if register == "HL":
-        cpu.ram[cpu.hl] = value
+        cpu.mmu[cpu.hl] = value
     else:
         cpu.reg[register] = value
     cpu.insert_instruction(bytearray([opcode]))

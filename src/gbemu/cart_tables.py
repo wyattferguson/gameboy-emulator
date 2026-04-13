@@ -37,7 +37,7 @@ CGB_FLAG: dict[str, str] = {
     "C0": "CGB+DMG",
 }
 
-RAM_SIZE: dict[int, str] = {
+MMU_SIZE: dict[int, str] = {
     0x00: "None",
     0x01: "Unused",
     0x02: "8 KB",

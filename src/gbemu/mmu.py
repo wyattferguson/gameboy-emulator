@@ -3,28 +3,33 @@ from gbemu.config import BIOS, MEMORY_SIZE, PC_START
 from gbemu.exceptions import RamError
 
 
-class RAM:
-    def __init__(self, cart: Cart, size: int = MEMORY_SIZE) -> None:
-        """Initialize RAM with a given size."""
+class MMU:
+    """Unified system memory."""
+
+    def __init__(self, cart: Cart | None = None, size: int = MEMORY_SIZE) -> None:
+        """Initialize MMU with a given size."""
         self.size = size
         self._memory = [0] * self.size
         # self._memory[0 : len(BIOS)] = BIOS  # load system bios
-        # copy rom into memory for now
-        self._memory[0 : len(cart.rom)] = cart.rom
         self._cart = cart
+        if cart:
+            self._memory[0 : len(cart.rom)] = cart.rom
+
+    def __len__(self) -> int:
+        return self.size
 
     def __getitem__(self, address: int) -> int:
-        if address < 0 or address >= self.size:
+        if address < 0 or address >= len(self):
             raise RamError(f"Address {address} is out of bounds.")
         return self._memory[address]
 
     def __setitem__(self, address: int, value: int) -> None:
-        if address < 0 or address >= self.size:
+        if address < 0 or address >= len(self):
             raise RamError(f"Address {address} is out of bounds.")
         self._memory[address] = value
 
     def __str__(self) -> str:
-        """Print memory in 16 byte chunks."""
+        """Return memory in 16 byte chunks."""
         chunk_size: int = 16
         print_rows: int = 4
         return "\n".join(

@@ -3,7 +3,7 @@ from gbemu.cart import Cart
 from gbemu.config import DEFAULT_ROM
 from gbemu.cpu import CPU
 from gbemu.joypad import Joypad
-from gbemu.ram import RAM
+from gbemu.mmu import MMU
 from gbemu.screen import Screen
 
 
@@ -12,18 +12,18 @@ class Gbemu:
         self.debug = debug
         self.rom = rom
         self.cart = Cart(self.rom)
-        self.ram = RAM(self.cart)
-        # self.joypad = Joypad(self.ram)
+        self.mmu = MMU(self.cart)
+        # self.joypad = Joypad(self.mmu)
         # self.screen = Screen()
         # self.audio = Audio()
-        self.cpu = CPU(self.ram, self.debug)
+        self.cpu = CPU(self.mmu, self.debug)
 
     def run(self) -> None:
         """Run the emulator."""
         print(self.cart)
-        # print(self.ram)
+        # print(self.mmu)
         print("MEMORY:")
-        print(self.ram)
+        print(self.mmu)
         print("GAME CYCLE:")
         while True:
             self.cpu.cycle()

@@ -1,5 +1,5 @@
 DEFAULT_ROM = "./roms/puzzle.gb"
-MEMORY_SIZE: int = 65535  # 32kb of totally memory
+MEMORY_SIZE: int = 32768  # 32kb of totally memory
 PC_START: int = 0x100  # rom load location
 SP_START: int = 0xFFFE  # stack pointer start location
 DEBUG = True
