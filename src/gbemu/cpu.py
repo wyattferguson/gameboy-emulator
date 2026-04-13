@@ -89,7 +89,7 @@ class CPU:
             sys.exit()
 
     def insert_instruction(self, instruction: bytearray) -> None:
-        """Insert instruction into RAM at current PC."""
+        """Insert instruction into RAM at current PC. Used for Testing."""
         for i, byte in enumerate(instruction):
             self.ram[self.pc + i] = byte
 
@@ -98,7 +98,6 @@ class CPU:
         self.fetch()
         self.decode()
         self.execute()
-        # self.cycles += self.instruction.cycles
         self.pc += self.instruction.length
 
     def nop(self) -> None:
@@ -166,17 +165,17 @@ class CPU:
         self.flags["H"] = 1 if (a & 0xF) - (b & 0xF) - carry < 0 else 0
         self.flags["C"] = 1 if result < 0 else 0
 
-    # def inc(self, register: str) -> None:
-    #     """Increment Value."""
-    #     self.reg[register] += 1
+    def inc(self, register: str) -> None:
+        """Increment Value."""
+        self.reg[register] += 1
 
-    # def dec(self, register: str) -> None:
-    #     """Decrement Value."""
-    #     self.reg[register] -= 1
+    def dec(self, register: str) -> None:
+        """Decrement Value."""
+        self.reg[register] -= 1
 
-    # def jmp(self, addr: int) -> None:
-    #     """Jump to Address."""
-    #     self.pc = addr
+    def jmp(self, addr: int) -> None:
+        """Jump to Address."""
+        self.pc = addr
 
     # def pop(self) -> None:
     #     logger.debug(f"POP SP: {hex(self.sp)}({self.sp})")
@@ -192,11 +191,11 @@ class CPU:
     #     self.sp -= 2
     #     self.pc = addr
 
-    # def jr(self, offset: int = 0) -> None:
-    #     """Relative Jump to address."""
-    #     # if not flag or self.flags[flag] == flag_val:
-    #     self.pc += offset
-    #     self.pc += self.instruction.length
+    def jr(self, offset: int = 0) -> None:
+        """Relative Jump to address."""
+        # if not flag or self.flags[flag] == flag_val:
+        self.pc += offset
+        self.pc += self.instruction.length
 
     def __str__(self) -> str:
         return (
