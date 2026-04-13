@@ -145,15 +145,17 @@ class CPU:
         self.flags["C"] = 1 if total < 0 else 0
         self.reg[dest] = total & 0xFF
 
-    def and_op(self, register: str) -> None:
-        """Bitwise AND."""
-        value: int = self.ram[self.hl] if register == "HL" else self.reg[register]
-        self.reg["A"] = self.reg["A"] & value
-        self.flags["Z"] = 1 if self.reg["A"] == 0 else 0
+    def bitwise(self, operation: str, register_a: str, register_b: str) -> None:
+        """Perform bitwise operation (AND, XOR, OR)."""
+        value: int = self.ram[self.hl] if register_b == "HL" else self.reg[register_b]
 
-    def xor(self, register_a: str, register_b: str) -> None:
-        """Bitwise XOR."""
-        self.reg[register_a] ^= self.reg[register_b]
+        if operation == "AND":
+            self.reg[register_a] &= value
+        elif operation == "XOR":
+            self.reg[register_a] ^= value
+        elif operation == "OR":
+            self.reg[register_a] |= value
+
         self.flags["Z"] = 1 if self.reg[register_a] == 0 else 0
 
     # def inc(self, register: str) -> None:
