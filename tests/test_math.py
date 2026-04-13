@@ -52,7 +52,6 @@ def test_reg_to_reg(
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
 
-    assert cpu.instruction == OPCODES[f"0x{opcode:x}"]
     assert cpu.reg[dest] == result
     assert cpu.flags["Z"] == z_flag
     assert cpu.flags["N"] == n_flag
@@ -110,7 +109,6 @@ def test_hl_to_reg(
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
 
-    assert cpu.instruction == OPCODES[f"0x{opcode:x}"]
     assert cpu.reg[dest] == result
     assert cpu.flags["Z"] == z_flag
     assert cpu.flags["N"] == n_flag

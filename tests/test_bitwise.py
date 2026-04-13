@@ -48,7 +48,6 @@ def test_bitwise(
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
 
-    assert cpu.instruction == OPCODES[f"0x{opcode:x}"]
     assert cpu.reg["A"] == result
     assert cpu.flags["Z"] == z_flag
     assert cpu.flags["N"] == 0

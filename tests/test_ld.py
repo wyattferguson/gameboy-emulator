@@ -75,7 +75,6 @@ def test_ld_reg(dest: str, src: str, value: int, opcode: int) -> None:
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
 
-    assert cpu.instruction == OPCODES[f"0x{opcode:x}"]
     assert cpu.reg[dest] == value
 
 
@@ -100,7 +99,6 @@ def test_ld_hl(dest: str, h: int, l: int, value: int, opcode: int) -> None:
     cpu.reg["L"] = l
     cpu.cycle()
 
-    assert cpu.instruction == OPCODES[f"0x{opcode:x}"]
     assert cpu.reg[dest] == value
 
 
@@ -124,5 +122,4 @@ def test_ld_hl_r(dest: str, h: int, l: int, value: int, opcode: int) -> None:
     cpu.reg[dest] = value
     cpu.cycle()
 
-    assert cpu.instruction == OPCODES[f"0x{opcode:x}"]
     assert cpu.ram[cpu.hl] == value

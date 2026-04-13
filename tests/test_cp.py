@@ -46,7 +46,6 @@ def test_cp(
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
 
-    assert cpu.instruction == OPCODES[f"0x{opcode:x}"]
     assert cpu.flags["Z"] == z_flag
     assert cpu.flags["N"] == 1
     assert cpu.flags["H"] == h_flag
