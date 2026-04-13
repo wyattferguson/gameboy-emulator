@@ -161,6 +161,14 @@ class CPU:
         self.flags["C"] = 1 if total < 0 else 0
         self.reg[dest] = total & 0xFF
 
+    def and_op(self, register: str) -> None:
+        result = self.reg["A"] & self.reg[register]
+        self.flags["Z"] = 1 if result == 0 else 0
+        self.flags["N"] = 0
+        self.flags["H"] = 1
+        self.flags["C"] = 0
+        self.reg["A"] = result
+
     # def inc(self, register: str) -> None:
     #     """Increment Value."""
     #     self.reg[register] += 1

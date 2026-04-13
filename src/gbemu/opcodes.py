@@ -110,6 +110,12 @@ OPCODES: dict[str, OpCode] = {
     "0x99": OpCode("SBC A, E", 1, 4, "sub_reg", args=["A", "E", True], flags=["Z", "N", "H", "C"]),
     "0x9a": OpCode("SBC A, H", 1, 4, "sub_reg", args=["A", "H", True], flags=["Z", "N", "H", "C"]),
     "0x9b": OpCode("SBC A, L", 1, 4, "sub_reg", args=["A", "L", True], flags=["Z", "N", "H", "C"]),
-    "0x9c": OpCode("SBC A, [HL]", 1, 8, "sub_hl", args=["A", True], flags=["Z", "N", "H", "C"]),
+    "0x9c": OpCode("SBC A, [HL]", 1, 8, "sub_hl", args=["A", True], flags=["Z", "N", "H"]),
     "0x9d": OpCode("SBC A, A", 1, 4, "sub_reg", args=["A", "A", True], flags=["Z", "N", "H", "C"]),
+    "0xa0": OpCode("AND A, B", 1, 4, "and_op", args=["B"], flags=["Z"]),
+    "0xa1": OpCode("AND A, C", 1, 4, "and_op", args=["C"], flags=["Z"]),
+    "0xa2": OpCode("AND A, D", 1, 4, "and_op", args=["D"], flags=["Z"]),
+    "0xa3": OpCode("AND A, E", 1, 4, "and_op", args=["E"], flags=["Z"]),
+    "0xa4": OpCode("AND A, H", 1, 4, "and_op", args=["H"], flags=["Z"]),
+    "0xa5": OpCode("AND A, L", 1, 4, "and_op", args=["L"], flags=["Z"]),
 }
