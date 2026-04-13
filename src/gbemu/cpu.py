@@ -1,6 +1,4 @@
-import re
 import sys
-from this import s
 
 from loguru import logger
 
@@ -29,7 +27,7 @@ class CPU:
         }
 
         self.flags = {
-            "Z": 0,  # zero
+            "Z": 0,
             "N": 0,  # subtract
             "H": 0,  # half-carry
             "C": 0,  # carry
@@ -135,15 +133,13 @@ class CPU:
         self.flags["C"] = 1 if total > 0xFF else 0
         self.reg[dest] = total & 0xFF
 
-    def sub(self, dest: str, source: str, with_carry: bool = False) -> None:
+    def sub(self, register_a: str, register_b: str, with_carry: bool = False) -> None:
         """Subtract value from source to dest, optionally with carry."""
         carry: int = self.flags["C"] if with_carry else 0
-        value: int = self.ram[self.hl] if source == "HL" else self.reg[source]
-        total: int = self.reg[dest] - value - carry
-        self.flags["Z"] = 1 if (total & 0xFF) == 0 else 0
-        self.flags["H"] = 1 if (self.reg[dest] & 0xF) - (value & 0xF) - carry < 0 else 0
-        self.flags["C"] = 1 if total < 0 else 0
-        self.reg[dest] = total & 0xFF
+        value: int = self.ram[self.hl] if register_b == "HL" else self.reg[register_b]
+        result: int = self.reg[register_a] - value - carry
+        self._set_sub_flags(result, self.reg[register_a], value, carry)
+        self.reg[register_a] = result & 0xFF
 
     def bitwise(self, operation: str, register_a: str, register_b: str) -> None:
         """Perform bitwise operation (AND, XOR, OR)."""
@@ -157,6 +153,18 @@ class CPU:
             self.reg[register_a] |= value
 
         self.flags["Z"] = 1 if self.reg[register_a] == 0 else 0
+
+    def cp(self, register_a: str, register_b: str) -> None:
+        """Compare registers."""
+        value: int = self.ram[self.hl] if register_b == "HL" else self.reg[register_b]
+        result: int = self.reg[register_a] - value
+        self._set_sub_flags(result, self.reg[register_a], value)
+
+    def _set_sub_flags(self, result: int, a: int, b: int, carry: int = 0) -> None:
+        """Set flags for subtraction operations."""
+        self.flags["Z"] = 1 if (result & 0xFF) == 0 else 0
+        self.flags["H"] = 1 if (a & 0xF) - (b & 0xF) - carry < 0 else 0
+        self.flags["C"] = 1 if result < 0 else 0
 
     # def inc(self, register: str) -> None:
     #     """Increment Value."""
