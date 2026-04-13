@@ -60,7 +60,7 @@ from gbemu.opcodes import OPCODES, OpCode
         ("A", "A", 0x2F, 0x7F),
     ],
 )
-def test_ld_reg(dest: str, src: str, value: int, opcode: int) -> None:
+def test_ld(dest: str, src: str, value: int, opcode: int) -> None:
     cpu = CPU(MMU())
     cpu.reg[src] = value
     cpu.insert_instruction(bytearray([opcode]))

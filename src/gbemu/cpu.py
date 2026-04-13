@@ -83,13 +83,14 @@ class CPU:
         """Run instruction and update PC, SP, registers, and flags."""
         try:
             logger.debug(f"Execute: {self.instruction.call}, {self.args}")
+
+            # Set flags with static values from instruction definition
             if self.instruction.flags:
                 for flag, value in self.instruction.flags.items():
                     self.flags[flag] = value
-            if self.args:
-                getattr(self, self.instruction.call)(*self.args)
-            else:
-                getattr(self, self.instruction.call)()
+
+            # Execute instruction logic
+            getattr(self, self.instruction.call)(*self.args)
 
         except Exception as e:
             # raise ExecuteError(f"Error executing: {self.instruction} - {e}") from e
