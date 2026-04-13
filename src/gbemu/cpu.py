@@ -142,7 +142,8 @@ class CPU:
         self.reg[dest] = total & 0xFF
 
     def and_op(self, register: str) -> None:
-        result = self.reg["A"] & self.reg[register]
+        value = self.ram[self.hl] if register == "HL" else self.reg[register]
+        result = self.reg["A"] & value
         self.flags["Z"] = 1 if result == 0 else 0
         self.flags["N"] = 0
         self.flags["H"] = 1

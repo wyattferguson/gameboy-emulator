@@ -118,4 +118,6 @@ OPCODES: dict[str, OpCode] = {
     "0xa3": OpCode("AND A, E", 1, 4, "and_op", args=["E"], flags=["Z"]),
     "0xa4": OpCode("AND A, H", 1, 4, "and_op", args=["H"], flags=["Z"]),
     "0xa5": OpCode("AND A, L", 1, 4, "and_op", args=["L"], flags=["Z"]),
+    "0xa6": OpCode("AND A, [HL]", 1, 8, "and_op", args=["HL"], flags=["Z"]),
+    "0xa7": OpCode("AND A, A", 1, 4, "and_op", args=["A"], flags=["Z"]),
 }
