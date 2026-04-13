@@ -38,6 +38,7 @@ class CPU:
         self.cycles: int = 0
         self.args: list[int] = []
 
+    @property
     def hl(self) -> int:
         """Get value of HL register pair."""
         return (self.reg["H"] << 8) + self.reg["L"]
@@ -102,43 +103,27 @@ class CPU:
         """No Operation."""
         self.pc += self.instruction.length
 
-    def ld_hr(self, register: str) -> None:
-        """Load H register with value from register."""
-        new_hl = (self.reg["HL"] & 0x00FF) | (self.reg[register] << 8)
-        self.ld("HL", new_hl)
-
-    def ld_hm(self, register: str) -> None:
-        """Load H register with value from register."""
-        self.ld("HL", register)
-        self.reg["HL"] -= 1
-
     def ld(self, register: str, value: int | str) -> None:
         """Store value in register."""
         if isinstance(value, str):
             value = self.reg[value]
 
-        logger.debug(f"LD {register} {hex(value)}({value})")
         self.reg[register] = value
 
     def ld_hl(self, reg: str) -> None:
         """Load value from memory at address in HL into register."""
-        self.ld(reg, self.ram[self.hl()])
+        self.ld(reg, self.ram[self.hl])
 
-    def ld_hl_r(self, reg: str) -> None:
+    def ld_hl_reg(self, reg: str) -> None:
         """Load value from register into memory at address in HL."""
-        self.ram[self.hl()] = self.reg[reg]
+        self.ram[self.hl] = self.reg[reg]
 
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
 
-    def add_reg(self, register_a: str, register_b: str, with_carry: bool = False) -> None:
-        self.add(register_a, self.reg[register_b], with_carry=with_carry)
-
-    def add_hl(self, register: str, with_carry: bool = False) -> None:
-        self.add(register, self.ram[self.hl()], with_carry=with_carry)
-
-    def add(self, dest: str, value: int, with_carry: bool = False) -> None:
+    def add(self, dest: str, source: str, with_carry: bool = False) -> None:
         carry = self.flags["C"] if with_carry else 0
+        value = self.ram[self.hl] if source == "HL" else self.reg[source]
         total = self.reg[dest] + value + carry
         self.flags["Z"] = 1 if (total & 0xFF) == 0 else 0
         self.flags["N"] = 0
@@ -146,14 +131,9 @@ class CPU:
         self.flags["C"] = 1 if total > 0xFF else 0
         self.reg[dest] = total & 0xFF
 
-    def sub_reg(self, register_a: str, register_b: str, with_carry: bool = False) -> None:
-        self.sub(register_a, self.reg[register_b], with_carry=with_carry)
-
-    def sub_hl(self, register: str, with_carry: bool = False) -> None:
-        self.sub(register, self.ram[self.hl()], with_carry=with_carry)
-
-    def sub(self, dest: str, value: int, with_carry: bool = False) -> None:
+    def sub(self, dest: str, source: str, with_carry: bool = False) -> None:
         carry = self.flags["C"] if with_carry else 0
+        value = self.ram[self.hl] if source == "HL" else self.reg[source]
         total = self.reg[dest] - value - carry
         self.flags["Z"] = 1 if (total & 0xFF) == 0 else 0
         self.flags["N"] = 1

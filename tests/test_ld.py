@@ -95,7 +95,7 @@ def test_ld_hl(dest: str, h: int, l: int, value: int, opcode: int) -> None:
     cpu = CPU(RAM())
     hl = (h << 8) + l
     cpu.ram[hl] = value
-    cpu.insert_instruction(bytearray([opcode]))  # LD reg, [HL]
+    cpu.insert_instruction(bytearray([opcode]))
     cpu.reg["H"] = h
     cpu.reg["L"] = l
     cpu.cycle()
@@ -120,9 +120,9 @@ def test_ld_hl_r(dest: str, h: int, l: int, value: int, opcode: int) -> None:
     cpu = CPU(RAM())
     cpu.reg["H"] = h
     cpu.reg["L"] = l
-    cpu.insert_instruction(bytearray([opcode]))  # LD [HL], reg
+    cpu.insert_instruction(bytearray([opcode]))
     cpu.reg[dest] = value
     cpu.cycle()
 
     assert cpu.instruction == OPCODES[f"0x{opcode:x}"]
-    assert cpu.ram[cpu.hl()] == value
+    assert cpu.ram[cpu.hl] == value
