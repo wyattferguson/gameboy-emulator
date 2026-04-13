@@ -42,7 +42,7 @@ def test_bitwise(
     cpu = CPU(MMU())
     cpu.reg["A"] = a_value
     if register == "HL":
-        cpu.mmu[cpu.hl] = value
+        cpu.mmu[cpu.reg["HL"]] = value
     else:
         cpu.reg[register] = value
     cpu.insert_instruction(bytearray([opcode]))

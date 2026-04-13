@@ -1,19 +1,12 @@
-from gbemu.config import MEMORY_SIZE
+from gbemu.cpu import CPU
+from gbemu.mmu import MMU
 
-"""
-0001 0010
-0011 0100
-0010 0000
-
-
-
-
-"""
 if __name__ == "__main__":
-    a = 0x12
-    b = 0x34
-    result = a & b
-    print(bin(a))
-    print(bin(b))
-    print(bin(result))
-    print(f"{a} & {b} = {result}")
+    cpu = CPU(MMU())
+    cpu.reg["H"] = 0x34
+    cpu.reg["L"] = 0x56
+
+    print(hex(cpu.reg["HL"]), hex(cpu.reg["H"]), hex(cpu.reg["L"]))
+
+    cpu.reg["HL"] = 0x12CD
+    print(hex(cpu.reg["HL"]), hex(cpu.reg["H"]), hex(cpu.reg["L"]))

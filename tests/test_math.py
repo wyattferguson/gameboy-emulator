@@ -63,8 +63,7 @@ def test_reg_to_reg(
     (
         "dest",
         "dest_val",
-        "h",
-        "l",
+        "hl",
         "value",
         "carry",
         "z_flag",
@@ -75,22 +74,21 @@ def test_reg_to_reg(
         "opcode",
     ),
     [
-        ("A", 0x01, 0x12, 0x34, 0x02, 0, 0, 0, 0, 0, 0x03, 0x86),  # ADD A, [HL]
-        ("A", 0x1F, 0x12, 0x34, 0x1C, 0, 0, 0, 1, 0, 0x3B, 0x86),
-        ("A", 0xFF, 0x12, 0x34, 0x0F, 0, 0, 0, 1, 1, 0x0E, 0x86),
-        ("A", 0xFF, 0x12, 0x34, 0x0F, 1, 0, 0, 1, 1, 0x0F, 0x8E),  # ADC A, [HL] with carry
-        ("A", 0x3F, 0x12, 0x34, 0x0F, 1, 0, 0, 1, 0, 0x4F, 0x8E),
-        ("A", 0x01, 0x12, 0x34, 0x02, 0, 0, 1, 1, 1, 0xFF, 0x94),  # SUB A, [HL]
-        ("A", 0x1F, 0x12, 0x34, 0x1C, 0, 0, 1, 0, 0, 0x03, 0x9C),  # SBC A, [HL] with carry
-        ("A", 0x10, 0x12, 0x34, 0x0F, 1, 1, 1, 1, 0, 0x00, 0x9C),
-        ("A", 0x65, 0x12, 0x34, 0x23, 1, 0, 1, 0, 0, 0x41, 0x9C),
+        ("A", 0x01, 0x1234, 0x02, 0, 0, 0, 0, 0, 0x03, 0x86),  # ADD A, [HL]
+        ("A", 0x1F, 0x1234, 0x1C, 0, 0, 0, 1, 0, 0x3B, 0x86),
+        ("A", 0xFF, 0x1234, 0x0F, 0, 0, 0, 1, 1, 0x0E, 0x86),
+        ("A", 0xFF, 0x1234, 0x0F, 1, 0, 0, 1, 1, 0x0F, 0x8E),  # ADC A, [HL] with carry
+        ("A", 0x3F, 0x1234, 0x0F, 1, 0, 0, 1, 0, 0x4F, 0x8E),
+        ("A", 0x01, 0x1234, 0x02, 0, 0, 1, 1, 1, 0xFF, 0x94),  # SUB A, [HL]
+        ("A", 0x1F, 0x1234, 0x1C, 0, 0, 1, 0, 0, 0x03, 0x9C),  # SBC A, [HL] with carry
+        ("A", 0x10, 0x1234, 0x0F, 1, 1, 1, 1, 0, 0x00, 0x9C),
+        ("A", 0x65, 0x1234, 0x23, 1, 0, 1, 0, 0, 0x41, 0x9C),
     ],
 )
 def test_hl_to_reg(
     dest: str,
     dest_val: int,
-    h: int,
-    l: int,
+    hl: int,
     value: int,
     carry: int,
     z_flag: int,
@@ -102,10 +100,9 @@ def test_hl_to_reg(
 ) -> None:
     cpu = CPU(MMU())
     cpu.reg[dest] = dest_val
-    cpu.reg["H"] = h
-    cpu.reg["L"] = l
+    cpu.reg["HL"] = hl
     cpu.flags["C"] = carry
-    cpu.mmu[(h << 8) + l] = value
+    cpu.mmu[hl] = value
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
 

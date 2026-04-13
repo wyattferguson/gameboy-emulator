@@ -70,47 +70,44 @@ def test_ld_reg(dest: str, src: str, value: int, opcode: int) -> None:
 
 
 @pytest.mark.parametrize(
-    ("dest", "h", "l", "value", "opcode"),
+    ("dest", "hl", "value", "opcode"),
     [
-        ("B", 0x12, 0x34, 86, 0x46),
-        ("C", 0x12, 0x34, 34, 0x4E),
-        ("D", 0x12, 0x34, 56, 0x56),
-        ("E", 0x12, 0x34, 11, 0x5E),
-        ("H", 0x12, 0x34, 22, 0x66),
-        ("L", 0x12, 0x34, 33, 0x6E),
-        ("A", 0x22, 0x34, 33, 0x7E),
+        ("B", 0x1234, 86, 0x46),
+        ("C", 0x1234, 34, 0x4E),
+        ("D", 0x1234, 56, 0x56),
+        ("E", 0x1234, 11, 0x5E),
+        ("H", 0x1234, 22, 0x66),
+        ("L", 0x1234, 33, 0x6E),
+        ("A", 0x1234, 33, 0x7E),
     ],
 )
-def test_ld_hl(dest: str, h: int, l: int, value: int, opcode: int) -> None:
+def test_ld_hl(dest: str, hl: int, value: int, opcode: int) -> None:
     cpu = CPU(MMU())
-    hl = (h << 8) + l
     cpu.mmu[hl] = value
     cpu.insert_instruction(bytearray([opcode]))
-    cpu.reg["H"] = h
-    cpu.reg["L"] = l
+    cpu.reg["HL"] = hl
     cpu.cycle()
 
     assert cpu.reg[dest] == value
 
 
 @pytest.mark.parametrize(
-    ("dest", "h", "l", "value", "opcode"),
+    ("dest", "hl", "value", "opcode"),
     [
-        ("B", 0x12, 0x34, 86, 0x70),
-        ("C", 0x44, 0x22, 34, 0x71),
-        ("D", 0x15, 0x12, 56, 0x72),
-        ("E", 0x16, 0x34, 11, 0x73),
-        ("H", 0x47, 0x18, 22, 0x74),
-        ("L", 0x12, 0x34, 33, 0x75),
-        ("A", 0x24, 0x35, 33, 0x77),
+        ("B", 0x1234, 86, 0x70),
+        ("C", 0x4422, 34, 0x71),
+        ("D", 0x1512, 56, 0x72),
+        ("E", 0x1634, 11, 0x73),
+        ("H", 0x4718, 22, 0x74),
+        ("L", 0x1234, 33, 0x75),
+        ("A", 0x2435, 33, 0x77),
     ],
 )
-def test_ld_hl_r(dest: str, h: int, l: int, value: int, opcode: int) -> None:
+def test_ld_hl_r(dest: str, hl: int, value: int, opcode: int) -> None:
     cpu = CPU(MMU())
-    cpu.reg["H"] = h
-    cpu.reg["L"] = l
+    cpu.reg["HL"] = hl
     cpu.insert_instruction(bytearray([opcode]))
     cpu.reg[dest] = value
     cpu.cycle()
 
-    assert cpu.mmu[cpu.hl] == value
+    assert cpu.mmu[cpu.reg["HL"]] == value
