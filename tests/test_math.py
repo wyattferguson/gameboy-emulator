@@ -1,19 +1,8 @@
 import pytest
 
-from gbemu.config import MEMORY_SIZE, PC_START, SP_START
 from gbemu.cpu import CPU
 from gbemu.opcodes import OPCODES, OpCode
-
-
-class RAM:
-    def __init__(self) -> None:
-        self._memory = [0] * MEMORY_SIZE
-
-    def __getitem__(self, address: int) -> int:
-        return self._memory[address]
-
-    def __setitem__(self, address: int, value: int) -> None:
-        self._memory[address] = value
+from tests.conftest import RAM
 
 
 @pytest.mark.parametrize(
@@ -31,7 +20,7 @@ class RAM:
         "opcode",
     ),
     [
-        ("A", "B", 0x12, 0x34, 0, 0, 0, 0, 0, 0x46, 0x80),
+        ("A", "B", 0x12, 0x34, 0, 0, 0, 0, 0, 0x46, 0x80),  # ADD A -> B
         ("A", "B", 0x0, 0x0, 0, 1, 0, 0, 0, 0x0, 0x80),
         ("A", "B", 0x1D, 0x11, 0, 0, 0, 0, 0, 0x2E, 0x80),
         ("A", "B", 0x4F, 0x15, 0, 0, 0, 1, 0, 0x64, 0x80),
@@ -39,9 +28,11 @@ class RAM:
         ("A", "A", 0x11, 0x11, 0, 0, 0, 0, 0, 0x22, 0x87),
         ("A", "B", 0xFF, 0xFF, 0, 0, 0, 1, 1, 0xFE, 0x88),  # ADC A, B with carry
         ("A", "B", 0xFF, 0xFF, 1, 0, 0, 1, 1, 0xFF, 0x88),  # ADC A, B with carry
+        ("A", "B", 0x34, 0x12, 0, 0, 1, 0, 0, 0x22, 0x90),  # SUB A -> B
+        ("A", "B", 0x12, 0x34, 0, 0, 1, 1, 1, 0xDE, 0x90),  # SUB A -> B
     ],
 )
-def test_add(
+def test_reg_to_reg(
     dest: int,
     src: int,
     dest_val: int,
@@ -85,14 +76,15 @@ def test_add(
         "opcode",
     ),
     [
-        ("A", 0x01, 0x12, 0x34, 0x02, 0, 0, 0, 0, 0, 0x03, 0x86),
+        ("A", 0x01, 0x12, 0x34, 0x02, 0, 0, 0, 0, 0, 0x03, 0x86),  # ADD A, [HL]
         ("A", 0x1F, 0x12, 0x34, 0x1C, 0, 0, 0, 1, 0, 0x3B, 0x86),
         ("A", 0xFF, 0x12, 0x34, 0x0F, 0, 0, 0, 1, 1, 0x0E, 0x86),
         ("A", 0xFF, 0x12, 0x34, 0x0F, 1, 0, 0, 1, 1, 0x0F, 0x8E),  # ADC A, [HL] with carry
         ("A", 0x3F, 0x12, 0x34, 0x0F, 1, 0, 0, 1, 0, 0x4F, 0x8E),  # ADC A, [HL] with carry
+        ("A", 0x01, 0x12, 0x34, 0x02, 0, 0, 1, 1, 1, 0xFF, 0x94),  # SUB A, [HL]
     ],
 )
-def test_add_hl(
+def test_hl_to_reg(
     dest: str,
     dest_val: int,
     h: int,

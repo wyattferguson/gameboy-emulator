@@ -1,19 +1,9 @@
 import pytest
 
-from gbemu.config import MEMORY_SIZE, PC_START, SP_START
+from gbemu.config import PC_START, SP_START
 from gbemu.cpu import CPU
 from gbemu.opcodes import OPCODES, OpCode
-
-
-class RAM:
-    def __init__(self) -> None:
-        self._memory = [0] * MEMORY_SIZE
-
-    def __getitem__(self, address: int) -> int:
-        return self._memory[address]
-
-    def __setitem__(self, address: int, value: int) -> None:
-        self._memory[address] = value
+from tests.conftest import RAM
 
 
 def test_ld_a_d8() -> None:

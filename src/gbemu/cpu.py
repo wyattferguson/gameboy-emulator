@@ -146,6 +146,21 @@ class CPU:
         self.flags["C"] = 1 if total > 0xFF else 0
         self.reg[dest] = total & 0xFF
 
+    def sub_reg(self, register_a: str, register_b: str, with_carry: bool = False) -> None:
+        self.sub(register_a, self.reg[register_b], with_carry=with_carry)
+
+    def sub_hl(self, register: str, with_carry: bool = False) -> None:
+        self.sub(register, self.ram[self.hl()], with_carry=with_carry)
+
+    def sub(self, dest: str, value: int, with_carry: bool = False) -> None:
+        carry = self.flags["C"] if with_carry else 0
+        total = self.reg[dest] - value - carry
+        self.flags["Z"] = 1 if (total & 0xFF) == 0 else 0
+        self.flags["N"] = 1
+        self.flags["H"] = 1 if (self.reg[dest] & 0xF) - (value & 0xF) - carry < 0 else 0
+        self.flags["C"] = 1 if total < 0 else 0
+        self.reg[dest] = total & 0xFF
+
     # def inc(self, register: str) -> None:
     #     """Increment Value."""
     #     self.reg[register] += 1
