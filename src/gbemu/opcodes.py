@@ -4,7 +4,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class OpCode:
     label: str  # mnemonic name
-    length: int  # lengh of instuction in bytes
+    length: int  # length of instruction in bytes
     cycles: int  # number of cpu cyles
     call: str  # CPU method name to call
     args: list[str | bool] | None = None  # give arguments to send to CPU method
@@ -17,7 +17,13 @@ class OpCode:
 OPCODES: dict[str, OpCode] = {
     "0x0": OpCode("NOP", 1, 4, "nop"),
     "0x1": OpCode("LD BC, d16", 3, 12, "ld", args=["BC"]),
+    "0x2": OpCode("LD [BC], A", 1, 8, "ld_16_reg", args=["BC", "A"]),
+    "0x11": OpCode("LD DE, d16", 3, 12, "ld", args=["DE"]),
+    "0x12": OpCode("LD [DE], A", 1, 8, "ld_16_reg", args=["DE", "A"]),
+    "0x21": OpCode("LD HL, d16", 3, 12, "ld", args=["HL"]),
+    # "0x31": OpCode("LD SP, d16", 3, 12, "ld", args=["SP"]),
     # "0x1f": OpCode("RRA", 1, 4, "rra", flags=["C"]),
+    "0x31": OpCode("LD SP, d16", 3, 12, "ld", args=["SP"]),
     "0x3e": OpCode("LD A, d8", 2, 8, "ld", args=["A"]),
     "0x40": OpCode("LD B, B", 1, 4, "ld", args=["B", "B"]),
     "0x41": OpCode("LD B, C", 1, 4, "ld", args=["B", "C"]),
@@ -67,14 +73,14 @@ OPCODES: dict[str, OpCode] = {
     "0x6d": OpCode("LD L, L", 1, 4, "ld", args=["L", "L"]),
     "0x6e": OpCode("LD L, [HL]", 1, 8, "ld_hl", args=["L"]),
     "0x6f": OpCode("LD L, A", 1, 4, "ld", args=["L", "A"]),
-    "0x70": OpCode("LD [HL], B", 1, 8, "ld_hl_reg", args=["B"]),
-    "0x71": OpCode("LD [HL], C", 1, 8, "ld_hl_reg", args=["C"]),
-    "0x72": OpCode("LD [HL], D", 1, 8, "ld_hl_reg", args=["D"]),
-    "0x73": OpCode("LD [HL], E", 1, 8, "ld_hl_reg", args=["E"]),
-    "0x74": OpCode("LD [HL], H", 1, 8, "ld_hl_reg", args=["H"]),
-    "0x75": OpCode("LD [HL], L", 1, 8, "ld_hl_reg", args=["L"]),
+    "0x70": OpCode("LD [HL], B", 1, 8, "ld_16_reg", args=["HL", "B"]),
+    "0x71": OpCode("LD [HL], C", 1, 8, "ld_16_reg", args=["HL", "C"]),
+    "0x72": OpCode("LD [HL], D", 1, 8, "ld_16_reg", args=["HL", "D"]),
+    "0x73": OpCode("LD [HL], E", 1, 8, "ld_16_reg", args=["HL", "E"]),
+    "0x74": OpCode("LD [HL], H", 1, 8, "ld_16_reg", args=["HL", "H"]),
+    "0x75": OpCode("LD [HL], L", 1, 8, "ld_16_reg", args=["HL", "L"]),
     "0x76": OpCode("HALT", 1, 4, "halt"),  # NEEDS INTERRUPT HANDLING / TESTING
-    "0x77": OpCode("LD [HL], A", 1, 8, "ld_hl_reg", args=["A"]),
+    "0x77": OpCode("LD [HL], A", 1, 8, "ld_16_reg", args=["HL", "A"]),
     "0x78": OpCode("LD A, B", 1, 4, "ld", args=["A", "B"]),
     "0x79": OpCode("LD A, C", 1, 4, "ld", args=["A", "C"]),
     "0x7a": OpCode("LD A, D", 1, 4, "ld", args=["A", "D"]),

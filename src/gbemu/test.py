@@ -3,10 +3,16 @@ from gbemu.mmu import MMU
 
 if __name__ == "__main__":
     cpu = CPU(MMU())
-    cpu.reg["H"] = 0x34
-    cpu.reg["L"] = 0x56
+    opcode = 0x1
+    value = 0x1234
+    bottom = (value >> 8) & 0xFF
+    top = value & 0xFF
+    cpu.insert_instruction(bytearray([opcode, top, bottom]))
+    cpu.cycle()
+    top = cpu.pc + 3
+    # print(
+    #     cpu.mmu[cpu.pc : top],
+    #     f": {[hex(b) for b in instruction]} at {hex(cpu.pc)}",
+    # )
 
-    print(hex(cpu.reg["HL"]), hex(cpu.reg["H"]), hex(cpu.reg["L"]))
-
-    cpu.reg["HL"] = 0x12CD
-    print(hex(cpu.reg["HL"]), hex(cpu.reg["H"]), hex(cpu.reg["L"]))
+    print(hex(cpu.reg["BC"]), hex(cpu.reg["B"]), hex(cpu.reg["C"]))

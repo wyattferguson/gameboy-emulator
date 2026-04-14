@@ -23,9 +23,9 @@ from gbemu.opcodes import OPCODES
         (0xFF, "H", 0xFF, 1, 0, 0, 0xBC),  # CP A -> H
         (0x00, "L", 0x00, 1, 0, 0, 0xBD),  # CP A -> L
         (0x7E, "HL", 0x7F, 0, 1, 1, 0xBE),  # CP A -> [HL]
-        (0x80, "HL", 0x7F, 0, 1, 0, 0xBE),
-        (0x7F, "HL", 0x80, 0, 0, 1, 0xBE),
-        (0x80, "HL", 0x80, 1, 0, 0, 0xBE),
+        (0x80, "HL", 0x7F, 0, 1, 0, 0xBE),  # CP A -> [HL] with borrow
+        (0x7F, "HL", 0x80, 0, 0, 1, 0xBE),  # CP A -> [HL] with carry
+        (0x80, "HL", 0x80, 1, 0, 0, 0xBE),  # CP A -> [HL] with zero result
     ],
 )
 def test_cp(

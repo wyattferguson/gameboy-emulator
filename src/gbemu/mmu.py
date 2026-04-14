@@ -18,7 +18,9 @@ class MMU:
     def __len__(self) -> int:
         return self.size
 
-    def __getitem__(self, address: int) -> int:
+    def __getitem__(self, address: int | slice) -> int | list:
+        if isinstance(address, slice):
+            return self._memory[address]
         if address < 0 or address >= len(self):
             raise RamError(f"Address {address} is out of bounds.")
         return self._memory[address]

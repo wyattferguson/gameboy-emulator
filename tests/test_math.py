@@ -21,15 +21,15 @@ from gbemu.opcodes import OPCODES, OpCode
     ),
     [
         ("A", "B", 0x12, 0x34, 0, 0, 0, 0, 0, 0x46, 0x80),  # ADD A -> B
-        ("A", "B", 0x0, 0x0, 0, 1, 0, 0, 0, 0x0, 0x80),
-        ("A", "B", 0x1D, 0x11, 0, 0, 0, 0, 0, 0x2E, 0x80),
-        ("A", "B", 0x4F, 0x15, 0, 0, 0, 1, 0, 0x64, 0x80),
-        ("A", "B", 0xFF, 0xFF, 0, 0, 0, 1, 1, 0xFE, 0x80),
-        ("A", "A", 0x11, 0x11, 0, 0, 0, 0, 0, 0x22, 0x87),
+        ("A", "B", 0x0, 0x0, 0, 1, 0, 0, 0, 0x0, 0x80),  # ADD A -> B with zero result
+        ("A", "B", 0x1D, 0x11, 0, 0, 0, 0, 0, 0x2E, 0x80),  # ADD A -> B with half-carry
+        ("A", "B", 0x4F, 0x15, 0, 0, 0, 1, 0, 0x64, 0x80),  # ADD A -> B with carry
+        ("A", "B", 0xFF, 0xFF, 0, 0, 0, 1, 1, 0xFE, 0x80),  # ADD A -> B with carry and zero result
+        ("A", "A", 0x11, 0x11, 0, 0, 0, 0, 0, 0x22, 0x87),  # ADC A -> A
         ("A", "B", 0xFF, 0xFF, 0, 0, 0, 1, 1, 0xFE, 0x88),  # ADC A, B with carry
-        ("A", "B", 0xFF, 0xFF, 1, 0, 0, 1, 1, 0xFF, 0x88),
+        ("A", "B", 0xFF, 0xFF, 1, 0, 0, 1, 1, 0xFF, 0x88),  # ADC A, B with carry
         ("A", "B", 0x34, 0x12, 0, 0, 1, 0, 0, 0x22, 0x90),  # SUB A -> B
-        ("A", "B", 0x12, 0x34, 0, 0, 1, 1, 1, 0xDE, 0x90),
+        ("A", "B", 0x12, 0x34, 0, 0, 1, 1, 1, 0xDE, 0x90),  # SUB A -> B with borrow
     ],
 )
 def test_reg_to_reg(

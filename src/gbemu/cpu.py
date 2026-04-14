@@ -13,10 +13,10 @@ class CPU:
     """GB CPU."""
 
     def __init__(self, mmu: MMU) -> None:
-        self.debug = DEBUG
-        self.pc = PC_START  # program counter
-        self.sp = SP_START  # stack pointer
-        self.mmu = mmu
+        self.debug: bool = DEBUG
+        self.pc: int = PC_START  # program counter
+        # self.sp: int = SP_START  # stack pointer
+        self.mmu: MMU = mmu
 
         self.reg = CallableDict(
             {
@@ -32,6 +32,7 @@ class CPU:
                 "BC": lambda: self.get_reg16("B", "C"),
                 "DE": lambda: self.get_reg16("D", "E"),
                 "AF": lambda: self.get_reg16("A", "F"),
+                "SP": SP_START,  # stack pointer
             },
         )
 
@@ -124,49 +125,49 @@ class CPU:
         """Load value from memory at address in HL into register."""
         self.ld(reg, self.mmu[self.reg["HL"]])
 
-    def ld_hl_reg(self, reg: str) -> None:
-        """Load value from register into memory at address in HL."""
-        self.mmu[self.reg["HL"]] = self.reg[reg]
+    def ld_16_reg(self, dest_register: str, src_register: str) -> None:
+        """Load 16-bit value from register into memory."""
+        self.mmu[self.reg[dest_register]] = self.reg[src_register]
 
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
 
-    def add(self, dest: str, source: str, with_carry: bool = False) -> None:
+    def add(self, dest_register: str, src_register: str, with_carry: bool = False) -> None:
         """Add value from source to dest, optionally with carry."""
         carry: int = self.flags["C"] if with_carry else 0
-        value: int = self.mmu[self.reg["HL"]] if source == "HL" else self.reg[source]
-        total: int = self.reg[dest] + value + carry
+        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]
+        total: int = self.reg[dest_register] + value + carry
         self.flags["Z"] = 1 if (total & 0xFF) == 0 else 0
-        self.flags["H"] = 1 if (self.reg[dest] & 0xF) + (value & 0xF) + carry > 0xF else 0
+        self.flags["H"] = 1 if (self.reg[dest_register] & 0xF) + (value & 0xF) + carry > 0xF else 0
         self.flags["C"] = 1 if total > 0xFF else 0
-        self.reg[dest] = total & 0xFF
+        self.reg[dest_register] = total & 0xFF
 
-    def sub(self, register_a: str, register_b: str, with_carry: bool = False) -> None:
+    def sub(self, dest_register: str, src_register: str, with_carry: bool = False) -> None:
         """Subtract value from source to dest, optionally with carry."""
         carry: int = self.flags["C"] if with_carry else 0
-        value: int = self.mmu[self.reg["HL"]] if register_b == "HL" else self.reg[register_b]
-        result: int = self.reg[register_a] - value - carry
-        self._set_sub_flags(result, self.reg[register_a], value, carry)
-        self.reg[register_a] = result & 0xFF
+        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]
+        result: int = self.reg[dest_register] - value - carry
+        self._set_sub_flags(result, self.reg[dest_register], value, carry)
+        self.reg[dest_register] = result & 0xFF
 
-    def bitwise(self, operation: str, register_a: str, register_b: str) -> None:
+    def bitwise(self, operation: str, dest_register: str, src_register: str) -> None:
         """Perform bitwise operation (AND, XOR, OR)."""
-        value: int = self.mmu[self.reg["HL"]] if register_b == "HL" else self.reg[register_b]
+        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]
 
         if operation == "AND":
-            self.reg[register_a] &= value
+            self.reg[dest_register] &= value
         elif operation == "XOR":
-            self.reg[register_a] ^= value
+            self.reg[dest_register] ^= value
         elif operation == "OR":
-            self.reg[register_a] |= value
+            self.reg[dest_register] |= value
 
-        self.flags["Z"] = 1 if self.reg[register_a] == 0 else 0
+        self.flags["Z"] = 1 if self.reg[dest_register] == 0 else 0
 
-    def cp(self, register_a: str, register_b: str) -> None:
+    def cp(self, dest_register: str, src_register: str) -> None:
         """Compare registers."""
-        value: int = self.mmu[self.reg["HL"]] if register_b == "HL" else self.reg[register_b]
-        result: int = self.reg[register_a] - value
-        self._set_sub_flags(result, self.reg[register_a], value)
+        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]
+        result: int = self.reg[dest_register] - value
+        self._set_sub_flags(result, self.reg[dest_register], value)
 
     def _set_sub_flags(self, result: int, a: int, b: int, carry: int = 0) -> None:
         """Set flags for subtraction operations."""
