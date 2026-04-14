@@ -28,7 +28,7 @@ class MMU:
     def __setitem__(self, address: int, value: int) -> None:
         if address < 0 or address >= len(self):
             raise RamError(f"Address {address} is out of bounds.")
-        self._memory[address] = value
+        self._memory[address] = value & 0xFF  # Ensure value is 8-bit
 
     def __str__(self) -> str:
         """Return memory in 16 byte chunks."""

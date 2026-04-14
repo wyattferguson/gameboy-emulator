@@ -1,6 +1,5 @@
 import pytest
 
-from gbemu.config import PC_START, SP_START
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU
 from gbemu.opcodes import OPCODES, OpCode
@@ -157,9 +156,7 @@ def test_ld_8(dest: str, value: int, opcode: int) -> None:
 def test_ld_mem_8(dest: str, address: int, value: int, opcode: int) -> None:
     """Test LD [HL], d8 instruction. Load 8-bit value into memory at address in HL."""
     cpu = CPU(MMU())
-    cpu.reg[dest] = 0x0000  # Clear HL
     cpu.reg[dest] = address
-    print(f"HL: {cpu.reg[dest]:04x}, Value: {value:02x}")
     cpu.insert_instruction(bytearray([opcode, value]))
     cpu.cycle()
     assert cpu.mmu[cpu.reg[dest]] == value

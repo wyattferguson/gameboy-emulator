@@ -44,7 +44,7 @@ class CPU:
 
         self.instruction: OpCode
         self.cycles: int = 0
-        self.args: list[int] = []
+        self.args: list[int] | None = None
 
     def get_reg16(self, register_a: str, register_b: str) -> int:
         """Get value of 16-bit register pair."""
@@ -90,7 +90,6 @@ class CPU:
                     self.flags[flag] = value
 
             # Execute instruction logic
-            print(f"ARGS: {self.args}")
             getattr(self, self.instruction.call)(*self.args)
 
         except Exception as e:
@@ -133,6 +132,9 @@ class CPU:
 
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
+
+    def stop(self) -> None:
+        """Halt CPU and LCD until button pressed. Used for power saving."""
 
     def add(self, dest_register: str, src_register: str, with_carry: bool = False) -> None:
         """Add value from source to dest, optionally with carry."""
@@ -213,6 +215,24 @@ class CPU:
         if len(register) == 1:
             self.flags["Z"] = 1 if self.reg[register] == 0 else 0
             self.flags["H"] = 1 if (self.reg[register] & 0xF) == 0 else 0
+
+    def rot_right(self, register: str, circular: bool = False) -> None:
+        """Rotate bits right."""
+        value: int = self.reg[register]
+        carry: int = value & 0x1
+        shifted: int = carry << 7 if circular else 0
+        self.reg[register] = (value >> 1) | shifted
+        self.flags["C"] = carry
+        # self.flags["Z"] = 1 if self.reg[register] == 0 else 0
+
+    def rot_left(self, register: str, circular: bool = False) -> None:
+        """Rotate bits left."""
+        value: int = self.reg[register]
+        carry: int = (value >> 7) & 0x1
+        shifted: int = carry if circular else 0
+        self.reg[register] = ((value << 1) | shifted) & 0xFF
+        self.flags["C"] = carry
+        # self.flags["Z"] = 1 if self.reg[register] == 0 else 0
 
     def jmp(self, addr: int) -> None:
         """Jump to Address."""
