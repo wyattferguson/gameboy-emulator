@@ -122,5 +122,11 @@ indent-style = "space"
 [tool.ty]
 terminal.output-format = "full"
 
+[tool.ty.environment]
+python = ".venv"
+
+[tool.ty.rules]
+unsupported-operator = "ignore" # fix for MMU operations
+
 [tool.ty.src]
 include = ["src/gbemu/**/*.py"]

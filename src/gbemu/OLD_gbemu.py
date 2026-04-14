@@ -16,7 +16,7 @@ class Gbemu:
         # self.joypad = Joypad(self.mmu)
         # self.screen = Screen()
         # self.audio = Audio()
-        self.cpu = CPU(self.mmu, self.debug)
+        self.cpu = CPU(self.mmu)
 
     def run(self) -> None:
         """Run the emulator."""

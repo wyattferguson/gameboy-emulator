@@ -21,19 +21,19 @@ OPCODES: dict[str, OpCode] = {
     "0x3": OpCode("INC BC", 1, 8, "inc", args=["BC"]),
     "0x4": OpCode("INC B", 1, 8, "inc", args=["B"], flags={"N": 0}),
     "0x5": OpCode("DEC B", 1, 8, "dec", args=["B"], flags={"N": 1}),
-    "0x6": OpCode("LD B, d8", 2, 8, "ld", args=["B"]),  # write test
+    "0x6": OpCode("LD B, d8", 2, 8, "ld", args=["B"]),
     "0x11": OpCode("LD DE, d16", 3, 12, "ld", args=["DE"]),
     "0x12": OpCode("LD [DE], A", 1, 8, "ld_mem", args=["DE", "A"]),
     "0x13": OpCode("INC DE", 1, 8, "inc", args=["DE"]),
     "0x14": OpCode("INC D", 1, 8, "inc", args=["D"], flags={"N": 0}),
     "0x15": OpCode("DEC D", 1, 8, "dec", args=["D"], flags={"N": 1}),
-    "0x16": OpCode("LD D, d8", 2, 8, "ld", args=["D"]),  # write test
+    "0x16": OpCode("LD D, d8", 2, 8, "ld", args=["D"]),
     # "0x1f": OpCode("RRA", 1, 4, "rra", flags=["C"]),
     "0x21": OpCode("LD HL, d16", 3, 12, "ld", args=["HL"]),
     "0x23": OpCode("INC HL", 1, 8, "inc", args=["HL"]),
     "0x24": OpCode("INC H", 1, 8, "inc", args=["H"], flags={"N": 0}),
     "0x25": OpCode("DEC H", 1, 8, "dec", args=["H"], flags={"N": 1}),
-    "0x26": OpCode("LD H, d8", 2, 8, "ld", args=["H"]),  # write test
+    "0x26": OpCode("LD H, d8", 2, 8, "ld", args=["H"]),
     "0x31": OpCode("LD SP, d16", 3, 12, "ld", args=["SP"]),
     "0x33": OpCode("INC SP", 1, 8, "inc", args=["SP"]),
     "0x34": OpCode("INC [HL]", 1, 12, "inc_mem", args=["HL"], flags={"N": 0}),

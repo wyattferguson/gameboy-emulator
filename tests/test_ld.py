@@ -128,3 +128,18 @@ def test_ld_16_reg(dest: str, src: str, value: int, opcode: int) -> None:
     cpu.cycle()
 
     assert cpu.mmu[cpu.reg[dest]] == value
+
+
+@pytest.mark.parametrize(
+    ("dest", "value", "opcode"),
+    [
+        ("B", 0x12, 0x6),  # LD B, d8
+        ("D", 0xDF, 0x16),  # LD D, d8
+        ("H", 0xF, 0x26),  # LD H, d8
+    ],
+)
+def test_ld_8(dest: str, value: int, opcode: int) -> None:
+    cpu = CPU(MMU())
+    cpu.insert_instruction(bytearray([opcode, value]))
+    cpu.cycle()
+    assert cpu.reg[dest] == value

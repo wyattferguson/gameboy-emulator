@@ -53,7 +53,7 @@ class CPU:
 
     def fetch(self) -> None:
         """Fetch instruction from memory at PC."""
-        op_code = hex(self.mmu[self.pc])
+        op_code = hex(self.mmu[self.pc])  # ty:ignore[invalid-argument-type]
         try:
             self.instruction = OPCODES[op_code]
             logger.debug(f"Fetch: {hex(self.pc)} - {self.instruction}")
@@ -67,9 +67,9 @@ class CPU:
     def decode(self) -> None:
         """Decode instruction and its arguments."""
         try:
-            self.args = self.instruction.args or []
+            self.args = self.instruction.args or []  # ty:ignore[invalid-assignment]
             if self.instruction.length > 1:
-                b = bytes([self.mmu[self.pc + i] for i in range(1, self.instruction.length)])
+                b = bytes([self.mmu[self.pc + i] for i in range(1, self.instruction.length)])  # ty:ignore[invalid-argument-type]
                 self.args.append(int.from_bytes(b, byteorder="little"))
 
             logger.debug(f"Decoded: {self.instruction}, {self.args}")
@@ -123,7 +123,7 @@ class CPU:
 
     def ld_hl(self, reg: str) -> None:
         """Load value from memory at address in HL into register."""
-        self.ld(reg, self.mmu[self.reg["HL"]])
+        self.ld(reg, self.mmu[self.reg["HL"]])  # ty:ignore[invalid-argument-type]
 
     def ld_mem(self, dest_register: str, src: str | int) -> None:
         """Load value into memory."""
@@ -137,7 +137,7 @@ class CPU:
     def add(self, dest_register: str, src_register: str, with_carry: bool = False) -> None:
         """Add value from source to dest, optionally with carry."""
         carry: int = self.flags["C"] if with_carry else 0
-        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]
+        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]  # ty:ignore[invalid-assignment]
         total: int = self.reg[dest_register] + value + carry
         self.flags["Z"] = 1 if (total & 0xFF) == 0 else 0
         self.flags["H"] = 1 if (self.reg[dest_register] & 0xF) + (value & 0xF) + carry > 0xF else 0
@@ -147,14 +147,14 @@ class CPU:
     def sub(self, dest_register: str, src_register: str, with_carry: bool = False) -> None:
         """Subtract value from source to dest, optionally with carry."""
         carry: int = self.flags["C"] if with_carry else 0
-        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]
+        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]  # ty:ignore[invalid-assignment]
         result: int = self.reg[dest_register] - value - carry
         self._set_sub_flags(result, self.reg[dest_register], value, carry)
         self.reg[dest_register] = result & 0xFF
 
     def bitwise(self, operation: str, dest_register: str, src_register: str) -> None:
         """Perform bitwise operation (AND, XOR, OR)."""
-        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]
+        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]  # ty:ignore[invalid-assignment]
 
         if operation == "AND":
             self.reg[dest_register] &= value
@@ -167,7 +167,7 @@ class CPU:
 
     def cp(self, dest_register: str, src_register: str) -> None:
         """Compare registers."""
-        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]
+        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]  # ty:ignore[invalid-assignment]
         result: int = self.reg[dest_register] - value
         self._set_sub_flags(result, self.reg[dest_register], value)
 
@@ -198,7 +198,7 @@ class CPU:
     def dec_mem(self, register: str) -> None:
         """Decrement value at address in HL."""
         addr: int = self.reg[register]
-        value: int = self.mmu[addr]
+        value: int = self.mmu[addr]  # ty:ignore[invalid-assignment]
         self.mmu[addr] = value - 1
 
         # Only set flags for 8-bit values
@@ -242,7 +242,6 @@ class CPU:
         return (
             "CPU State:\n"
             f"PC: {hex(self.pc)}({self.pc})\n"
-            f"SP: {hex(self.sp)}({self.sp})\n"
             f"REGS: {self.reg}\n"
             f"FLAGS: {self.flags}\n"
             f"CYCLES: {self.cycles}\n"
