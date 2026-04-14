@@ -139,7 +139,27 @@ def test_ld_16_reg(dest: str, src: str, value: int, opcode: int) -> None:
     ],
 )
 def test_ld_8(dest: str, value: int, opcode: int) -> None:
+    """Test LD r, d8 instruction. Load 8-bit value into register."""
     cpu = CPU(MMU())
     cpu.insert_instruction(bytearray([opcode, value]))
     cpu.cycle()
     assert cpu.reg[dest] == value
+
+
+@pytest.mark.parametrize(
+    ("dest", "address", "value", "opcode"),
+    [
+        ("HL", 0x1234, 0x12, 0x36),  # LD [HL], d8
+        ("HL", 0xDF11, 0xFF, 0x36),  # LD [HL], d8
+        ("HL", 0xF, 0xAB, 0x36),  # LD [HL], d8
+    ],
+)
+def test_ld_mem_8(dest: str, address: int, value: int, opcode: int) -> None:
+    """Test LD [HL], d8 instruction. Load 8-bit value into memory at address in HL."""
+    cpu = CPU(MMU())
+    cpu.reg[dest] = 0x0000  # Clear HL
+    cpu.reg[dest] = address
+    print(f"HL: {cpu.reg[dest]:04x}, Value: {value:02x}")
+    cpu.insert_instruction(bytearray([opcode, value]))
+    cpu.cycle()
+    assert cpu.mmu[cpu.reg[dest]] == value

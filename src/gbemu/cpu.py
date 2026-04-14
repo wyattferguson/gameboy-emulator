@@ -15,7 +15,6 @@ class CPU:
     def __init__(self, mmu: MMU) -> None:
         self.debug: bool = DEBUG
         self.pc: int = PC_START  # program counter
-        # self.sp: int = SP_START  # stack pointer
         self.mmu: MMU = mmu
 
         self.reg = CallableDict(
@@ -67,7 +66,7 @@ class CPU:
     def decode(self) -> None:
         """Decode instruction and its arguments."""
         try:
-            self.args = self.instruction.args or []  # ty:ignore[invalid-assignment]
+            self.args = list(self.instruction.args or [])  # ty:ignore[invalid-assignment]
             if self.instruction.length > 1:
                 b = bytes([self.mmu[self.pc + i] for i in range(1, self.instruction.length)])  # ty:ignore[invalid-argument-type]
                 self.args.append(int.from_bytes(b, byteorder="little"))
@@ -91,6 +90,7 @@ class CPU:
                     self.flags[flag] = value
 
             # Execute instruction logic
+            print(f"ARGS: {self.args}")
             getattr(self, self.instruction.call)(*self.args)
 
         except Exception as e:
@@ -237,13 +237,3 @@ class CPU:
         # if not flag or self.flags[flag] == flag_val:
         self.pc += offset
         self.pc += self.instruction.length
-
-    def __str__(self) -> str:
-        return (
-            "CPU State:\n"
-            f"PC: {hex(self.pc)}({self.pc})\n"
-            f"REGS: {self.reg}\n"
-            f"FLAGS: {self.flags}\n"
-            f"CYCLES: {self.cycles}\n"
-            f"INST: {self.instruction}\n"
-        )

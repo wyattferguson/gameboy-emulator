@@ -3,6 +3,8 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class OpCode:
+    """GB CPU instruction."""
+
     label: str  # mnemonic name
     length: int  # length of instruction in bytes
     cycles: int  # number of cpu cyles
@@ -38,7 +40,7 @@ OPCODES: dict[str, OpCode] = {
     "0x33": OpCode("INC SP", 1, 8, "inc", args=["SP"]),
     "0x34": OpCode("INC [HL]", 1, 12, "inc_mem", args=["HL"], flags={"N": 0}),
     "0x35": OpCode("DEC [HL]", 1, 12, "dec_mem", args=["HL"], flags={"N": 1}),
-    "0x36": OpCode("LD [HL], d8", 2, 12, "ld_mem", args=["HL"]),  # write test
+    "0x36": OpCode("LD [HL], d8", 2, 12, "ld_mem", args=["HL"]),
     "0x3e": OpCode("LD A, d8", 2, 8, "ld", args=["A"]),
     "0x40": OpCode("LD B, B", 1, 4, "ld", args=["B", "B"]),
     "0x41": OpCode("LD B, C", 1, 4, "ld", args=["B", "C"]),
