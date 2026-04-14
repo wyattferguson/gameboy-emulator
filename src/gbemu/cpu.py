@@ -188,7 +188,7 @@ class CPU:
 
     def inc_mem(self, register: str) -> None:
         """Increment value at address in HL."""
-        addr = self.reg[register]
+        addr: int = self.reg[register]
         self.mmu[addr] += 1
 
         # Only set flags for 8-bit values
@@ -197,12 +197,13 @@ class CPU:
 
     def dec_mem(self, register: str) -> None:
         """Decrement value at address in HL."""
-        addr = self.reg[register]
-        self.mmu[addr] -= 1
+        addr: int = self.reg[register]
+        value: int = self.mmu[addr]
+        self.mmu[addr] = value - 1
 
         # Only set flags for 8-bit values
         self.flags["Z"] = 1 if self.mmu[addr] == 0 else 0
-        self.flags["H"] = 1 if (self.mmu[addr] & 0xF) == 0 else 0
+        self.flags["H"] = 1 if (value & 0xF) == 0 else 0
 
     def dec(self, register: str) -> None:
         """Decrement register or HL address."""

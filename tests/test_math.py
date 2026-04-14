@@ -3,6 +3,7 @@ import pytest
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU
 from gbemu.opcodes import OPCODES, OpCode
+from tests.helper import verify_flags
 
 
 @pytest.mark.parametrize(
@@ -53,10 +54,7 @@ def test_reg_to_reg(
     cpu.cycle()
 
     assert cpu.reg[dest] == result
-    assert cpu.flags["Z"] == z_flag
-    assert cpu.flags["N"] == n_flag
-    assert cpu.flags["H"] == h_flag
-    assert cpu.flags["C"] == c_flag
+    verify_flags(cpu, z_flag, n_flag, h_flag, c_flag)
 
 
 @pytest.mark.parametrize(
@@ -75,12 +73,12 @@ def test_reg_to_reg(
     ),
     [
         ("A", 0x01, 0x1234, 0x02, 0, 0, 0, 0, 0, 0x03, 0x86),  # ADD A, [HL]
-        ("A", 0x1F, 0x1234, 0x1C, 0, 0, 0, 1, 0, 0x3B, 0x86),
-        ("A", 0xFF, 0x1234, 0x0F, 0, 0, 0, 1, 1, 0x0E, 0x86),
-        ("A", 0xFF, 0x1234, 0x0F, 1, 0, 0, 1, 1, 0x0F, 0x8E),  # ADC A, [HL] with carry
-        ("A", 0x3F, 0x1234, 0x0F, 1, 0, 0, 1, 0, 0x4F, 0x8E),
+        ("A", 0x1F, 0x1234, 0x1C, 0, 0, 0, 1, 0, 0x3B, 0x86),  # ADD A, [HL]
+        ("A", 0xFF, 0x1234, 0x0F, 0, 0, 0, 1, 1, 0x0E, 0x86),  # ADD A, [HL]
+        ("A", 0xFF, 0x1234, 0x0F, 1, 0, 0, 1, 1, 0x0F, 0x8E),  # ADC A, [HL] w/ carry
+        ("A", 0x3F, 0x1234, 0x0F, 1, 0, 0, 1, 0, 0x4F, 0x8E),  # ADC A, [HL] w/ carry
         ("A", 0x01, 0x1234, 0x02, 0, 0, 1, 1, 1, 0xFF, 0x94),  # SUB A, [HL]
-        ("A", 0x1F, 0x1234, 0x1C, 0, 0, 1, 0, 0, 0x03, 0x9C),  # SBC A, [HL] with carry
+        ("A", 0x1F, 0x1234, 0x1C, 0, 0, 1, 0, 0, 0x03, 0x9C),  # SBC A, [HL] w/ carry
         ("A", 0x10, 0x1234, 0x0F, 1, 1, 1, 1, 0, 0x00, 0x9C),
         ("A", 0x65, 0x1234, 0x23, 1, 0, 1, 0, 0, 0x41, 0x9C),
     ],
@@ -107,10 +105,7 @@ def test_hl_to_reg(
     cpu.cycle()
 
     assert cpu.reg[dest] == result
-    assert cpu.flags["Z"] == z_flag
-    assert cpu.flags["N"] == n_flag
-    assert cpu.flags["H"] == h_flag
-    assert cpu.flags["C"] == c_flag
+    verify_flags(cpu, z_flag, n_flag, h_flag, c_flag)
 
 
 @pytest.mark.parametrize(
@@ -148,21 +143,27 @@ def test_inc_16(
         "result",
         "z_flag",
         "h_flag",
+        "n_flag",
         "opcode",
     ),
     [
-        ("B", 0x12, 0x13, 0, 0, 0x04),  # INC B
-        ("B", 0x1F, 0x20, 0, 1, 0x04),  # INC B with carry
-        ("D", 0x56, 0x57, 0, 0, 0x14),  # INC D
-        ("H", 0xFF, 0x00, 1, 1, 0x24),  # INC H with carry and zero
+        ("B", 0x12, 0x11, 0, 0, 1, 0x05),  # DEC B
+        ("B", 0xFF, 0xFE, 0, 0, 1, 0x05),  # DEC B
+        ("D", 0x56, 0x55, 0, 0, 1, 0x15),  # DEC D
+        ("H", 0x01, 0x00, 1, 1, 1, 0x25),  # DEC H with carry and zero
+        ("B", 0x12, 0x13, 0, 0, 0, 0x04),  # INC B
+        ("B", 0x1F, 0x20, 0, 1, 0, 0x04),  # INC B with carry
+        ("D", 0x56, 0x57, 0, 0, 0, 0x14),  # INC D
+        ("H", 0xFF, 0x00, 1, 1, 0, 0x24),  # INC H with carry and zero
     ],
 )
-def test_inc_8(
+def test_dec_inc_8(
     dest: str,
     value: int,
     result: int,
     z_flag: int,
     h_flag: int,
+    n_flag: int,
     opcode: int,
 ) -> None:
     cpu = CPU(MMU())
@@ -171,9 +172,7 @@ def test_inc_8(
     cpu.cycle()
 
     assert cpu.reg[dest] == result
-    assert cpu.flags["Z"] == z_flag
-    assert cpu.flags["N"] == 0
-    assert cpu.flags["H"] == h_flag
+    verify_flags(cpu, z_flag, n_flag, h_flag)
 
 
 @pytest.mark.parametrize(
@@ -182,33 +181,32 @@ def test_inc_8(
         "value",
         "result",
         "z_flag",
+        "n_flag",
         "h_flag",
         "opcode",
     ),
     [
-        ("B", 0x12, 0x11, 0, 0, 0x05),  # DEC B
-        ("B", 0xFF, 0xFE, 0, 0, 0x05),  # DEC B
-        ("D", 0x56, 0x55, 0, 0, 0x15),  # DEC D
-        ("H", 0x01, 0x00, 1, 1, 0x25),  # DEC H with carry and zero
+        ("HL", 0x11, 0x12, 0, 0, 0, 0x34),  # INC [HL]
+        ("HL", 0x0F, 0x10, 0, 0, 1, 0x34),  # INC [HL] with half-carry
+        ("HL", 0xFF, 0x00, 1, 0, 1, 0x34),  # INC [HL] with carry and zero
+        ("HL", 0xD, 0xC, 0, 1, 0, 0x35),  # DEC [HL]
+        ("HL", 0x10, 0x0F, 0, 1, 1, 0x35),  # DEC [HL] with half-borrow
+        ("HL", 0x01, 0x00, 1, 1, 0, 0x35),  # DEC [HL] with zero
     ],
 )
-def test_dec_8(
+def test_dec_inc_mem(
     dest: str,
     value: int,
     result: int,
     z_flag: int,
+    n_flag: int,
     h_flag: int,
     opcode: int,
 ) -> None:
     cpu = CPU(MMU())
-    cpu.reg[dest] = value
+    cpu.mmu[cpu.reg[dest]] = value
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
 
-    assert cpu.reg[dest] == result
-    assert cpu.flags["Z"] == z_flag
-    assert cpu.flags["N"] == 1
-    assert cpu.flags["H"] == h_flag
-
-
-# WRITE TESTS FOR INC [HL] AND DEC [HL]
+    assert cpu.mmu[cpu.reg[dest]] == result
+    verify_flags(cpu, z_flag, n_flag, h_flag)

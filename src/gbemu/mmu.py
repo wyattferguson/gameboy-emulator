@@ -18,7 +18,7 @@ class MMU:
     def __len__(self) -> int:
         return self.size
 
-    def __getitem__(self, address: int | slice) -> int | list:
+    def __getitem__(self, address: int | slice) -> int | list[int]:
         if isinstance(address, slice):
             return self._memory[address]
         if address < 0 or address >= len(self):

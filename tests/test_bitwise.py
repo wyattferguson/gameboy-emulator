@@ -3,6 +3,7 @@ import pytest
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU
 from gbemu.opcodes import OPCODES
+from tests.helper import verify_flags
 
 
 @pytest.mark.parametrize(
@@ -49,7 +50,4 @@ def test_bitwise(
     cpu.cycle()
 
     assert cpu.reg["A"] == result
-    assert cpu.flags["Z"] == z_flag
-    assert cpu.flags["N"] == 0
-    assert cpu.flags["H"] == h_flag
-    assert cpu.flags["C"] == 0
+    verify_flags(cpu, z_flag, 0, h_flag, 0)
