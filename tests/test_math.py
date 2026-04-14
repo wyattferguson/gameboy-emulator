@@ -111,3 +111,31 @@ def test_hl_to_reg(
     assert cpu.flags["N"] == n_flag
     assert cpu.flags["H"] == h_flag
     assert cpu.flags["C"] == c_flag
+
+
+@pytest.mark.parametrize(
+    (
+        "dest",
+        "value",
+        "result",
+        "opcode",
+    ),
+    [
+        ("BC", 0x1234, 0x1235, 0x03),  # INC BC
+        ("DE", 0xFFFF, 0x0000, 0x13),  # INC DE
+        ("HL", 0x00FF, 0x0100, 0x23),  # INC HL
+        ("SP", 0xDD11, 0xDD12, 0x33),  # INC SP
+    ],
+)
+def test_inc(
+    dest: str,
+    value: int,
+    result: int,
+    opcode: int,
+) -> None:
+    cpu = CPU(MMU())
+    cpu.reg[dest] = value
+    cpu.insert_instruction(bytearray([opcode]))
+    cpu.cycle()
+
+    assert cpu.reg[dest] == result

@@ -176,11 +176,11 @@ class CPU:
         self.flags["C"] = 1 if result < 0 else 0
 
     def inc(self, register: str) -> None:
-        """Increment Value."""
+        """Increment register."""
         self.reg[register] += 1
 
     def dec(self, register: str) -> None:
-        """Decrement Value."""
+        """Decrement register."""
         self.reg[register] -= 1
 
     def jmp(self, addr: int) -> None:
