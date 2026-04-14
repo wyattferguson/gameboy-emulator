@@ -7,12 +7,12 @@ class MMU:
     """Unified system memory."""
 
     def __init__(self, cart: Cart | None = None, size: int = MEMORY_SIZE) -> None:
-        """Initialize MMU with a given size."""
         self.size = size
         self._memory = [0] * self.size
         # self._memory[0 : len(BIOS)] = BIOS  # load system bios
         self._cart = cart
         if cart:
+            # FIX: Load max 32kb of ROM and bank switching for larger ROMs
             self._memory[0 : len(cart.rom)] = cart.rom
 
     def __len__(self) -> int:
@@ -28,7 +28,7 @@ class MMU:
     def __setitem__(self, address: int, value: int) -> None:
         if address < 0 or address >= len(self):
             raise RamError(f"Address {address} is out of bounds.")
-        self._memory[address] = value
+        self._memory[address] = value & 0xFF  # Ensure value is a byte
 
     def __str__(self) -> str:
         """Return memory in 16 byte chunks."""
