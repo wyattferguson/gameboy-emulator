@@ -1,7 +1,5 @@
 from dataclasses import dataclass
 
-from pygame.examples.testsprite import flags
-
 
 @dataclass(frozen=True)
 class OpCode:
@@ -19,22 +17,28 @@ class OpCode:
 OPCODES: dict[str, OpCode] = {
     "0x0": OpCode("NOP", 1, 4, "nop"),
     "0x1": OpCode("LD BC, d16", 3, 12, "ld", args=["BC"]),
-    "0x2": OpCode("LD [BC], A", 1, 8, "ld_16_reg", args=["BC", "A"]),
+    "0x2": OpCode("LD [BC], A", 1, 8, "ld_mem", args=["BC", "A"]),
     "0x3": OpCode("INC BC", 1, 8, "inc", args=["BC"]),
     "0x4": OpCode("INC B", 1, 8, "inc", args=["B"], flags={"N": 0}),
     "0x5": OpCode("DEC B", 1, 8, "dec", args=["B"], flags={"N": 1}),
+    "0x6": OpCode("LD B, d8", 2, 8, "ld", args=["B"]),  # write test
     "0x11": OpCode("LD DE, d16", 3, 12, "ld", args=["DE"]),
-    "0x12": OpCode("LD [DE], A", 1, 8, "ld_16_reg", args=["DE", "A"]),
+    "0x12": OpCode("LD [DE], A", 1, 8, "ld_mem", args=["DE", "A"]),
     "0x13": OpCode("INC DE", 1, 8, "inc", args=["DE"]),
     "0x14": OpCode("INC D", 1, 8, "inc", args=["D"], flags={"N": 0}),
     "0x15": OpCode("DEC D", 1, 8, "dec", args=["D"], flags={"N": 1}),
+    "0x16": OpCode("LD D, d8", 2, 8, "ld", args=["D"]),  # write test
     # "0x1f": OpCode("RRA", 1, 4, "rra", flags=["C"]),
     "0x21": OpCode("LD HL, d16", 3, 12, "ld", args=["HL"]),
     "0x23": OpCode("INC HL", 1, 8, "inc", args=["HL"]),
     "0x24": OpCode("INC H", 1, 8, "inc", args=["H"], flags={"N": 0}),
     "0x25": OpCode("DEC H", 1, 8, "dec", args=["H"], flags={"N": 1}),
+    "0x26": OpCode("LD H, d8", 2, 8, "ld", args=["H"]),  # write test
     "0x31": OpCode("LD SP, d16", 3, 12, "ld", args=["SP"]),
     "0x33": OpCode("INC SP", 1, 8, "inc", args=["SP"]),
+    "0x34": OpCode("INC [HL]", 1, 12, "inc_mem", args=["HL"], flags={"N": 0}),  # write test
+    "0x35": OpCode("DEC [HL]", 1, 12, "dec_mem", args=["HL"], flags={"N": 1}),  # write test
+    "0x36": OpCode("LD [HL], d8", 2, 12, "ld_mem", args=["HL"]),  # write test
     "0x3e": OpCode("LD A, d8", 2, 8, "ld", args=["A"]),
     "0x40": OpCode("LD B, B", 1, 4, "ld", args=["B", "B"]),
     "0x41": OpCode("LD B, C", 1, 4, "ld", args=["B", "C"]),
@@ -84,14 +88,14 @@ OPCODES: dict[str, OpCode] = {
     "0x6d": OpCode("LD L, L", 1, 4, "ld", args=["L", "L"]),
     "0x6e": OpCode("LD L, [HL]", 1, 8, "ld_hl", args=["L"]),
     "0x6f": OpCode("LD L, A", 1, 4, "ld", args=["L", "A"]),
-    "0x70": OpCode("LD [HL], B", 1, 8, "ld_16_reg", args=["HL", "B"]),
-    "0x71": OpCode("LD [HL], C", 1, 8, "ld_16_reg", args=["HL", "C"]),
-    "0x72": OpCode("LD [HL], D", 1, 8, "ld_16_reg", args=["HL", "D"]),
-    "0x73": OpCode("LD [HL], E", 1, 8, "ld_16_reg", args=["HL", "E"]),
-    "0x74": OpCode("LD [HL], H", 1, 8, "ld_16_reg", args=["HL", "H"]),
-    "0x75": OpCode("LD [HL], L", 1, 8, "ld_16_reg", args=["HL", "L"]),
+    "0x70": OpCode("LD [HL], B", 1, 8, "ld_mem", args=["HL", "B"]),
+    "0x71": OpCode("LD [HL], C", 1, 8, "ld_mem", args=["HL", "C"]),
+    "0x72": OpCode("LD [HL], D", 1, 8, "ld_mem", args=["HL", "D"]),
+    "0x73": OpCode("LD [HL], E", 1, 8, "ld_mem", args=["HL", "E"]),
+    "0x74": OpCode("LD [HL], H", 1, 8, "ld_mem", args=["HL", "H"]),
+    "0x75": OpCode("LD [HL], L", 1, 8, "ld_mem", args=["HL", "L"]),
     "0x76": OpCode("HALT", 1, 4, "halt"),  # NEEDS INTERRUPT HANDLING / TESTING
-    "0x77": OpCode("LD [HL], A", 1, 8, "ld_16_reg", args=["HL", "A"]),
+    "0x77": OpCode("LD [HL], A", 1, 8, "ld_mem", args=["HL", "A"]),
     "0x78": OpCode("LD A, B", 1, 4, "ld", args=["A", "B"]),
     "0x79": OpCode("LD A, C", 1, 4, "ld", args=["A", "C"]),
     "0x7a": OpCode("LD A, D", 1, 4, "ld", args=["A", "D"]),

@@ -209,3 +209,6 @@ def test_dec_8(
     assert cpu.flags["Z"] == z_flag
     assert cpu.flags["N"] == 1
     assert cpu.flags["H"] == h_flag
+
+
+# WRITE TESTS FOR INC [HL] AND DEC [HL]

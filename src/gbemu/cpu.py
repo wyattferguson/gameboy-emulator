@@ -114,20 +114,22 @@ class CPU:
         """No Operation."""
         self.pc += self.instruction.length
 
-    def ld(self, register_a: str, register_b: int | str) -> None:
-        """Store value in register."""
-        if isinstance(register_b, str):
-            register_b = self.reg[register_b]
+    def ld(self, register: str, src_location: int | str) -> None:
+        """Load value in register."""
+        if isinstance(src_location, str):
+            src_location: int = self.reg[src_location]
 
-        self.reg[register_a] = register_b
+        self.reg[register] = src_location
 
     def ld_hl(self, reg: str) -> None:
         """Load value from memory at address in HL into register."""
         self.ld(reg, self.mmu[self.reg["HL"]])
 
-    def ld_16_reg(self, dest_register: str, src_register: str) -> None:
-        """Load 16-bit value from register into memory."""
-        self.mmu[self.reg[dest_register]] = self.reg[src_register]
+    def ld_mem(self, dest_register: str, src: str | int) -> None:
+        """Load value into memory."""
+        if isinstance(src, str):
+            src: int = self.reg[src]
+        self.mmu[self.reg[dest_register]] = src
 
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
@@ -184,10 +186,29 @@ class CPU:
             self.flags["Z"] = 1 if self.reg[register] == 0 else 0
             self.flags["H"] = 1 if (self.reg[register] & 0xF) == 0 else 0
 
+    def inc_mem(self, register: str) -> None:
+        """Increment value at address in HL."""
+        addr = self.reg[register]
+        self.mmu[addr] += 1
+
+        # Only set flags for 8-bit values
+        self.flags["Z"] = 1 if self.mmu[addr] == 0 else 0
+        self.flags["H"] = 1 if (self.mmu[addr] & 0xF) == 0 else 0
+
+    def dec_mem(self, register: str) -> None:
+        """Decrement value at address in HL."""
+        addr = self.reg[register]
+        self.mmu[addr] -= 1
+
+        # Only set flags for 8-bit values
+        self.flags["Z"] = 1 if self.mmu[addr] == 0 else 0
+        self.flags["H"] = 1 if (self.mmu[addr] & 0xF) == 0 else 0
+
     def dec(self, register: str) -> None:
-        """Decrement register."""
+        """Decrement register or HL address."""
         self.reg[register] -= 1
 
+        # Only set flags for 8-bit registers
         if len(register) == 1:
             self.flags["Z"] = 1 if self.reg[register] == 0 else 0
             self.flags["H"] = 1 if (self.reg[register] & 0xF) == 0 else 0
