@@ -14,5 +14,7 @@ class CallableDict(dict):
             register_b = value & 0xFF
             super().__setitem__(key[0], register_a)
             super().__setitem__(key[1], register_b)
+        elif key == "SP":
+            super().__setitem__("SP", value & 0xFFFF)
         else:
-            super().__setitem__(key, value)
+            super().__setitem__(key, value & 0xFF)

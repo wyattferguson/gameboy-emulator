@@ -127,7 +127,7 @@ def test_hl_to_reg(
         ("SP", 0xDD11, 0xDD12, 0x33),  # INC SP
     ],
 )
-def test_inc(
+def test_inc_16(
     dest: str,
     value: int,
     result: int,
@@ -139,3 +139,73 @@ def test_inc(
     cpu.cycle()
 
     assert cpu.reg[dest] == result
+
+
+@pytest.mark.parametrize(
+    (
+        "dest",
+        "value",
+        "result",
+        "z_flag",
+        "h_flag",
+        "opcode",
+    ),
+    [
+        ("B", 0x12, 0x13, 0, 0, 0x04),  # INC B
+        ("B", 0x1F, 0x20, 0, 1, 0x04),  # INC B with carry
+        ("D", 0x56, 0x57, 0, 0, 0x14),  # INC D
+        ("H", 0xFF, 0x00, 1, 1, 0x24),  # INC H with carry and zero
+    ],
+)
+def test_inc_8(
+    dest: str,
+    value: int,
+    result: int,
+    z_flag: int,
+    h_flag: int,
+    opcode: int,
+) -> None:
+    cpu = CPU(MMU())
+    cpu.reg[dest] = value
+    cpu.insert_instruction(bytearray([opcode]))
+    cpu.cycle()
+
+    assert cpu.reg[dest] == result
+    assert cpu.flags["Z"] == z_flag
+    assert cpu.flags["N"] == 0
+    assert cpu.flags["H"] == h_flag
+
+
+@pytest.mark.parametrize(
+    (
+        "dest",
+        "value",
+        "result",
+        "z_flag",
+        "h_flag",
+        "opcode",
+    ),
+    [
+        ("B", 0x12, 0x11, 0, 0, 0x05),  # DEC B
+        ("B", 0xFF, 0xFE, 0, 0, 0x05),  # DEC B
+        ("D", 0x56, 0x55, 0, 0, 0x15),  # DEC D
+        ("H", 0x01, 0x00, 1, 1, 0x25),  # DEC H with carry and zero
+    ],
+)
+def test_dec_8(
+    dest: str,
+    value: int,
+    result: int,
+    z_flag: int,
+    h_flag: int,
+    opcode: int,
+) -> None:
+    cpu = CPU(MMU())
+    cpu.reg[dest] = value
+    cpu.insert_instruction(bytearray([opcode]))
+    cpu.cycle()
+
+    assert cpu.reg[dest] == result
+    assert cpu.flags["Z"] == z_flag
+    assert cpu.flags["N"] == 1
+    assert cpu.flags["H"] == h_flag

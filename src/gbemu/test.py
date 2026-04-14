@@ -3,10 +3,15 @@ from gbemu.mmu import MMU
 
 if __name__ == "__main__":
     cpu = CPU(MMU())
-    opcode = 0x3
-    value = 0x00FF
-    cpu.reg["BC"] = value
-    print(hex(cpu.reg["BC"]), hex(cpu.reg["B"]), hex(cpu.reg["C"]))
-    cpu.insert_instruction(bytearray([opcode]))
+    # ("BC", "A", 0x1234, 0x2),  # LD [BC], A
+    opcode = 0x2
+    value = 0x1234
+    dest = "BC"
+
+    cpu = CPU(MMU())
+    top = (value >> 8) & 0xFF
+    bottom = value & 0xFF
+    cpu.insert_instruction(bytearray([opcode, bottom, top]))
     cpu.cycle()
-    print(hex(cpu.reg["BC"]), hex(cpu.reg["B"]), hex(cpu.reg["C"]))
+
+    print(cpu.reg[dest], value, hex(cpu.reg[dest]), hex(value))

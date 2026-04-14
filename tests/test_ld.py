@@ -117,8 +117,8 @@ def test_ld_16(dest: str, value: int, opcode: int) -> None:
 @pytest.mark.parametrize(
     ("dest", "src", "value", "opcode"),
     [
-        ("BC", "A", 0x1234, 0x2),  # LD [BC], A
-        ("DE", "A", 0x5BA1, 0x12),  # LD [DE], A
+        ("BC", "A", 0xCD, 0x2),  # LD [BC], A
+        ("DE", "A", 0x12, 0x12),  # LD [DE], A
     ],
 )
 def test_ld_16_reg(dest: str, src: str, value: int, opcode: int) -> None:

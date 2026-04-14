@@ -179,21 +179,30 @@ class CPU:
         """Increment register."""
         self.reg[register] += 1
 
+        # Only set flags for 8-bit registers
+        if len(register) == 1:
+            self.flags["Z"] = 1 if self.reg[register] == 0 else 0
+            self.flags["H"] = 1 if (self.reg[register] & 0xF) == 0 else 0
+
     def dec(self, register: str) -> None:
         """Decrement register."""
         self.reg[register] -= 1
+
+        if len(register) == 1:
+            self.flags["Z"] = 1 if self.reg[register] == 0 else 0
+            self.flags["H"] = 1 if (self.reg[register] & 0xF) == 0 else 0
 
     def jmp(self, addr: int) -> None:
         """Jump to Address."""
         self.pc = addr
 
-    def pop(self) -> None:
-        logger.debug(f"POP SP: {hex(self.sp)}({self.sp})")
-        if len(self.mmu) < self.sp:
-            self.sp += 2
-            self.pc = self.mmu[self.sp]
-        else:
-            raise Exception("Stack underflow")
+    # def pop(self) -> None:
+    #     logger.debug(f"POP SP: {hex(self.sp)}({self.sp})")
+    #     if len(self.mmu) < self.sp:
+    #         self.sp += 2
+    #         self.pc = self.mmu[self.sp]
+    #     else:
+    #         raise Exception("Stack underflow")
 
     # def rst(self, addr: int) -> None:
     #     """Store PC, move to addr."""
