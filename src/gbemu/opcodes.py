@@ -35,6 +35,7 @@ OPCODES: dict[str, OpCode] = {
     "0x8": OpCode("LD [a16], SP", 3, 20, "ld_mem_sp"),
     "0x9": OpCode("ADD HL, BC", 1, 8, "add16", args=["HL", "BC"], flags={"N": 0}),
     "0xa": OpCode("LD A, [BC]", 1, 8, "ld_reg16", args=["A", "BC"]),
+    "0xb": OpCode("DEC BC", 1, 8, "dec", args=["BC"]),
     "0xf": OpCode(
         "RRCA",
         1,
@@ -60,6 +61,7 @@ OPCODES: dict[str, OpCode] = {
     ),
     "0x19": OpCode("ADD HL, DE", 1, 8, "add16", args=["HL", "DE"], flags={"N": 0}),
     "0x1a": OpCode("LD A, [DE]", 1, 8, "ld_reg16", args=["A", "DE"]),
+    "0x1b": OpCode("DEC DE", 1, 8, "dec", args=["DE"]),
     "0x1f": OpCode(
         "RRA",
         1,
@@ -75,6 +77,7 @@ OPCODES: dict[str, OpCode] = {
     "0x26": OpCode("LD H, d8", 2, 8, "ld", args=["H"]),
     "0x29": OpCode("ADD HL, HL", 1, 8, "add16", args=["HL", "HL"], flags={"N": 0}),
     "0x2a": OpCode("LD A, [HL+]", 1, 8, "ld_hl_mod", args=["A", 1]),
+    "0x2b": OpCode("DEC HL", 1, 8, "dec", args=["HL"]),
     "0x31": OpCode("LD SP, d16", 3, 12, "ld", args=["SP"]),
     "0x33": OpCode("INC SP", 1, 8, "inc", args=["SP"]),
     "0x34": OpCode("INC [HL]", 1, 12, "inc_mem", args=["HL"], flags={"N": 0}),
@@ -82,6 +85,7 @@ OPCODES: dict[str, OpCode] = {
     "0x36": OpCode("LD [HL], d8", 2, 12, "ld_mem", args=["HL"]),
     "0x39": OpCode("ADD HL, SP", 1, 8, "add16", args=["HL", "SP"], flags={"N": 0}),
     "0x3a": OpCode("LD A, [HL-]", 1, 8, "ld_hl_mod", args=["A", -1]),
+    "0x3b": OpCode("DEC SP", 1, 8, "dec", args=["SP"]),
     "0x3e": OpCode("LD A, d8", 2, 8, "ld", args=["A"]),
     "0x40": OpCode("LD B, B", 1, 4, "ld", args=["B", "B"]),
     "0x41": OpCode("LD B, C", 1, 4, "ld", args=["B", "C"]),

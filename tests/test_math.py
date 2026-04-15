@@ -155,9 +155,13 @@ def test_inc_16(
         ("B", 0x1F, 0x20, 0, 1, 0, 0x04),  # INC B with carry
         ("D", 0x56, 0x57, 0, 0, 0, 0x14),  # INC D
         ("H", 0xFF, 0x00, 1, 1, 0, 0x24),  # INC H with carry and zero
+        ("BC", 0x1234, 0x1233, 0, 0, 0, 0xB),  # DEC BC
+        ("DE", 0x1230, 0x122F, 0, 0, 0, 0x1B),  # DEC DE
+        ("HL", 0x1234, 0x1233, 0, 0, 0, 0x2B),  # DEC HL
+        ("SP", 0x1234, 0x1233, 0, 0, 0, 0x3B),  # DEC SP
     ],
 )
-def test_dec_inc_8(
+def test_dec_inc_mixed(
     dest: str,
     value: int,
     result: int,
