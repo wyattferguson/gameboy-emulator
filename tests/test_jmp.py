@@ -43,10 +43,18 @@ def test_jr(
         (0x20, "Z", 0, 0xFE, True),  # JR NZ, r8 w/ Z = 0 (jump taken, negative offset)
         (0x20, "Z", 1, 0x12, False),  # JR NZ, r8 w/ Z = 1 (jump not taken)
         (0x20, "Z", 1, 0xFE, False),  # JR NZ, r8 w/ Z = 1 (jump not taken, negative offset)
+        (0x28, "Z", 1, 0x12, True),  # JR Z, r8 w/ Z = 1 (jump taken)
+        (0x28, "Z", 1, 0xFE, True),  # JR Z, r8 w/ Z = 1 (jump taken, negative offset)
+        (0x28, "Z", 0, 0x12, False),  # JR Z, r8 w/ Z = 0 (jump not taken)
+        (0x28, "Z", 0, 0xFE, False),  # JR Z, r8 w/ Z = 0 (jump not taken, negative offset)
         (0x30, "C", 0, 0x12, True),  # JR NC, r8 w/ C = 0 (jump taken)
         (0x30, "C", 0, 0xFE, True),  # JR NC, r8 w/ C = 0 (jump taken, negative offset)
         (0x30, "C", 1, 0x12, False),  # JR NC, r8 w/ C = 1 (jump not taken)
         (0x30, "C", 1, 0xFE, False),  # JR NC, r8 w/ C = 1 (jump not taken, negative offset)
+        (0x38, "C", 1, 0x12, True),  # JR C, r8 w/ C = 1 (jump taken)
+        (0x38, "C", 1, 0xFE, True),  # JR C, r8 w/ C = 1 (jump taken, negative offset)
+        (0x38, "C", 0, 0x12, False),  # JR C, r8 w/ C = 0 (jump not taken)
+        (0x38, "C", 0, 0xFE, False),  # JR C, r8 w/ C = 0 (jump not taken, negative offset)
     ],
 )
 def test_jrc(
