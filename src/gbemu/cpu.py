@@ -111,7 +111,6 @@ class CPU:
 
     def nop(self) -> None:
         """No Operation."""
-        self.pc += self.instruction.length
 
     def ld(self, register: str, src_location: int | str) -> None:
         """Load value in register."""

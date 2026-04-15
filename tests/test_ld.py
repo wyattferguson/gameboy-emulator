@@ -139,6 +139,10 @@ def test_ld_16_reg(dest: str, src: str, value: int, opcode: int) -> None:
         ("B", 0x12, 0x6),  # LD B, d8
         ("D", 0xDF, 0x16),  # LD D, d8
         ("H", 0xF, 0x26),  # LD H, d8
+        ("C", 0xAB, 0xE),  # LD C, d8
+        ("E", 0x45, 0x1E),  # LD E, d8
+        ("L", 0x78, 0x2E),  # LD L, d8
+        ("A", 0xCD, 0x3E),  # LD A, d8
     ],
 )
 def test_ld_8(dest: str, value: int, opcode: int) -> None:
