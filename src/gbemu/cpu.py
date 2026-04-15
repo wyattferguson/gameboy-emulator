@@ -216,23 +216,29 @@ class CPU:
             self.flags["Z"] = 1 if self.reg[register] == 0 else 0
             self.flags["H"] = 1 if (self.reg[register] & 0xF) == 0 else 0
 
-    def rot_right(self, register: str, circular: bool = False) -> None:
-        """Rotate bits right."""
+    def rotate(
+        self,
+        register: str,
+        left: bool,
+        circular: bool = False,
+        insert_carry: bool = False,
+    ) -> None:
         value: int = self.reg[register]
-        carry: int = value & 0x1
-        shifted: int = carry << 7 if circular else 0
-        self.reg[register] = (value >> 1) | shifted
-        self.flags["C"] = carry
-        # self.flags["Z"] = 1 if self.reg[register] == 0 else 0
+        old_carry: int = self.flags["C"]
+        new_carry: int = (value >> 7) & 0x1 if left else value & 0x1
 
-    def rot_left(self, register: str, circular: bool = False) -> None:
-        """Rotate bits left."""
-        value: int = self.reg[register]
-        carry: int = (value >> 7) & 0x1
-        shifted: int = carry if circular else 0
-        self.reg[register] = ((value << 1) | shifted) & 0xFF
-        self.flags["C"] = carry
-        # self.flags["Z"] = 1 if self.reg[register] == 0 else 0
+        shifted: int = new_carry if left else new_carry << 7
+        if insert_carry:
+            shifted = old_carry if left else old_carry << 7
+        elif not circular:
+            shifted = 0
+
+        if left:
+            self.reg[register] = ((value << 1) | shifted) & 0xFF
+        else:
+            self.reg[register] = (value >> 1) | shifted
+
+        self.flags["C"] = new_carry
 
     def jmp(self, addr: int) -> None:
         """Jump to Address."""
