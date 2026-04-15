@@ -87,7 +87,8 @@ class CPU:
                     self.flags[flag] = value
 
             # Execute instruction logic
-            getattr(self, self.instruction.call)(*self.args)
+            if self.instruction.call:
+                getattr(self, self.instruction.call)(*self.args)
 
         except Exception as e:
             # raise ExecuteError(f"Error executing: {self.instruction} - {e}") from e

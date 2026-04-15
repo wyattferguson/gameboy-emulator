@@ -10,7 +10,7 @@ class OpCode:
     label: str  # mnemonic name
     length: int  # length of instruction in bytes
     cycles: int  # number of cpu cyles
-    call: str  # CPU method name to call
+    call: str | None = None  # CPU method name to call
     args: list[str | bool | int | Bitwise] | None = None  # give arguments to send to CPU method
     flags: dict[str, int] | None = None  # set CPU flags after execution
 
@@ -100,6 +100,7 @@ OPCODES: dict[str, OpCode] = {
     "0x34": OpCode("INC [HL]", 1, 12, "inc_mem", args=["HL"], flags={"N": 0}),
     "0x35": OpCode("DEC [HL]", 1, 12, "dec_mem", args=["HL"], flags={"N": 1}),
     "0x36": OpCode("LD [HL], d8", 2, 12, "ld_mem", args=["HL"]),
+    "0x37": OpCode("SCF", 1, 4, flags={"N": 0, "H": 0, "C": 1}),
     "0x38": OpCode("JR C, r8", 2, 12, "jrc", args=["C", 1]),
     "0x39": OpCode("ADD HL, SP", 1, 8, "add16", args=["HL", "SP"], flags={"N": 0}),
     "0x3a": OpCode("LD A, [HL-]", 1, 8, "ld_hl_mod", args=["A", -1]),

@@ -90,6 +90,8 @@ def test_cpl(
     [
         (0, 1, 0x3F),  # CCF
         (1, 0, 0x3F),  # CCF
+        (0, 1, 0x37),  # SCF
+        (1, 1, 0x37),  # SCF
     ],
 )
 def test_ccf(
