@@ -293,6 +293,26 @@ class CPU:
         if self.flags[flag] == condition:
             self.jr(offset)
 
+    def daa(self) -> None:
+        """Decimal Adjust Accumulator. Modify A register to BCD representation."""
+        a: int = self.reg["A"]
+        adjust: int = 0
+
+        # Adjust lower nibble if H flag is set or if value is > 9
+        if self.flags["H"] or (a & 0xF) > 9:
+            adjust |= 0x6
+
+        # Adjust upper nibble if C flag is set or if value is > 0x99
+        if self.flags["C"] or a > 0x99:
+            adjust |= 0x60
+
+        a: int = a - adjust & 0xFF if self.flags["N"] else a + adjust & 0xFF
+
+        self.reg["A"] = a
+        self.flags["Z"] = 1 if a == 0 else 0
+        if adjust >= 0x60:
+            self.flags["C"] = 1
+
     def jr(self, offset: int = 0) -> None:
         """Relative Jump to address."""
         signed_offset: int = hex_to_signed(offset, 8)

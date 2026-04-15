@@ -259,3 +259,42 @@ def test_add16(
 
     assert cpu.reg[dest] == result
     verify_flags(cpu, c_flag=carry, n_flag=0)
+
+
+@pytest.mark.parametrize(
+    (
+        "a_start",
+        "n_start",
+        "c_start",
+        "result",
+        "z_flag",
+        "n_flag",
+        "c_flag",
+    ),
+    [
+        (0x3C, 0, 0, 0x42, 0, 0, 0),  # lower nibble adjust (+0x06)
+        (0x9A, 0, 0, 0x00, 1, 0, 1),  # lower+upper adjust (+0x66)
+        (0x15, 0, 1, 0x75, 0, 0, 1),  # carry-in forces upper adjust (+0x60)
+        (0x73, 1, 1, 0x13, 0, 1, 1),  # subtraction mode with carry adjust (-0x60)
+        (0x1F, 1, 0, 0x19, 0, 1, 0),  # subtraction mode lower nibble adjust (-0x06)
+    ],
+)
+def test_daa(
+    a_start: int,
+    n_start: int,
+    c_start: int,
+    result: int,
+    z_flag: int,
+    n_flag: int,
+    c_flag: int,
+) -> None:
+    cpu = CPU(MMU())
+    cpu.reg["A"] = a_start
+    cpu.flags["N"] = n_start
+    cpu.flags["C"] = c_start
+    cpu.insert_instruction(bytearray([0x27]))
+
+    cpu.cycle()
+
+    assert cpu.reg["A"] == result
+    verify_flags(cpu, z_flag=z_flag, n_flag=n_flag, h_flag=0, c_flag=c_flag)

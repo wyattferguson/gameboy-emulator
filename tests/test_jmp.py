@@ -64,7 +64,7 @@ def test_jrc(
     offset: int,
     should_jump: bool,
 ) -> None:
-    """Test conditional JR opcodes for taken and not-taken cases."""
+    """Test conditional JR."""
     cpu = CPU(MMU())
     result_pc = cpu.pc + (hex_to_signed(offset, 8) if should_jump else 2)
     cpu.flags[flag] = flag_value

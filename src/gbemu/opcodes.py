@@ -85,6 +85,7 @@ OPCODES: dict[str, OpCode] = {
     "0x24": OpCode("INC H", 1, 8, "inc", args=["H"], flags={"N": 0}),
     "0x25": OpCode("DEC H", 1, 8, "dec", args=["H"], flags={"N": 1}),
     "0x26": OpCode("LD H, d8", 2, 8, "ld", args=["H"]),
+    "0x27": OpCode("DAA", 1, 4, "daa", flags={"H": 0}),
     "0x28": OpCode("JR Z, r8", 2, 12, "jrc", args=["Z", 1]),
     "0x29": OpCode("ADD HL, HL", 1, 8, "add16", args=["HL", "HL"], flags={"N": 0}),
     "0x2a": OpCode("LD A, [HL+]", 1, 8, "ld_hl_mod", args=["A", 1]),
