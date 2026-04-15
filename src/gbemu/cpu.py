@@ -158,7 +158,7 @@ class CPU:
 
     def add16(self, dest_register: str, src_register: str) -> None:
         """Add 16-bit pair registers."""
-        value: int = self.get_stored_value(src_register)
+        value: int = self.reg[src_register]
         total: int = self.reg[dest_register] + value
         self.flags["H"] = 1 if (self.reg[dest_register] & 0xFFF) + (value & 0xFFF) > 0xFFF else 0
         self.flags["C"] = 1 if total > 0xFFFF else 0
@@ -191,10 +191,10 @@ class CPU:
         result: int = self.reg[dest_register] - value
         self._set_sub_flags(result, self.reg[dest_register], value)
 
-    def get_stored_value(self, register: str) -> int:
+    def get_stored_value(self, register: str, from_memory: bool = False) -> int:
         """Get value stored in register or memory."""
-        if register == "HL":
-            return self.mmu[self.reg["HL"]]  # ty:ignore[invalid-return-type]
+        if register == "HL" or from_memory:
+            return self.mmu[self.reg[register]]  # ty:ignore[invalid-return-type]
         return self.reg[register]
 
     def _set_sub_flags(self, result: int, a: int, b: int, carry: int = 0) -> None:
@@ -215,14 +215,14 @@ class CPU:
         """Increment value at address in HL."""
         addr: int = self.reg[register]
         self.mmu[addr] += 1
-        self._set_inc_dec_flags(self.mmu[addr], self.mmu[addr])
+        self._set_inc_dec_flags(self.mmu[addr], self.mmu[addr])  # ty:ignore[invalid-argument-type]
 
     def dec_mem(self, register: str) -> None:
         """Decrement value at address in HL."""
         addr: int = self.reg[register]
         value: int = self.mmu[addr]  # ty:ignore[invalid-assignment]
         self.mmu[addr] = value - 1
-        self._set_inc_dec_flags(self.mmu[addr], value)
+        self._set_inc_dec_flags(self.mmu[addr], value)  # ty:ignore[invalid-argument-type]
 
     def dec(self, register: str) -> None:
         """Decrement register or HL address."""
@@ -287,6 +287,11 @@ class CPU:
     def ccf(self) -> None:
         """Complement Carry Flag."""
         self.flags["C"] ^= 1
+
+    def jrc(self, flag: str, condition: int, offset: int) -> None:
+        """Relative Jump to address if condition is met."""
+        if self.flags[flag] == condition:
+            self.jr(offset)
 
     def jr(self, offset: int = 0) -> None:
         """Relative Jump to address."""
