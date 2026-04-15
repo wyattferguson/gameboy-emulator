@@ -13,6 +13,7 @@ class OpCode:
     call: str | None = None  # CPU method name to call
     args: list[str | bool | int | Bitwise] | None = None  # give arguments to send to CPU method
     flags: dict[str, int] | None = None  # set CPU flags after execution
+    pc_inc: bool = True  # whether to increment PC after execution
 
     def __str__(self) -> str:
         return f"{self.label} {self.length} - {self.args} - {self.flags}"
@@ -64,7 +65,7 @@ OPCODES: dict[str, OpCode] = {
         args=["A", True, False, True],
         flags={"Z": 0, "N": 0, "H": 0},
     ),
-    "0x18": OpCode("JR r8", 2, 12, "jr"),
+    "0x18": OpCode("JR r8", 2, 12, "jr", pc_inc=False),
     "0x19": OpCode("ADD HL, DE", 1, 8, "add16", args=["HL", "DE"], flags={"N": 0}),
     "0x1a": OpCode("LD A, [DE]", 1, 8, "ld_reg16", args=["A", "DE"]),
     "0x1b": OpCode("DEC DE", 1, 8, "dec", args=["DE"]),
@@ -79,7 +80,7 @@ OPCODES: dict[str, OpCode] = {
         args=["A", False, False, True],
         flags={"Z": 0, "N": 0, "H": 0},
     ),
-    "0x20": OpCode("JR NZ, r8", 2, 12, "jrc", args=["Z", 0]),
+    "0x20": OpCode("JR NZ, r8", 2, 12, "jrc", args=["Z", 0], pc_inc=False),
     "0x21": OpCode("LD HL, d16", 3, 12, "ld", args=["HL"]),
     "0x22": OpCode("LD [HL+], A", 1, 8, "ld_a_hl_mod", args=[1, True]),
     "0x23": OpCode("INC HL", 1, 8, "inc", args=["HL"]),
@@ -87,7 +88,7 @@ OPCODES: dict[str, OpCode] = {
     "0x25": OpCode("DEC H", 1, 8, "dec", args=["H"], flags={"N": 1}),
     "0x26": OpCode("LD H, d8", 2, 8, "ld", args=["H"]),
     "0x27": OpCode("DAA", 1, 4, "daa", flags={"H": 0}),
-    "0x28": OpCode("JR Z, r8", 2, 12, "jrc", args=["Z", 1]),
+    "0x28": OpCode("JR Z, r8", 2, 12, "jrc", args=["Z", 1], pc_inc=False),
     "0x29": OpCode("ADD HL, HL", 1, 8, "add16", args=["HL", "HL"], flags={"N": 0}),
     "0x2a": OpCode("LD A, [HL+]", 1, 8, "ld_a_hl_mod", args=[1]),
     "0x2b": OpCode("DEC HL", 1, 8, "dec", args=["HL"]),
@@ -95,7 +96,7 @@ OPCODES: dict[str, OpCode] = {
     "0x2d": OpCode("DEC L", 1, 8, "dec", args=["L"], flags={"N": 1}),
     "0x2e": OpCode("LD L, d8", 2, 8, "ld", args=["L"]),
     "0x2f": OpCode("CPL", 1, 4, "cpl", args=["A"], flags={"N": 1, "H": 1}),
-    "0x30": OpCode("JR NC, r8", 2, 12, "jrc", args=["C", 0]),
+    "0x30": OpCode("JR NC, r8", 2, 12, "jrc", args=["C", 0], pc_inc=False),
     "0x31": OpCode("LD SP, d16", 3, 12, "ld", args=["SP"]),
     "0x32": OpCode("LD [HL-], A", 1, 8, "ld_a_hl_mod", args=[-1, True]),
     "0x33": OpCode("INC SP", 1, 8, "inc", args=["SP"]),
@@ -103,7 +104,7 @@ OPCODES: dict[str, OpCode] = {
     "0x35": OpCode("DEC [HL]", 1, 12, "dec_mem", args=["HL"], flags={"N": 1}),
     "0x36": OpCode("LD [HL], d8", 2, 12, "ld_mem", args=["HL"]),
     "0x37": OpCode("SCF", 1, 4, flags={"N": 0, "H": 0, "C": 1}),
-    "0x38": OpCode("JR C, r8", 2, 12, "jrc", args=["C", 1]),
+    "0x38": OpCode("JR C, r8", 2, 12, "jrc", args=["C", 1], pc_inc=False),
     "0x39": OpCode("ADD HL, SP", 1, 8, "add16", args=["HL", "SP"], flags={"N": 0}),
     "0x3a": OpCode("LD A, [HL-]", 1, 8, "ld_a_hl_mod", args=[-1]),
     "0x3b": OpCode("DEC SP", 1, 8, "dec", args=["SP"]),
@@ -461,7 +462,7 @@ OPCODES: dict[str, OpCode] = {
         args=["A", "A"],
         flags={"N": 1, "Z": 1, "H": 0, "C": 0},
     ),
-    "0xc0": OpCode("RET NZ", 1, 20, "retc", args=["Z", 0]),
+    "0xc0": OpCode("RET NZ", 1, 20, "ret", args=["Z", 0], pc_inc=False),
 }
 
 

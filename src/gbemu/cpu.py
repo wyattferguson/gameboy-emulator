@@ -109,7 +109,8 @@ class CPU:
         self.fetch()
         self.decode()
         self.execute()
-        self.pc += self.instruction.length
+        if self.instruction.pc_inc:
+            self.pc += self.instruction.length
 
     def nop(self) -> None:
         """No Operation."""
@@ -270,13 +271,16 @@ class CPU:
         """Jump to Address."""
         self.pc = addr
 
-    # def pop(self) -> None:
-    #     logger.debug(f"POP SP: {hex(self.sp)}({self.sp})")
-    #     if len(self.mmu) < self.sp:
-    #         self.sp += 2
-    #         self.pc = self.mmu[self.sp]
-    #     else:
-    #         raise Exception("Stack underflow")
+    def pop(self) -> int:
+        """Pop value from stack."""
+        value: int = self.mmu[self.reg["SP"]]  # ty:ignore[invalid-assignment]
+        self.reg["SP"] -= 1
+        return value
+
+    def push(self, value: int) -> None:
+        """Push value onto stack."""
+        self.reg["SP"] += 1
+        self.mmu[self.reg["SP"]] = value
 
     # def rst(self, addr: int) -> None:
     #     """Store PC, move to addr."""
@@ -322,12 +326,7 @@ class CPU:
         signed_offset: int = hex_to_signed(offset, 8)
         self.pc += signed_offset
 
-        # compensate for PC increment after execution
-        self.pc -= self.instruction.length
-
     def ret(self, condition_flag: str | None = None, condition_value: int | None = None) -> None:
         """Return from subroutine, optionally if condition is met."""
         if condition_flag is None or self.flags[condition_flag] == condition_value:
-            self.pc = self.mmu[self.reg["SP"]]  # ty:ignore[invalid-assignment]
-            # compensate for PC increment after execution
-            self.pc -= self.instruction.length
+            self.pc = self.pop()

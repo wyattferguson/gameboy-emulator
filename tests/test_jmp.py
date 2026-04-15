@@ -66,7 +66,7 @@ def test_jrc(
 ) -> None:
     """Test conditional JR."""
     cpu = CPU(MMU())
-    result_pc = cpu.pc + (hex_to_signed(offset, 8) if should_jump else 2)
+    result_pc = cpu.pc + (hex_to_signed(offset, 8) if should_jump else 0)
     cpu.flags[flag] = flag_value
     cpu.insert_instruction(bytearray([opcode, offset]))
 
