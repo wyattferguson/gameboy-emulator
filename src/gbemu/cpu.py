@@ -50,6 +50,14 @@ class CPU:
         """Get value of 16-bit register pair."""
         return (self.reg[register_a] << 8) + self.reg[register_b]
 
+    @staticmethod
+    def hex_to_signed(value: int, bits: int = 8) -> int:
+        """Convert an unsigned hex value to its signed representation."""
+        mask = (1 << bits) - 1
+        value &= mask
+        sign_bit = 1 << (bits - 1)
+        return value - (1 << bits) if value & sign_bit else value
+
     def fetch(self) -> None:
         """Fetch instruction from memory at PC."""
         op_code = hex(self.mmu[self.pc])  # ty:ignore[invalid-argument-type]
@@ -275,6 +283,6 @@ class CPU:
 
     def jr(self, offset: int = 0) -> None:
         """Relative Jump to address."""
-        # if not flag or self.flags[flag] == flag_val:
-        self.pc += offset
-        self.pc += self.instruction.length
+        signed_offset: int = self.hex_to_signed(offset, 8)
+        self.pc += signed_offset
+        self.pc -= self.instruction.length  # compensate for PC increment after execution

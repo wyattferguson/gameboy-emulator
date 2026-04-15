@@ -62,6 +62,7 @@ OPCODES: dict[str, OpCode] = {
         args=["A", True, False, True],
         flags={"Z": 0, "N": 0, "H": 0},
     ),
+    "0x18": OpCode("JR r8", 2, 12, "jr"),
     "0x19": OpCode("ADD HL, DE", 1, 8, "add16", args=["HL", "DE"], flags={"N": 0}),
     "0x1a": OpCode("LD A, [DE]", 1, 8, "ld_reg16", args=["A", "DE"]),
     "0x1b": OpCode("DEC DE", 1, 8, "dec", args=["DE"]),

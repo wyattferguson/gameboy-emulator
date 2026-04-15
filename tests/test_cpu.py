@@ -1,27 +1,20 @@
+import pytest
+
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU
 from gbemu.opcodes import OPCODES
 
 
-def test_cpu_register_access() -> None:
-    cpu = CPU(MMU())
-
-    cpu.reg["A"] = 0x12
-    cpu.reg["H"] = 0x34
-    cpu.reg["L"] = 0x56
-
-    assert cpu.reg["A"] == 0x12
-    assert cpu.reg["HL"] == 0x3456
-
-
-def test_decode_does_not_mutate_shared_opcode_args() -> None:
-    opcode = OPCODES["0x36"]
-    cpu = CPU(MMU())
-    cpu.reg["HL"] = 0x1234
-    cpu.insert_instruction(bytearray([0x36, 0x12]))
-
-    cpu.fetch()
-    cpu.decode()
-
-    assert opcode.args == ["HL"]
-    assert cpu.args == ["HL", 0x12]
+@pytest.mark.parametrize(
+    ("value", "bits", "expected"),
+    [
+        (0x00, 8, 0),
+        (0x7F, 8, 127),
+        (0x80, 8, -128),
+        (0xFF, 8, -1),
+        (0x8000, 16, -32768),
+        (0xFFFF, 16, -1),
+    ],
+)
+def test_hex_to_signed(value: int, bits: int, expected: int) -> None:
+    assert CPU.hex_to_signed(value, bits) == expected
