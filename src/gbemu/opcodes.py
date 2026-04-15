@@ -100,6 +100,7 @@ OPCODES: dict[str, OpCode] = {
     "0x3c": OpCode("INC A", 1, 8, "inc", args=["A"], flags={"N": 0}),
     "0x3d": OpCode("DEC A", 1, 8, "dec", args=["A"], flags={"N": 1}),
     "0x3e": OpCode("LD A, d8", 2, 8, "ld", args=["A"]),
+    "0x3f": OpCode("CCF", 1, 4, "ccf", flags={"N": 0, "H": 0}),
     "0x40": OpCode("LD B, B", 1, 4, "ld", args=["B", "B"]),
     "0x41": OpCode("LD B, C", 1, 4, "ld", args=["B", "C"]),
     "0x42": OpCode("LD B, D", 1, 4, "ld", args=["B", "D"]),

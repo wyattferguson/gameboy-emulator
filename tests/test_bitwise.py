@@ -79,3 +79,26 @@ def test_cpl(
 
     assert cpu.reg["A"] == result
     verify_flags(cpu, n_flag=1, h_flag=1)
+
+
+@pytest.mark.parametrize(
+    (
+        "c_flag_before",
+        "c_flag_after",
+        "opcode",
+    ),
+    [
+        (0, 1, 0x3F),  # CCF
+        (1, 0, 0x3F),  # CCF
+    ],
+)
+def test_ccf(
+    c_flag_before: int,
+    c_flag_after: int,
+    opcode: int,
+) -> None:
+    cpu = CPU(MMU())
+    cpu.flags["C"] = c_flag_before
+    cpu.insert_instruction(bytearray([opcode]))
+    cpu.cycle()
+    verify_flags(cpu, n_flag=0, h_flag=0, c_flag=c_flag_after)
