@@ -71,7 +71,6 @@ class CPU:
                 b = bytes([self.mmu[self.pc + i] for i in range(1, self.instruction.length)])  # ty:ignore[invalid-argument-type]
                 self.args.append(int.from_bytes(b, byteorder="little"))
 
-            print(f"Decoded: {self.instruction}, {self.args}")
             logger.debug(f"Decoded: {self.instruction}, {self.args}")
         except Exception as e:
             # raise DecodeError(
@@ -121,15 +120,20 @@ class CPU:
 
         self.reg[register] = src_location
 
-    def ld_hl(self, reg: str) -> None:
-        """Load value from memory at address in HL into register."""
-        self.ld(reg, self.mmu[self.reg["HL"]])  # ty:ignore[invalid-argument-type]
+    def ld_reg16(self, reg: str, src_register: str) -> None:
+        """Load value from memory from 16bit address into register."""
+        self.ld(reg, self.mmu[self.reg[src_register]])  # ty:ignore[invalid-argument-type]
 
     def ld_mem(self, dest_register: str, src: str | int) -> None:
         """Load value into memory."""
         if isinstance(src, str):
             src: int = self.reg[src]
         self.mmu[self.reg[dest_register]] = src
+
+    def ld_hl_mod(self, register: str, mod: int = 1) -> None:
+        """Load value into memory at HL, then increment or decrement HL."""
+        self.reg[register] = self.mmu[self.reg["HL"]]  # ty:ignore[invalid-assignment]
+        self.reg["HL"] += mod
 
     def ld_mem_sp(self, address: int) -> None:
         """Load SP into memory at immediate 16-bit address (little-endian)."""

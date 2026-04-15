@@ -48,25 +48,29 @@ def test_ld(dest: str, src: str, value: int, opcode: int) -> None:
 
 
 @pytest.mark.parametrize(
-    ("dest", "hl", "value", "opcode"),
+    ("reg", "pair_reg", "address", "value", "opcode"),
     [
-        ("B", 0x1234, 86, 0x46),  # LD B, [HL]
-        ("C", 0x1234, 34, 0x4E),  # LD C, [HL]
-        ("D", 0x1234, 56, 0x56),  # LD D, [HL]
-        ("E", 0x1234, 11, 0x5E),  # LD E, [HL]
-        ("H", 0x1234, 22, 0x66),  # LD H, [HL]
-        ("L", 0x1234, 33, 0x6E),  # LD L, [HL]
-        ("A", 0x1234, 33, 0x7E),  # LD A, [HL]
+        ("B", "HL", 0x1234, 86, 0x46),  # LD B, [HL]
+        ("C", "HL", 0x1234, 34, 0x4E),  # LD C, [HL]
+        ("D", "HL", 0x1234, 56, 0x56),  # LD D, [HL]
+        ("E", "HL", 0x1234, 11, 0x5E),  # LD E, [HL]
+        ("H", "HL", 0x1234, 22, 0x66),  # LD H, [HL]
+        ("L", "HL", 0x1234, 33, 0x6E),  # LD L, [HL]
+        ("A", "HL", 0x1234, 33, 0x7E),  # LD A, [HL]
+        ("A", "BC", 0x1234, 0xCD, 0xA),  # LD A, [BC]
+        ("A", "BC", 0x00F0, 0x12, 0xA),  # LD A, [BC]
+        ("A", "DE", 0x1234, 0xFF, 0x1A),  # LD A, [DE]
+        ("A", "DE", 0x00F0, 0x55, 0x1A),  # LD A, [DE]
     ],
 )
-def test_ld_hl(dest: str, hl: int, value: int, opcode: int) -> None:
+def test_ld_hl(reg: str, pair_reg: str, address: int, value: int, opcode: int) -> None:
     cpu = CPU(MMU())
-    cpu.mmu[hl] = value
+    cpu.mmu[address] = value
     cpu.insert_instruction(bytearray([opcode]))
-    cpu.reg["HL"] = hl
+    cpu.reg[pair_reg] = address
     cpu.cycle()
 
-    assert cpu.reg[dest] == value
+    assert cpu.reg[reg] == value
 
 
 @pytest.mark.parametrize(
@@ -177,3 +181,23 @@ def test_ld_mem_imm(opcode: int, msb: int, lsb: int, sp_value: int) -> None:
     address = (msb << 8) | lsb
     assert cpu.mmu[address] == (sp_value & 0xFF)
     assert cpu.mmu[address + 1] == ((sp_value >> 8) & 0xFF)
+
+
+@pytest.mark.parametrize(
+    ("dest", "address", "value", "hl_mod", "opcode"),
+    [
+        ("A", 0x1234, 0xCD, 1, 0x2A),  # LD A, [HL+]
+        ("A", 0x00F0, 0x12, 1, 0x2A),  # LD A, [HL+]
+        ("A", 0x1234, 0xCD, -1, 0x3A),  # LD A, [HL-]
+        ("A", 0x00F0, 0x12, -1, 0x3A),  # LD A, [HL-]
+    ],
+)
+def test_ld_hl_mod(dest: str, address: int, value: int, hl_mod: int, opcode: int) -> None:
+    cpu = CPU(MMU())
+    cpu.reg["HL"] = address
+    cpu.mmu[address] = value
+    cpu.insert_instruction(bytearray([opcode]))
+    cpu.cycle()
+
+    assert cpu.reg[dest] == value
+    assert cpu.reg["HL"] == address + hl_mod
