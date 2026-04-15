@@ -44,7 +44,7 @@ class CPU:
 
         self.instruction: OpCode
         self.cycles: int = 0
-        self.args: list[int] | None = None
+        self.args: list[int]
 
     def get_reg16(self, register_a: str, register_b: str) -> int:
         """Get value of 16-bit register pair."""
@@ -203,27 +203,20 @@ class CPU:
 
         # Only set flags for 8-bit registers
         if len(register) == 1:
-            self.flags["Z"] = 1 if self.reg[register] == 0 else 0
-            self.flags["H"] = 1 if (self.reg[register] & 0xF) == 0 else 0
+            self._set_inc_dec_flags(self.reg[register], self.reg[register])
 
     def inc_mem(self, register: str) -> None:
         """Increment value at address in HL."""
         addr: int = self.reg[register]
         self.mmu[addr] += 1
-
-        # Only set flags for 8-bit values
-        self.flags["Z"] = 1 if self.mmu[addr] == 0 else 0
-        self.flags["H"] = 1 if (self.mmu[addr] & 0xF) == 0 else 0
+        self._set_inc_dec_flags(self.mmu[addr], self.mmu[addr])
 
     def dec_mem(self, register: str) -> None:
         """Decrement value at address in HL."""
         addr: int = self.reg[register]
         value: int = self.mmu[addr]  # ty:ignore[invalid-assignment]
         self.mmu[addr] = value - 1
-
-        # Only set flags for 8-bit values
-        self.flags["Z"] = 1 if self.mmu[addr] == 0 else 0
-        self.flags["H"] = 1 if (value & 0xF) == 0 else 0
+        self._set_inc_dec_flags(self.mmu[addr], value)
 
     def dec(self, register: str) -> None:
         """Decrement register or HL address."""
@@ -231,8 +224,12 @@ class CPU:
 
         # Only set flags for 8-bit registers
         if len(register) == 1:
-            self.flags["Z"] = 1 if self.reg[register] == 0 else 0
-            self.flags["H"] = 1 if (self.reg[register] & 0xF) == 0 else 0
+            self._set_inc_dec_flags(self.reg[register], self.reg[register])
+
+    def _set_inc_dec_flags(self, result: int, value: int) -> None:
+        """Set flags for INC and DEC operations."""
+        self.flags["Z"] = 1 if result == 0 else 0
+        self.flags["H"] = 1 if (value & 0xF) == 0 else 0
 
     def rotate(
         self,
@@ -241,6 +238,7 @@ class CPU:
         circular: bool = False,
         insert_carry: bool = False,
     ) -> None:
+        """Rotate bits in register left or right."""
         value: int = self.reg[register]
         old_carry: int = self.flags["C"]
         new_carry: int = (value >> 7) & 0x1 if left else value & 0x1
