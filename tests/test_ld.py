@@ -160,3 +160,20 @@ def test_ld_mem_8(dest: str, address: int, value: int, opcode: int) -> None:
     cpu.insert_instruction(bytearray([opcode, value]))
     cpu.cycle()
     assert cpu.mmu[cpu.reg[dest]] == value
+
+
+@pytest.mark.parametrize(
+    ("opcode", "msb", "lsb", "sp_value"),
+    [
+        (0x8, 0x12, 0x34, 0xCCCC),  # LD [16a], SP
+    ],
+)
+def test_ld_mem_imm(opcode: int, msb: int, lsb: int, sp_value: int) -> None:
+    """Test LD [16a], SP instruction. Load SP into memory at 16-bit address."""
+    cpu = CPU(MMU())
+    cpu.reg["SP"] = sp_value
+    cpu.insert_instruction(bytearray([opcode, lsb, msb]))
+    cpu.cycle()
+    address = (msb << 8) | lsb
+    assert cpu.mmu[address] == (sp_value & 0xFF)
+    assert cpu.mmu[address + 1] == ((sp_value >> 8) & 0xFF)

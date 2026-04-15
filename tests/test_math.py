@@ -210,3 +210,40 @@ def test_dec_inc_mem(
 
     assert cpu.mmu[cpu.reg[dest]] == result
     verify_flags(cpu, z_flag, n_flag, h_flag)
+
+
+@pytest.mark.parametrize(
+    (
+        "dest",
+        "src",
+        "dest_val",
+        "src_val",
+        "carry",
+        "result",
+        "opcode",
+    ),
+    [
+        ("HL", "BC", 0x1234, 0x1234, 0, 0x2468, 0x9),  # ADD HL, BC
+        ("HL", "BC", 0x1234, 0xF234, 1, 0x468, 0x9),  # ADD HL, BC check carry
+        ("HL", "DE", 0x2, 0x1, 0, 0x3, 0x19),  # ADD HL, DE
+        ("HL", "HL", 0x0100, 0x0100, 0, 0x0200, 0x29),  # ADD HL, HL
+        ("HL", "SP", 0xDD11, 0xDD12, 1, 0xBA23, 0x39),  # ADD HL, SP check carry
+    ],
+)
+def test_add16(
+    dest: str,
+    src: str,
+    dest_val: int,
+    src_val: int,
+    carry: int,
+    result: int,
+    opcode: int,
+) -> None:
+    cpu = CPU(MMU())
+    cpu.reg[dest] = dest_val
+    cpu.reg[src] = src_val
+    cpu.insert_instruction(bytearray([opcode]))
+    cpu.cycle()
+
+    assert cpu.reg[dest] == result
+    verify_flags(cpu, c_flag=carry, n_flag=0)

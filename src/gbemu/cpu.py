@@ -71,6 +71,7 @@ class CPU:
                 b = bytes([self.mmu[self.pc + i] for i in range(1, self.instruction.length)])  # ty:ignore[invalid-argument-type]
                 self.args.append(int.from_bytes(b, byteorder="little"))
 
+            print(f"Decoded: {self.instruction}, {self.args}")
             logger.debug(f"Decoded: {self.instruction}, {self.args}")
         except Exception as e:
             # raise DecodeError(
@@ -130,6 +131,11 @@ class CPU:
             src: int = self.reg[src]
         self.mmu[self.reg[dest_register]] = src
 
+    def ld_mem_sp(self, address: int) -> None:
+        """Load SP into memory at immediate 16-bit address (little-endian)."""
+        self.mmu[address] = self.reg["SP"] & 0xFF
+        self.mmu[address + 1] = (self.reg["SP"] >> 8) & 0xFF
+
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
 
@@ -145,6 +151,14 @@ class CPU:
         self.flags["H"] = 1 if (self.reg[dest_register] & 0xF) + (value & 0xF) + carry > 0xF else 0
         self.flags["C"] = 1 if total > 0xFF else 0
         self.reg[dest_register] = total & 0xFF
+
+    def add16(self, dest_register: str, src_register: str) -> None:
+        """Add 16-bit pair registers."""
+        value: int = self.reg[src_register]
+        total: int = self.reg[dest_register] + value
+        self.flags["H"] = 1 if (self.reg[dest_register] & 0xFFF) + (value & 0xFFF) > 0xFFF else 0
+        self.flags["C"] = 1 if total > 0xFFFF else 0
+        self.reg[dest_register] = total & 0xFFFF
 
     def sub(self, dest_register: str, src_register: str, with_carry: bool = False) -> None:
         """Subtract value from source to dest, optionally with carry."""
