@@ -52,33 +52,30 @@ def test_bitwise(
     assert cpu.reg["A"] == result
     verify_flags(cpu, z_flag, 0, h_flag, 0)
 
-    @pytest.mark.parametrize(
-        (
-            "a_value",
-            "z_flag",
-            "h_flag",
-            "result",
-            "opcode",
-        ),
-        [
-            (0x00, 0, 1, 0xFF, 0x2F),  # CPL A
-            (0xFF, 0, 1, 0x00, 0x2F),  # CPL A
-            (0xAA, 0, 1, 0x55, 0x2F),  # CPL A
-            (0x55, 0, 1, 0xAA, 0x2F),  # CPL A
-            (0x12, 0, 1, 0xED, 0x2F),  # CPL A
-        ],
-    )
-    def test_cpl(
-        a_value: int,
-        z_flag: int,
-        h_flag: int,
-        result: int,
-        opcode: int,
-    ) -> None:
-        cpu = CPU(MMU())
-        cpu.reg["A"] = a_value
-        cpu.insert_instruction(bytearray([opcode]))
-        cpu.cycle()
 
-        assert cpu.reg["A"] == result
-        verify_flags(cpu, z_flag, 0, h_flag, 0)
+@pytest.mark.parametrize(
+    (
+        "value",
+        "result",
+        "opcode",
+    ),
+    [
+        (0x00, 0xFF, 0x2F),  # CPL A
+        (0xFF, 0x00, 0x2F),  # CPL A
+        (0xAA, 0x55, 0x2F),  # CPL A
+        (0x55, 0xAA, 0x2F),  # CPL A
+        (0x12, 0xED, 0x2F),  # CPL A
+    ],
+)
+def test_cpl(
+    value: int,
+    result: int,
+    opcode: int,
+) -> None:
+    cpu = CPU(MMU())
+    cpu.reg["A"] = value
+    cpu.insert_instruction(bytearray([opcode]))
+    cpu.cycle()
+
+    assert cpu.reg["A"] == result
+    verify_flags(cpu, n_flag=1, h_flag=1)
