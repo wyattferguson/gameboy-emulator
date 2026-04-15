@@ -81,6 +81,7 @@ OPCODES: dict[str, OpCode] = {
     ),
     "0x20": OpCode("JR NZ, r8", 2, 12, "jrc", args=["Z", 0]),
     "0x21": OpCode("LD HL, d16", 3, 12, "ld", args=["HL"]),
+    "0x22": OpCode("LD [HL+], A", 1, 8, "ld_a_hl_mod", args=[1, True]),
     "0x23": OpCode("INC HL", 1, 8, "inc", args=["HL"]),
     "0x24": OpCode("INC H", 1, 8, "inc", args=["H"], flags={"N": 0}),
     "0x25": OpCode("DEC H", 1, 8, "dec", args=["H"], flags={"N": 1}),
@@ -88,7 +89,7 @@ OPCODES: dict[str, OpCode] = {
     "0x27": OpCode("DAA", 1, 4, "daa", flags={"H": 0}),
     "0x28": OpCode("JR Z, r8", 2, 12, "jrc", args=["Z", 1]),
     "0x29": OpCode("ADD HL, HL", 1, 8, "add16", args=["HL", "HL"], flags={"N": 0}),
-    "0x2a": OpCode("LD A, [HL+]", 1, 8, "ld_hl_mod", args=["A", 1]),
+    "0x2a": OpCode("LD A, [HL+]", 1, 8, "ld_a_hl_mod", args=[1]),
     "0x2b": OpCode("DEC HL", 1, 8, "dec", args=["HL"]),
     "0x2c": OpCode("INC L", 1, 8, "inc", args=["L"], flags={"N": 0}),
     "0x2d": OpCode("DEC L", 1, 8, "dec", args=["L"], flags={"N": 1}),
@@ -96,6 +97,7 @@ OPCODES: dict[str, OpCode] = {
     "0x2f": OpCode("CPL", 1, 4, "cpl", args=["A"], flags={"N": 1, "H": 1}),
     "0x30": OpCode("JR NC, r8", 2, 12, "jrc", args=["C", 0]),
     "0x31": OpCode("LD SP, d16", 3, 12, "ld", args=["SP"]),
+    "0x32": OpCode("LD [HL-], A", 1, 8, "ld_a_hl_mod", args=[-1, True]),
     "0x33": OpCode("INC SP", 1, 8, "inc", args=["SP"]),
     "0x34": OpCode("INC [HL]", 1, 12, "inc_mem", args=["HL"], flags={"N": 0}),
     "0x35": OpCode("DEC [HL]", 1, 12, "dec_mem", args=["HL"], flags={"N": 1}),
@@ -103,7 +105,7 @@ OPCODES: dict[str, OpCode] = {
     "0x37": OpCode("SCF", 1, 4, flags={"N": 0, "H": 0, "C": 1}),
     "0x38": OpCode("JR C, r8", 2, 12, "jrc", args=["C", 1]),
     "0x39": OpCode("ADD HL, SP", 1, 8, "add16", args=["HL", "SP"], flags={"N": 0}),
-    "0x3a": OpCode("LD A, [HL-]", 1, 8, "ld_hl_mod", args=["A", -1]),
+    "0x3a": OpCode("LD A, [HL-]", 1, 8, "ld_a_hl_mod", args=[-1]),
     "0x3b": OpCode("DEC SP", 1, 8, "dec", args=["SP"]),
     "0x3c": OpCode("INC A", 1, 8, "inc", args=["A"], flags={"N": 0}),
     "0x3d": OpCode("DEC A", 1, 8, "dec", args=["A"], flags={"N": 1}),
@@ -459,4 +461,8 @@ OPCODES: dict[str, OpCode] = {
         args=["A", "A"],
         flags={"N": 1, "Z": 1, "H": 0, "C": 0},
     ),
+    "0xc0": OpCode("RET NZ", 1, 20, "retc", args=["Z", 0]),
 }
+
+
+CB_PREFIXED: dict[str, OpCode] = {}

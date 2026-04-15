@@ -24,10 +24,6 @@
 
 [MIT license](https://github.com/wyattferguson/gbemu/blob/master/LICENSE)
 
-## Contributing
-
-Contributors (coding, testing, packaging, reporting issues) are very welcome! More details and a development primer can be found in the [CONTRIBUTING.md](https://github.com/wyattferguson/gbemu/blob/master/CONBRIBUTING.md).
-
 ## Contact + Support
 
 Created by [Wyatt Ferguson](https://github.com/wyattferguson)

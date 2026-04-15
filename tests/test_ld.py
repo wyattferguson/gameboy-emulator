@@ -188,20 +188,40 @@ def test_ld_mem_imm(opcode: int, msb: int, lsb: int, sp_value: int) -> None:
 
 
 @pytest.mark.parametrize(
-    ("dest", "address", "value", "hl_mod", "opcode"),
+    ("address", "value", "hl_mod", "opcode"),
     [
-        ("A", 0x1234, 0xCD, 1, 0x2A),  # LD A, [HL+]
-        ("A", 0x00F0, 0x12, 1, 0x2A),  # LD A, [HL+]
-        ("A", 0x1234, 0xCD, -1, 0x3A),  # LD A, [HL-]
-        ("A", 0x00F0, 0x12, -1, 0x3A),  # LD A, [HL-]
+        (0x1234, 0xCD, 1, 0x2A),  # LD A, [HL+]
+        (0x00F0, 0x12, 1, 0x2A),  # LD A, [HL+]
+        (0x1234, 0xCD, -1, 0x3A),  # LD A, [HL-]
+        (0x00F0, 0x12, -1, 0x3A),  # LD A, [HL-]
     ],
 )
-def test_ld_hl_mod(dest: str, address: int, value: int, hl_mod: int, opcode: int) -> None:
+def test_ld_a_hl_mod_register(address: int, value: int, hl_mod: int, opcode: int) -> None:
     cpu = CPU(MMU())
     cpu.reg["HL"] = address
     cpu.mmu[address] = value
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
 
-    assert cpu.reg[dest] == value
+    assert cpu.reg["A"] == value
+    assert cpu.reg["HL"] == address + hl_mod
+
+
+@pytest.mark.parametrize(
+    ("address", "value", "hl_mod", "opcode"),
+    [
+        (0x1234, 0xCD, 1, 0x22),  # LD [HL+], A
+        (0x00F0, 0x12, 1, 0x22),  # LD [HL+], A
+        (0x1234, 0xCD, -1, 0x32),  # LD [HL-], A
+        (0x00F0, 0x12, -1, 0x32),  # LD [HL-], A
+    ],
+)
+def test_ld_a_hl_mod_memory(address: int, value: int, hl_mod: int, opcode: int) -> None:
+    cpu = CPU(MMU())
+    cpu.reg["A"] = value
+    cpu.reg["HL"] = address
+    cpu.insert_instruction(bytearray([opcode]))
+    cpu.cycle()
+
+    assert cpu.mmu[address] == value
     assert cpu.reg["HL"] == address + hl_mod

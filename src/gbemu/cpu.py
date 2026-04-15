@@ -131,9 +131,12 @@ class CPU:
             src: int = self.reg[src]
         self.mmu[self.reg[dest_register]] = src
 
-    def ld_hl_mod(self, register: str, mod: int = 1) -> None:
-        """Load value into memory at HL, then increment or decrement HL."""
-        self.reg[register] = self.mmu[self.reg["HL"]]  # ty:ignore[invalid-assignment]
+    def ld_a_hl_mod(self, mod: int = 1, from_register: bool = False) -> None:
+        """Load value into memory at HL or reg A, then increment or decrement HL."""
+        if from_register:
+            self.mmu[self.reg["HL"]] = self.reg["A"]
+        else:
+            self.reg["A"] = self.get_stored_value("HL")
         self.reg["HL"] += mod
 
     def ld_mem_sp(self, address: int) -> None:
@@ -289,11 +292,6 @@ class CPU:
         """Complement Carry Flag."""
         self.flags["C"] ^= 1
 
-    def jrc(self, flag: str, condition: int, offset: int) -> None:
-        """Relative Jump to address if condition is met."""
-        if self.flags[flag] == condition:
-            self.jr(offset)
-
     def daa(self) -> None:
         """Decimal Adjust Accumulator. Modify A register to BCD representation."""
         a: int = self.reg["A"]
@@ -314,6 +312,11 @@ class CPU:
         if adjust >= 0x60:
             self.flags["C"] = 1
 
+    def jrc(self, flag: str, condition: int, offset: int) -> None:
+        """Relative Jump to address if condition is met."""
+        if self.flags[flag] == condition:
+            self.jr(offset)
+
     def jr(self, offset: int = 0) -> None:
         """Relative Jump to address."""
         signed_offset: int = hex_to_signed(offset, 8)
@@ -321,3 +324,10 @@ class CPU:
 
         # compensate for PC increment after execution
         self.pc -= self.instruction.length
+
+    def ret(self, condition_flag: str | None = None, condition_value: int | None = None) -> None:
+        """Return from subroutine, optionally if condition is met."""
+        if condition_flag is None or self.flags[condition_flag] == condition_value:
+            self.pc = self.mmu[self.reg["SP"]]  # ty:ignore[invalid-assignment]
+            # compensate for PC increment after execution
+            self.pc -= self.instruction.length
