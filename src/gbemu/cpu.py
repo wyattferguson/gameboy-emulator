@@ -281,6 +281,10 @@ class CPU:
     #     self.sp -= 2
     #     self.pc = addr
 
+    def cpl(self, register: str) -> None:
+        """Complement A register."""
+        self.reg[register] ^= 0xFF
+
     def jr(self, offset: int = 0) -> None:
         """Relative Jump to address."""
         signed_offset: int = self.hex_to_signed(offset, 8)
