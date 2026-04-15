@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from gbemu.ctypes import Bitwise
+
 
 @dataclass(frozen=True)
 class OpCode:
@@ -9,7 +11,7 @@ class OpCode:
     length: int  # length of instruction in bytes
     cycles: int  # number of cpu cyles
     call: str  # CPU method name to call
-    args: list[str | bool | int] | None = None  # give arguments to send to CPU method
+    args: list[str | bool | int | Bitwise] | None = None  # give arguments to send to CPU method
     flags: dict[str, int] | None = None  # set CPU flags after execution
 
     def __str__(self) -> str:
@@ -200,7 +202,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["AND", "A", "B"],
+        args=[Bitwise.AND, "A", "B"],
         flags={"N": 0, "H": 1, "C": 0},
     ),
     "0xa1": OpCode(
@@ -208,7 +210,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["AND", "A", "C"],
+        args=[Bitwise.AND, "A", "C"],
         flags={"N": 0, "H": 1, "C": 0},
     ),
     "0xa2": OpCode(
@@ -216,7 +218,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["AND", "A", "D"],
+        args=[Bitwise.AND, "A", "D"],
         flags={"N": 0, "H": 1, "C": 0},
     ),
     "0xa3": OpCode(
@@ -224,7 +226,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["AND", "A", "E"],
+        args=[Bitwise.AND, "A", "E"],
         flags={"N": 0, "H": 1, "C": 0},
     ),
     "0xa4": OpCode(
@@ -232,7 +234,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["AND", "A", "H"],
+        args=[Bitwise.AND, "A", "H"],
         flags={"N": 0, "H": 1, "C": 0},
     ),
     "0xa5": OpCode(
@@ -240,7 +242,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["AND", "A", "L"],
+        args=[Bitwise.AND, "A", "L"],
         flags={"N": 0, "H": 1, "C": 0},
     ),
     "0xa6": OpCode(
@@ -248,7 +250,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         8,
         "bitwise",
-        args=["AND", "A", "HL"],
+        args=[Bitwise.AND, "A", "HL"],
         flags={"N": 0, "H": 1, "C": 0},
     ),
     "0xa7": OpCode(
@@ -256,7 +258,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["AND", "A", "A"],
+        args=[Bitwise.AND, "A", "A"],
         flags={"N": 0, "H": 1, "C": 0},
     ),
     "0xa8": OpCode(
@@ -264,7 +266,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["XOR", "A", "B"],
+        args=[Bitwise.XOR, "A", "B"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xa9": OpCode(
@@ -272,7 +274,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["XOR", "A", "C"],
+        args=[Bitwise.XOR, "A", "C"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xaa": OpCode(
@@ -280,7 +282,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["XOR", "A", "D"],
+        args=[Bitwise.XOR, "A", "D"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xab": OpCode(
@@ -288,7 +290,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["XOR", "A", "E"],
+        args=[Bitwise.XOR, "A", "E"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xac": OpCode(
@@ -296,7 +298,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["XOR", "A", "H"],
+        args=[Bitwise.XOR, "A", "H"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xad": OpCode(
@@ -304,7 +306,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["XOR", "A", "L"],
+        args=[Bitwise.XOR, "A", "L"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xae": OpCode(
@@ -312,7 +314,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         8,
         "bitwise",
-        args=["XOR", "A", "HL"],
+        args=[Bitwise.XOR, "A", "HL"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xaf": OpCode(
@@ -320,7 +322,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["XOR", "A", "A"],
+        args=[Bitwise.XOR, "A", "A"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xb0": OpCode(
@@ -328,7 +330,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["OR", "A", "B"],
+        args=[Bitwise.OR, "A", "B"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xb1": OpCode(
@@ -336,7 +338,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["OR", "A", "C"],
+        args=[Bitwise.OR, "A", "C"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xb2": OpCode(
@@ -344,7 +346,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["OR", "A", "D"],
+        args=[Bitwise.OR, "A", "D"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xb3": OpCode(
@@ -352,7 +354,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["OR", "A", "E"],
+        args=[Bitwise.OR, "A", "E"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xb4": OpCode(
@@ -360,7 +362,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["OR", "A", "H"],
+        args=[Bitwise.OR, "A", "H"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xb5": OpCode(
@@ -368,7 +370,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["OR", "A", "L"],
+        args=[Bitwise.OR, "A", "L"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xb6": OpCode(
@@ -376,7 +378,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         8,
         "bitwise",
-        args=["OR", "A", "HL"],
+        args=[Bitwise.OR, "A", "HL"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xb7": OpCode(
@@ -384,7 +386,7 @@ OPCODES: dict[str, OpCode] = {
         1,
         4,
         "bitwise",
-        args=["OR", "A", "A"],
+        args=[Bitwise.OR, "A", "A"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xb8": OpCode(

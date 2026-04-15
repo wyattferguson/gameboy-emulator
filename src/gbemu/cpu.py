@@ -3,10 +3,11 @@ import sys
 from loguru import logger
 
 from gbemu.config import DEBUG, PC_START, SP_START
-from gbemu.ctypes import CallableDict
+from gbemu.ctypes import Bitwise, CallableDict
 from gbemu.exceptions import DecodeError, ExecuteError, FetchError
 from gbemu.mmu import MMU
 from gbemu.opcodes import OPCODES, OpCode
+from gbemu.utils import hex_to_signed
 
 
 class CPU:
@@ -45,18 +46,6 @@ class CPU:
         self.instruction: OpCode
         self.cycles: int = 0
         self.args: list[int]
-
-    def get_reg16(self, register_a: str, register_b: str) -> int:
-        """Get value of 16-bit register pair."""
-        return (self.reg[register_a] << 8) + self.reg[register_b]
-
-    @staticmethod
-    def hex_to_signed(value: int, bits: int = 8) -> int:
-        """Convert an unsigned hex value to its signed representation."""
-        mask = (1 << bits) - 1
-        value &= mask
-        sign_bit = 1 << (bits - 1)
-        return value - (1 << bits) if value & sign_bit else value
 
     def fetch(self) -> None:
         """Fetch instruction from memory at PC."""
@@ -110,6 +99,10 @@ class CPU:
         for i, byte in enumerate(instruction):
             self.mmu[self.pc + i] = byte
 
+    def get_reg16(self, register_a: str, register_b: str) -> int:
+        """Get value of 16-bit register pair."""
+        return (self.reg[register_a] << 8) + self.reg[register_b]
+
     def cycle(self) -> None:
         """Execute next CPU cycle."""
         self.fetch()
@@ -156,7 +149,7 @@ class CPU:
     def add(self, dest_register: str, src_register: str, with_carry: bool = False) -> None:
         """Add value from source to dest, optionally with carry."""
         carry: int = self.flags["C"] if with_carry else 0
-        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]  # ty:ignore[invalid-assignment]
+        value: int = self.get_stored_value(src_register)
         total: int = self.reg[dest_register] + value + carry
         self.flags["Z"] = 1 if (total & 0xFF) == 0 else 0
         self.flags["H"] = 1 if (self.reg[dest_register] & 0xF) + (value & 0xF) + carry > 0xF else 0
@@ -165,7 +158,7 @@ class CPU:
 
     def add16(self, dest_register: str, src_register: str) -> None:
         """Add 16-bit pair registers."""
-        value: int = self.reg[src_register]
+        value: int = self.get_stored_value(src_register)
         total: int = self.reg[dest_register] + value
         self.flags["H"] = 1 if (self.reg[dest_register] & 0xFFF) + (value & 0xFFF) > 0xFFF else 0
         self.flags["C"] = 1 if total > 0xFFFF else 0
@@ -174,29 +167,35 @@ class CPU:
     def sub(self, dest_register: str, src_register: str, with_carry: bool = False) -> None:
         """Subtract value from source to dest, optionally with carry."""
         carry: int = self.flags["C"] if with_carry else 0
-        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]  # ty:ignore[invalid-assignment]
+        value: int = self.get_stored_value(src_register)
         result: int = self.reg[dest_register] - value - carry
         self._set_sub_flags(result, self.reg[dest_register], value, carry)
         self.reg[dest_register] = result & 0xFF
 
-    def bitwise(self, operation: str, dest_register: str, src_register: str) -> None:
+    def bitwise(self, operation: Bitwise, dest_register: str, src_register: str) -> None:
         """Perform bitwise operation (AND, XOR, OR)."""
-        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]  # ty:ignore[invalid-assignment]
+        value: int = self.get_stored_value(src_register)
 
-        if operation == "AND":
+        if operation == Bitwise.AND:
             self.reg[dest_register] &= value
-        elif operation == "XOR":
+        elif operation == Bitwise.XOR:
             self.reg[dest_register] ^= value
-        elif operation == "OR":
+        elif operation == Bitwise.OR:
             self.reg[dest_register] |= value
 
         self.flags["Z"] = 1 if self.reg[dest_register] == 0 else 0
 
     def cp(self, dest_register: str, src_register: str) -> None:
         """Compare registers."""
-        value: int = self.mmu[self.reg["HL"]] if src_register == "HL" else self.reg[src_register]  # ty:ignore[invalid-assignment]
+        value: int = self.get_stored_value(src_register)
         result: int = self.reg[dest_register] - value
         self._set_sub_flags(result, self.reg[dest_register], value)
+
+    def get_stored_value(self, register: str) -> int:
+        """Get value stored in register or memory."""
+        if register == "HL":
+            return self.mmu[self.reg["HL"]]  # ty:ignore[invalid-return-type]
+        return self.reg[register]
 
     def _set_sub_flags(self, result: int, a: int, b: int, carry: int = 0) -> None:
         """Set flags for subtraction operations."""
@@ -291,6 +290,8 @@ class CPU:
 
     def jr(self, offset: int = 0) -> None:
         """Relative Jump to address."""
-        signed_offset: int = self.hex_to_signed(offset, 8)
+        signed_offset: int = hex_to_signed(offset, 8)
         self.pc += signed_offset
-        self.pc -= self.instruction.length  # compensate for PC increment after execution
+
+        # compensate for PC increment after execution
+        self.pc -= self.instruction.length

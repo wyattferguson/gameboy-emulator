@@ -1,3 +1,6 @@
+from enum import StrEnum
+
+
 class CallableDict(dict):
     """Run callable values when accessed."""
 
@@ -18,3 +21,12 @@ class CallableDict(dict):
             super().__setitem__("SP", value & 0xFFFF)
         else:
             super().__setitem__(key, value & 0xFF)
+
+
+class Bitwise(StrEnum):
+    """Bitwise operations."""
+
+    AND = "AND"
+    OR = "OR"
+    XOR = "XOR"
+    NOT = "NOT"
