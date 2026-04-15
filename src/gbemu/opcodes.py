@@ -462,7 +462,13 @@ OPCODES: dict[str, OpCode] = {
         args=["A", "A"],
         flags={"N": 1, "Z": 1, "H": 0, "C": 0},
     ),
-    "0xc0": OpCode("RET NZ", 1, 20, "ret", args=["Z", 0], pc_inc=False),
+    "0xc0": OpCode("RET NZ", 1, 20, "ret", args=["Z", 0], pc_inc=False),  # NEEDS TESTING
+    "0xc1": OpCode("POP BC", 1, 12, "pop", args=["BC"]),
+    "0xc5": OpCode("PUSH BC", 1, 16, "push", args=["BC"]),
+    "0xd1": OpCode("POP DE", 1, 12, "pop", args=["DE"]),
+    "0xd5": OpCode("PUSH DE", 1, 16, "push", args=["DE"]),
+    "0xe1": OpCode("POP HL", 1, 12, "pop", args=["HL"]),
+    "0xe5": OpCode("PUSH HL", 1, 16, "push", args=["HL"]),
 }
 
 

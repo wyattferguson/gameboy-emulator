@@ -3,7 +3,7 @@ import pytest
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU
 from gbemu.opcodes import OPCODES, OpCode
-from tests.helper import verify_flags
+from tests.utils import verify_flags
 
 
 @pytest.mark.parametrize(

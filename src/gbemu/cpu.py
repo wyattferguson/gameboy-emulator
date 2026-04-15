@@ -271,16 +271,16 @@ class CPU:
         """Jump to Address."""
         self.pc = addr
 
-    def pop(self) -> int:
+    def pop(self, register: str) -> int:
         """Pop value from stack."""
-        value: int = self.mmu[self.reg["SP"]]  # ty:ignore[invalid-assignment]
-        self.reg["SP"] -= 1
+        value: int = self.mmu[self.reg[register]]  # ty:ignore[invalid-assignment]
+        self.reg[register] -= 2
         return value
 
-    def push(self, value: int) -> None:
+    def push(self, register: str) -> None:
         """Push value onto stack."""
-        self.reg["SP"] += 1
-        self.mmu[self.reg["SP"]] = value
+        self.reg["SP"] += 2
+        self.mmu[self.reg["SP"]] = self.reg[register]
 
     # def rst(self, addr: int) -> None:
     #     """Store PC, move to addr."""
@@ -329,4 +329,4 @@ class CPU:
     def ret(self, condition_flag: str | None = None, condition_value: int | None = None) -> None:
         """Return from subroutine, optionally if condition is met."""
         if condition_flag is None or self.flags[condition_flag] == condition_value:
-            self.pc = self.pop()
+            self.pc = self.pop("SP")
