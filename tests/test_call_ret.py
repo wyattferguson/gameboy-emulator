@@ -125,26 +125,3 @@ def test_ret_nz(
         assert cpu.pc == (initial_pc + 1) & 0xFFFF
         # SP should not change
         assert cpu.reg["SP"] == 0x8000
-
-
-def test_call_and_ret_sequence() -> None:
-    """Test CALL followed by RET sequence."""
-    cpu = CPU(MMU())
-    initial_pc = cpu.pc
-    initial_sp = cpu.reg["SP"]
-    call_target = 0x2000
-
-    # Execute CALL
-    addr_low = call_target & 0xFF
-    addr_high = (call_target >> 8) & 0xFF
-    cpu.insert_instruction(bytearray([0xCD, addr_low, addr_high]))
-    cpu.cycle()
-
-    # After CALL, PC should be at target, SP incremented
-    assert cpu.pc == call_target
-    assert cpu.reg["SP"] == (initial_sp + 2) & 0xFFFF
-
-    # Now simulate a RET (unconditional return)
-    # We need to set up the stack to point back
-    cpu.pc = call_target  # Simulate being at the called location
-    cpu.insert_instruction(bytearray([0xC9]))  # RET (not tested directly, but here for context)

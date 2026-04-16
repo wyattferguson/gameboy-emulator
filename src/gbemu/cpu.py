@@ -7,7 +7,7 @@ from gbemu.ctypes import Bitwise, CallableDict
 from gbemu.exceptions import DecodeError, ExecuteError, FetchError
 from gbemu.mmu import MMU
 from gbemu.opcodes import OPCODES, OpCode
-from gbemu.utils import hex_to_signed
+from gbemu.utils import hex_to_signed, to_u16
 
 
 class CPU:
@@ -103,7 +103,7 @@ class CPU:
 
     def get_reg16(self, register_a: str, register_b: str) -> int:
         """Get value of 16-bit register pair."""
-        return (self.reg[register_a] << 8) + self.reg[register_b]
+        return to_u16(self.reg[register_a], self.reg[register_b])
 
     def cycle(self) -> None:
         """Execute next CPU cycle."""
@@ -334,11 +334,11 @@ class CPU:
         self.reg["SP"] += 2
         self.mmu[self.reg["SP"]] = self.reg[register] if isinstance(register, str) else register  # ty:ignore[invalid-argument-type]
 
-    # def rst(self, addr: int) -> None:
-    #     """Store PC, move to addr."""
-    #     self.mmu[self.sp] = self.pc
-    #     self.sp -= 2
-    #     self.pc = addr
+    def rst(self, addr: int, msb: int = 0) -> None:
+        """Call to the absolute fixed address."""
+        value: int = to_u16(msb, addr)
+        self.push(self.pc)
+        self.pc = value
 
     def cpl(self, register: str) -> None:
         """Complement A register."""
