@@ -31,11 +31,20 @@ BIOS: list[int] = [
 ]
 # fmt: on
 
-# screen config
+# screen/ppu config
+DISPLAY_SCALER: int = 5
 SCREEN_WIDTH: int = 160
 SCREEN_HEIGHT: int = 144
-DISPLAY_SCALER: int = 5
+
 DELAY: int = 1
+BG_COLOR: tuple[int, int, int] = (202, 220, 159)
+PALLETE = [
+    (15, 56, 15),
+    (48, 98, 48),
+    (139, 172, 15),
+    (155, 188, 15),
+]
+TILE_SIZE: int = 8
 
 # memory address mappings
 M_JOYPAD: int = 0xFF00

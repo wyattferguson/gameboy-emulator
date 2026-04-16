@@ -6,7 +6,7 @@ from gbemu.config import M_JOYPAD
 from gbemu.mmu import MMU
 
 
-class Joypad:
+class Controller:
     def __init__(self, ram: MMU) -> None:
         self.mmu = ram
         self.mmu[M_JOYPAD] = 0xFF  # Set all buttons to not pressed
@@ -50,7 +50,7 @@ class Joypad:
 
     def __str__(self) -> str:
         return (
-            f"Joypad State:\n"
+            f"Controller State:\n"
             f"JOYPAD: {self.mmu[M_JOYPAD]}\n"
             f"Up/Select : {(self.mmu[M_JOYPAD] & 0b0100) == 0}\n"
             f"Down/Start: {(self.mmu[M_JOYPAD] & 0b1000) == 0}\n"
