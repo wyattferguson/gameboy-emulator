@@ -184,3 +184,103 @@ def test_cb_rot_remaining_hl(
 
     assert mmu[addr] == result
     verify_flags(cpu, c_flag=c_flag)
+
+
+@pytest.mark.parametrize(
+    ("dest", "value", "c_flag", "result", "opcode"),
+    [
+        ("B", 0x81, 1, 0x02, 0x20),  # SLA B
+        ("C", 0x80, 1, 0x00, 0x21),  # SLA C
+        ("D", 0x40, 0, 0x80, 0x22),  # SLA D
+        ("E", 0x7F, 0, 0xFE, 0x23),  # SLA E
+        ("H", 0x01, 0, 0x02, 0x24),  # SLA H
+        ("L", 0xFF, 1, 0xFE, 0x25),  # SLA L
+        ("A", 0x55, 0, 0xAA, 0x27),  # SLA A
+        ("B", 0x81, 1, 0xC0, 0x28),  # SRA B
+        ("C", 0x7F, 1, 0x3F, 0x29),  # SRA C
+        ("D", 0x80, 0, 0xC0, 0x2A),  # SRA D
+        ("E", 0x01, 1, 0x00, 0x2B),  # SRA E
+        ("H", 0xFF, 1, 0xFF, 0x2C),  # SRA H
+        ("L", 0x02, 0, 0x01, 0x2D),  # SRA L
+        ("A", 0x85, 1, 0xC2, 0x2F),  # SRA A
+    ],
+)
+def test_cb_shift_selected_registers(
+    dest: str,
+    value: int,
+    c_flag: int,
+    result: int,
+    opcode: int,
+) -> None:
+    cpu = CPU(MMU())
+    cpu.reg[dest] = value
+    cpu.insert_instruction(bytearray([0xCB, opcode]))
+    cpu.cycle()
+
+    assert cpu.reg[dest] == result
+    verify_flags(cpu, c_flag=c_flag)
+
+
+@pytest.mark.parametrize(
+    ("opcode", "value", "c_flag", "result"),
+    [
+        (0x26, 0x81, 1, 0x02),  # SLA [HL]
+        (0x2E, 0x81, 1, 0xC0),  # SRA [HL]
+    ],
+)
+def test_cb_shift_selected_hl(opcode: int, value: int, c_flag: int, result: int) -> None:
+    mmu = MMU()
+    cpu = CPU(mmu)
+    addr = 0xC000
+    cpu.reg["H"] = addr >> 8
+    cpu.reg["L"] = addr & 0xFF
+    mmu[addr] = value
+    cpu.insert_instruction(bytearray([0xCB, opcode]))
+    cpu.cycle()
+
+    assert mmu[addr] == result
+    verify_flags(cpu, c_flag=c_flag)
+
+
+@pytest.mark.parametrize(
+    ("dest", "value", "z_flag", "result", "opcode"),
+    [
+        ("B", 0xAB, 0, 0xBA, 0x30),  # SWAP B
+        ("C", 0x12, 0, 0x21, 0x31),  # SWAP C
+        ("D", 0xF0, 0, 0x0F, 0x32),  # SWAP D
+        ("E", 0x0F, 0, 0xF0, 0x33),  # SWAP E
+        ("H", 0x00, 1, 0x00, 0x34),  # SWAP H zero
+        ("L", 0x5A, 0, 0xA5, 0x35),  # SWAP L
+        ("A", 0x37, 0, 0x73, 0x37),  # SWAP A
+    ],
+)
+def test_cb_swap_registers(dest: str, value: int, z_flag: int, result: int, opcode: int) -> None:
+    cpu = CPU(MMU())
+    cpu.reg[dest] = value
+    cpu.insert_instruction(bytearray([0xCB, opcode]))
+    cpu.cycle()
+
+    assert cpu.reg[dest] == result
+    verify_flags(cpu, z_flag=z_flag, n_flag=0, h_flag=0, c_flag=0)
+
+
+@pytest.mark.parametrize(
+    ("value", "z_flag", "result"),
+    [
+        (0xAB, 0, 0xBA),  # SWAP [HL]
+        (0x00, 1, 0x00),  # SWAP [HL] zero
+        (0xF0, 0, 0x0F),  # SWAP [HL] upper nibble
+    ],
+)
+def test_cb_swap_hl(value: int, z_flag: int, result: int) -> None:
+    mmu = MMU()
+    cpu = CPU(mmu)
+    addr = 0xC000
+    cpu.reg["H"] = addr >> 8
+    cpu.reg["L"] = addr & 0xFF
+    mmu[addr] = value
+    cpu.insert_instruction(bytearray([0xCB, 0x36]))
+    cpu.cycle()
+
+    assert mmu[addr] == result
+    verify_flags(cpu, z_flag=z_flag, n_flag=0, h_flag=0, c_flag=0)

@@ -293,8 +293,9 @@ class CPU:
         left: bool = False,
         circular: bool = False,
         insert_carry: bool = False,
+        preserve_msb: bool = False,
     ) -> None:
-        """Rotate bits in register left or right."""
+        """Rotate bits left or right."""
         value: int = self.get_stored_value(register)
         old_carry: int = self.flags["C"]
         new_carry: int = (value >> 7) & 0x1 if left else value & 0x1
@@ -303,9 +304,27 @@ class CPU:
         if insert_carry:
             shifted = old_carry if left else old_carry << 7
         elif not circular:
-            shifted = 0
+            shifted = (value & 0x80) if preserve_msb and not left else 0
 
         result = (value << 1 | shifted) & 0xFF if left else value >> 1 | shifted
+
+        if register == "HL":
+            self.mmu[self.reg["HL"]] = result
+        else:
+            self.reg[register] = result
+
+        self.flags["C"] = new_carry
+
+    def shift(self, register: str, left: bool = False, arithmetic: bool = False) -> None:
+        """Shift bits left or right."""
+        value: int = self.get_stored_value(register)
+        new_carry: int = (value >> 7) & 0x1 if left else value & 0x1
+
+        if left:
+            result: int = (value << 1) & 0xFF
+        else:
+            msb: int = value & 0x80 if arithmetic else 0
+            result: int = (value >> 1) | msb
 
         if register == "HL":
             self.mmu[self.reg["HL"]] = result
@@ -319,8 +338,6 @@ class CPU:
         if self.flags[flag] == condition:
             self.jp(addr)
         else:
-            # If condition not met, advance PC by instruction length
-            # Conditional JP instructions are 3 bytes
             self.pc += 3
 
     def jp(self, addr: int | str) -> None:
@@ -419,3 +436,15 @@ class CPU:
     def ei(self) -> None:
         """Enable interrupts."""
         self.interrupts = True
+
+    def swap(self, register: str) -> None:
+        """Swap upper and lower nibbles."""
+        value: int = self.get_stored_value(register)
+        result: int = ((value & 0xF) << 4) | ((value & 0xF0) >> 4)
+
+        if register == "HL":
+            self.mmu[self.reg["HL"]] = result
+        else:
+            self.reg[register] = result
+
+        self.flags["Z"] = 1 if result == 0 else 0
