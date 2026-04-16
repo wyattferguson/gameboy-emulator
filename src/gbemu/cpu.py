@@ -18,7 +18,8 @@ class CPU:
         self.pc: int = PC_START  # program counter
         self.mmu: MMU = mmu
         self.interrupts: bool = False
-
+        self.halted: bool = False
+        self.cb_prefixed: bool = False
         self.reg = CallableDict(
             {
                 "A": 0,
@@ -55,6 +56,7 @@ class CPU:
             if op_code == "0xcb":
                 op_code = self.fetch_cb_prefixed()
                 self.instruction = CB_PREFIXED[op_code]
+                self.cb_prefixed = True
             else:
                 self.instruction = OPCODES[op_code]
             logger.debug(f"Fetch: {hex(self.pc)} - {self.instruction}")
@@ -74,7 +76,7 @@ class CPU:
         """Decode instruction and its arguments."""
         try:
             self.args = list(self.instruction.args or [])  # ty:ignore[invalid-assignment]
-            if self.instruction.length > 1:
+            if self.instruction.length > 1 and not self.cb_prefixed:
                 b = bytes([self.mmu[self.pc + i] for i in range(1, self.instruction.length)])  # ty:ignore[invalid-argument-type]
                 self.args.append(int.from_bytes(b, byteorder="little"))
 
@@ -119,6 +121,7 @@ class CPU:
         self.fetch()
         self.decode()
         self.execute()
+        self.cb_prefixed = False
         if self.instruction.pc_inc:
             self.pc += self.instruction.length
 
@@ -292,7 +295,7 @@ class CPU:
         insert_carry: bool = False,
     ) -> None:
         """Rotate bits in register left or right."""
-        value: int = self.reg[register]
+        value: int = self.get_stored_value(register)
         old_carry: int = self.flags["C"]
         new_carry: int = (value >> 7) & 0x1 if left else value & 0x1
 
@@ -302,10 +305,12 @@ class CPU:
         elif not circular:
             shifted = 0
 
-        if left:
-            self.reg[register] = ((value << 1) | shifted) & 0xFF
+        result = (value << 1 | shifted) & 0xFF if left else value >> 1 | shifted
+
+        if register == "HL":
+            self.mmu[self.reg["HL"]] = result
         else:
-            self.reg[register] = (value >> 1) | shifted
+            self.reg[register] = result
 
         self.flags["C"] = new_carry
 
@@ -392,8 +397,6 @@ class CPU:
         if self.flags[flag] == condition:
             self.call(addr)
         else:
-            # If condition not met, advance PC by instruction length
-            # Conditional CALL instructions are 3 bytes
             self.pc += 3
 
     def call(self, addr: int) -> None:
@@ -407,7 +410,6 @@ class CPU:
             # Pop return address from stack
             self.pc = self.pop("SP")
         else:
-            # If condition not met, advance PC by instruction length
             self.pc += 1
 
     def di(self) -> None:

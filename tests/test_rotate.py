@@ -86,3 +86,101 @@ def test_cb_rot(
 
     assert cpu.reg[dest] == result
     verify_flags(cpu, c_flag=c_flag)
+
+
+@pytest.mark.parametrize(
+    ("value", "start_c_flag", "c_flag", "result"),
+    [
+        (0x11, 0, 0, 0x22),  # RLC [HL] no carry
+        (0xFF, 1, 1, 0xFF),  # RLC [HL] all ones
+        (0x80, 0, 1, 0x01),  # RLC [HL] bit 7 wraps to bit 0
+        (0x78, 1, 0, 0xF0),  # RLC [HL] start carry ignored
+    ],
+)
+def test_cb_rot_hl(value: int, start_c_flag: int, c_flag: int, result: int) -> None:
+    mmu = MMU()
+    cpu = CPU(mmu)
+    addr = 0xC000
+    cpu.reg["H"] = addr >> 8
+    cpu.reg["L"] = addr & 0xFF
+    mmu[addr] = value
+    cpu.flags["C"] = start_c_flag
+    cpu.insert_instruction(bytearray([0xCB, 0x6]))
+    cpu.cycle()
+
+    assert mmu[addr] == result
+    verify_flags(cpu, c_flag=c_flag)
+
+
+@pytest.mark.parametrize(
+    ("dest", "value", "start_c_flag", "c_flag", "result", "opcode"),
+    [
+        ("A", 0x85, 0, 1, 0x0B, 0x7),  # RLC A
+        ("B", 0x01, 0, 1, 0x80, 0x8),  # RRC B
+        ("C", 0x01, 0, 1, 0x80, 0x9),  # RRC C
+        ("D", 0x01, 0, 1, 0x80, 0xA),  # RRC D
+        ("E", 0x01, 0, 1, 0x80, 0xB),  # RRC E
+        ("H", 0x01, 0, 1, 0x80, 0xC),  # RRC H
+        ("L", 0x01, 0, 1, 0x80, 0xD),  # RRC L
+        ("A", 0x01, 0, 1, 0x80, 0xF),  # RRC A
+        ("B", 0x80, 1, 1, 0x01, 0x10),  # RL B
+        ("C", 0x80, 1, 1, 0x01, 0x11),  # RL C
+        ("D", 0x80, 1, 1, 0x01, 0x12),  # RL D
+        ("E", 0x80, 1, 1, 0x01, 0x13),  # RL E
+        ("H", 0x80, 1, 1, 0x01, 0x14),  # RL H
+        ("L", 0x80, 1, 1, 0x01, 0x15),  # RL L
+        ("A", 0x80, 1, 1, 0x01, 0x17),  # RL A
+        ("B", 0x01, 1, 1, 0x80, 0x18),  # RR B
+        ("C", 0x01, 1, 1, 0x80, 0x19),  # RR C
+        ("D", 0x01, 1, 1, 0x80, 0x1A),  # RR D
+        ("E", 0x01, 1, 1, 0x80, 0x1B),  # RR E
+        ("H", 0x01, 1, 1, 0x80, 0x1C),  # RR H
+        ("L", 0x01, 1, 1, 0x80, 0x1D),  # RR L
+        ("A", 0x01, 1, 1, 0x80, 0x1F),  # RR A
+    ],
+)
+def test_cb_rot_remaining_registers(
+    dest: str,
+    value: int,
+    start_c_flag: int,
+    c_flag: int,
+    result: int,
+    opcode: int,
+) -> None:
+    cpu = CPU(MMU())
+    cpu.reg[dest] = value
+    cpu.flags["C"] = start_c_flag
+    cpu.insert_instruction(bytearray([0xCB, opcode]))
+    cpu.cycle()
+
+    assert cpu.reg[dest] == result
+    verify_flags(cpu, c_flag=c_flag)
+
+
+@pytest.mark.parametrize(
+    ("opcode", "value", "start_c_flag", "c_flag", "result"),
+    [
+        (0xE, 0x01, 0, 1, 0x80),  # RRC [HL]
+        (0x16, 0x80, 1, 1, 0x01),  # RL [HL]
+        (0x1E, 0x01, 1, 1, 0x80),  # RR [HL]
+    ],
+)
+def test_cb_rot_remaining_hl(
+    opcode: int,
+    value: int,
+    start_c_flag: int,
+    c_flag: int,
+    result: int,
+) -> None:
+    mmu = MMU()
+    cpu = CPU(mmu)
+    addr = 0xC000
+    cpu.reg["H"] = addr >> 8
+    cpu.reg["L"] = addr & 0xFF
+    mmu[addr] = value
+    cpu.flags["C"] = start_c_flag
+    cpu.insert_instruction(bytearray([0xCB, opcode]))
+    cpu.cycle()
+
+    assert mmu[addr] == result
+    verify_flags(cpu, c_flag=c_flag)
