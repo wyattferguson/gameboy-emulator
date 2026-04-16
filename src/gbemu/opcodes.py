@@ -31,7 +31,7 @@ OPCODES: dict[str, OpCode] = {
         "RLCA",
         1,
         4,
-        "rotate",
+        "rot",
         args=["A", True, True],
         flags={"Z": 0, "N": 0, "H": 0},
     ),
@@ -46,7 +46,7 @@ OPCODES: dict[str, OpCode] = {
         "RRCA",
         1,
         4,
-        "rotate",
+        "rot",
         args=["A", False, True],
         flags={"Z": 0, "N": 0, "H": 0},
     ),
@@ -61,7 +61,7 @@ OPCODES: dict[str, OpCode] = {
         "RLA",
         1,
         4,
-        "rotate",
+        "rot",
         args=["A", True, False, True],
         flags={"Z": 0, "N": 0, "H": 0},
     ),
@@ -76,7 +76,7 @@ OPCODES: dict[str, OpCode] = {
         "RRA",
         1,
         4,
-        "rotate",
+        "rot",
         args=["A", False, False, True],
         flags={"Z": 0, "N": 0, "H": 0},
     ),
@@ -531,4 +531,11 @@ OPCODES: dict[str, OpCode] = {
 }
 
 
-CB_PREFIXED: dict[str, OpCode] = {}
+CB_PREFIXED: dict[str, OpCode] = {
+    "0x0": OpCode("RLC B", 2, 8, "rot", args=["B", True, True], flags={"N": 0, "H": 0}),
+    "0x1": OpCode("RLC C", 2, 8, "rot", args=["C", True, True], flags={"N": 0, "H": 0}),
+    "0x2": OpCode("RLC D", 2, 8, "rot", args=["D", True, True], flags={"N": 0, "H": 0}),
+    "0x3": OpCode("RLC E", 2, 8, "rot", args=["E", True, True], flags={"N": 0, "H": 0}),
+    "0x4": OpCode("RLC H", 2, 8, "rot", args=["H", True, True], flags={"N": 0, "H": 0}),
+    "0x5": OpCode("RLC L", 2, 8, "rot", args=["L", True, True], flags={"N": 0, "H": 0}),
+}

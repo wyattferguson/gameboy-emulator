@@ -54,3 +54,35 @@ def test_rot_carry(
 
     assert cpu.reg[dest] == result
     verify_flags(cpu, c_flag=c_flag)
+
+
+@pytest.mark.parametrize(
+    ("dest", "value", "start_c_flag", "c_flag", "result", "opcode"),
+    [
+        ("B", 0x11, 0, 0, 0x22, 0x0),  # RLC B
+        ("B", 0xFF, 1, 1, 0xFF, 0x0),  # RLC B w/ carry
+        ("C", 0x11, 0, 0, 0x22, 0x1),  # RLC C
+        ("D", 0x56, 0, 0, 0xAC, 0x2),  # RLC D
+        ("D", 0x78, 1, 0, 0xF0, 0x2),  # RLC D with start carry 1
+        ("E", 0x11, 0, 0, 0x22, 0x3),  # RLC E
+        ("H", 0xFF, 1, 1, 0xFF, 0x4),  # RLC H
+        ("L", 0x56, 0, 0, 0xAC, 0x5),  # RLC L
+        ("L", 0x78, 1, 0, 0xF0, 0x5),  # RLC L with start carry 1
+    ],
+)
+def test_cb_rot(
+    dest: str,
+    value: int,
+    start_c_flag: int,
+    c_flag: int,
+    result: int,
+    opcode: int,
+) -> None:
+    cpu = CPU(MMU())
+    cpu.reg[dest] = value
+    cpu.flags["C"] = start_c_flag
+    cpu.insert_instruction(bytearray([0xCB, opcode]))
+    cpu.cycle()
+
+    assert cpu.reg[dest] == result
+    verify_flags(cpu, c_flag=c_flag)

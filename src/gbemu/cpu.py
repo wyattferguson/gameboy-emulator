@@ -6,7 +6,7 @@ from gbemu.config import DEBUG, PC_START, SP_START
 from gbemu.ctypes import Bitwise, CallableDict
 from gbemu.exceptions import DecodeError, ExecuteError, FetchError
 from gbemu.mmu import MMU
-from gbemu.opcodes import OPCODES, OpCode
+from gbemu.opcodes import CB_PREFIXED, OPCODES, OpCode
 from gbemu.utils import hex_to_signed, to_u16
 
 
@@ -52,7 +52,11 @@ class CPU:
         """Fetch instruction from memory at PC."""
         op_code = hex(self.mmu[self.pc])  # ty:ignore[invalid-argument-type]
         try:
-            self.instruction = OPCODES[op_code]
+            if op_code == "0xcb":
+                op_code = self.fetch_cb_prefixed()
+                self.instruction = CB_PREFIXED[op_code]
+            else:
+                self.instruction = OPCODES[op_code]
             logger.debug(f"Fetch: {hex(self.pc)} - {self.instruction}")
         except Exception:
             # raise FetchError(
@@ -60,6 +64,11 @@ class CPU:
             # ) from e
             logger.debug(f"Not Found: {hex(self.pc)} - {op_code}")
             sys.exit()
+
+    def fetch_cb_prefixed(self) -> str:
+        """Fetch CB-prefixed instruction."""
+        self.pc += 1
+        return hex(self.mmu[self.pc])  # ty:ignore
 
     def decode(self) -> None:
         """Decode instruction and its arguments."""
@@ -275,10 +284,10 @@ class CPU:
         self.flags["Z"] = 1 if result == 0 else 0
         self.flags["H"] = 1 if (value & 0xF) == 0 else 0
 
-    def rotate(
+    def rot(
         self,
         register: str,
-        left: bool,
+        left: bool = False,
         circular: bool = False,
         insert_carry: bool = False,
     ) -> None:
@@ -332,7 +341,7 @@ class CPU:
     def push(self, register: str | int) -> None:
         """Push value onto stack."""
         self.reg["SP"] += 2
-        self.mmu[self.reg["SP"]] = self.reg[register] if isinstance(register, str) else register  # ty:ignore[invalid-argument-type]
+        self.mmu[self.reg["SP"]] = self.reg[register] if isinstance(register, str) else register
 
     def rst(self, addr: int, msb: int = 0) -> None:
         """Call to the absolute fixed address."""
