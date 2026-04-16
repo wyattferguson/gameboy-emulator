@@ -425,7 +425,6 @@ class CPU:
     def ret(self, condition_flag: str | None = None, condition_value: int | None = None) -> None:
         """Return from subroutine, optionally if condition is met."""
         if condition_flag is None or self.flags[condition_flag] == condition_value:
-            # Pop return address from stack
             self.pc = self.pop("SP")
         else:
             self.pc += 1
