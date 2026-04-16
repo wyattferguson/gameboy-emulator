@@ -342,6 +342,16 @@ class CPU:
         signed_offset: int = hex_to_signed(offset, 8)
         self.pc += signed_offset
 
+    def callc(self, flag: str, condition: int, addr: int) -> None:
+        """Call subroutine at address if condition is met."""
+        if self.flags[flag] == condition:
+            self.call(addr)
+
+    def call(self, addr: int) -> None:
+        """Call subroutine at address."""
+        self.push("PC")
+        self.pc = addr
+
     def ret(self, condition_flag: str | None = None, condition_value: int | None = None) -> None:
         """Return from subroutine, optionally if condition is met."""
         if condition_flag is None or self.flags[condition_flag] == condition_value:
