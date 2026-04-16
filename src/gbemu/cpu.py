@@ -17,6 +17,7 @@ class CPU:
         self.debug: bool = DEBUG
         self.pc: int = PC_START  # program counter
         self.mmu: MMU = mmu
+        self.interrupts: bool = False
 
         self.reg = CallableDict(
             {
@@ -267,14 +268,29 @@ class CPU:
 
         self.flags["C"] = new_carry
 
-    def jmp(self, addr: int) -> None:
+    def jpc(self, flag: str, condition: int, addr: int) -> None:
+        """Jump to address if condition is met."""
+        if self.flags[flag] == condition:
+            self.jp(addr)
+
+    def jp(self, addr: int | str) -> None:
         """Jump to Address."""
+        if isinstance(addr, str):
+            addr = self.reg[addr]
         self.pc = addr
 
     def pop(self, register: str) -> int:
         """Pop value from stack."""
         value: int = self.mmu[self.reg[register]]  # ty:ignore[invalid-assignment]
         self.reg[register] -= 2
+
+        # AF lower 4 bits set flags
+        if register == "AF":
+            self.flags["Z"] = (value >> 7) & 0x1
+            self.flags["N"] = (value >> 6) & 0x1
+            self.flags["H"] = (value >> 5) & 0x1
+            self.flags["C"] = (value >> 4) & 0x1
+            value &= 0xF0
         return value
 
     def push(self, register: str) -> None:
@@ -330,3 +346,11 @@ class CPU:
         """Return from subroutine, optionally if condition is met."""
         if condition_flag is None or self.flags[condition_flag] == condition_value:
             self.pc = self.pop("SP")
+
+    def di(self) -> None:
+        """Disable interrupts."""
+        self.interrupts = False
+
+    def ei(self) -> None:
+        """Enable interrupts."""
+        self.interrupts = True

@@ -16,6 +16,8 @@ from gbemu.mmu import MMU
         (0xE5, "H", "L", 0x9A, 0xBC),  # PUSH HL
         (0xE5, "H", "L", 0x11, 0x11),  # PUSH HL min value
         (0xE5, "H", "L", 0x99, 0xFF),  # PUSH HL high value
+        (0xF5, "A", "F", 0x3C, 0xF0),  # PUSH AF
+        (0xF5, "A", "F", 0xFF, 0x10),  # PUSH AF alt value
     ],
 )
 def test_push(opcode: int, reg_high: str, reg_low: str, high: int, low: int) -> None:
@@ -66,6 +68,22 @@ def test_push_bc_then_pop_bc() -> None:
     pushed_sp = cpu.reg["SP"]
     assert pushed_sp == (initial_sp + 2) & 0xFFFF
     assert cpu.mmu[pushed_sp] == 0xEF
+
+
+def test_pop_af_sets_flags() -> None:
+    """Test POP AF updates AF and decodes upper-nibble flags from stack value."""
+    cpu = CPU(MMU())
+    cpu.reg["AF"] = 0x8000
+    cpu.mmu[0x8000] = 0xB0  # Z=1, N=0, H=1, C=1
+
+    cpu.insert_instruction(bytearray([0xF1]))  # POP AF
+    cpu.cycle()
+
+    assert cpu.reg["AF"] == 0x7FFE
+    assert cpu.flags["Z"] == 1
+    assert cpu.flags["N"] == 0
+    assert cpu.flags["H"] == 1
+    assert cpu.flags["C"] == 1
 
 
 def test_push_affects_sp_only() -> None:
