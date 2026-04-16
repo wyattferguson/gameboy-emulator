@@ -492,9 +492,25 @@ OPCODES: dict[str, OpCode] = {
         flags={"N": 0, "H": 1, "C": 0},
     ),
     "0xe9": OpCode("JP HL", 1, 4, "jp", args=["HL"], pc_inc=False),
+    "0xee": OpCode(
+        "XOR A, d8",
+        2,
+        8,
+        "bitwise",
+        args=[Bitwise.XOR, "A"],
+        flags={"N": 0, "H": 0, "C": 0},
+    ),
     "0xf1": OpCode("POP AF", 1, 12, "pop", args=["AF"]),
     "0xf3": OpCode("DI", 1, 4, "di"),
     "0xf5": OpCode("PUSH AF", 1, 16, "push", args=["AF"]),
+    "0xf6": OpCode(
+        "OR A, d8",
+        2,
+        8,
+        "bitwise",
+        args=[Bitwise.OR, "A"],
+        flags={"N": 0, "H": 0, "C": 0},
+    ),
     "0xfb": OpCode("EI", 1, 4, "ei"),
 }
 
