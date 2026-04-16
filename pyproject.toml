@@ -43,16 +43,16 @@ issues = "https://github.com/wyattferguson/gbemu/issues"
 requires = ["uv_build>=0.10.4,<0.11.0"]
 build-backend = "uv_build"
 
-# [project.scripts]
-# gbemu = "gbemu.__main__:run"
+[project.scripts]
+gbemu = "gbemu.__main__:run"
 
 [tool.taskipy.tasks]
 format = {cmd = "ruff format ./src/gbemu/", help = "Format code using ruff"}
 lint = {cmd = "ruff check --fix ./src/gbemu/", help = "Lint and auto-fix code using ruff"}
 type = {cmd = "ty check", help = "Typecheck code using ty" }
 tests = {cmd = "pytest --verbose -s --color=yes tests", help = "Run tests using pytest"}
-# run = "gbemu"
-run = {cmd = "uv run ./src/gbemu/test.py", help = "Run the emulator"}
+run = {cmd = "gbemu", help = "Run the emulator"}
+#run = {cmd = "uv run ./src/gbemu/test.py", help = "Run the emulator"}
 
 [tool.ruff]
 line-length = 100

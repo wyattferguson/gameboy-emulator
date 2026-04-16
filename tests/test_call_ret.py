@@ -19,7 +19,6 @@ def test_call(
 ) -> None:
     """Test CALL instruction. Push PC to stack and jump to address."""
     cpu = CPU(MMU())
-    initial_pc = cpu.pc
     initial_sp = cpu.reg["SP"]
 
     # Instruction: opcode (1 byte) + address (2 bytes, little-endian)
@@ -28,10 +27,7 @@ def test_call(
     cpu.insert_instruction(bytearray([0xCD, addr_low, addr_high]))
 
     cpu.cycle()
-
-    # PC should be set to target address
     assert cpu.pc == target_addr
-    # SP should be incremented by 2
     assert cpu.reg["SP"] == (initial_sp + 2) & 0xFFFF
 
 
@@ -74,14 +70,10 @@ def test_callc(
     cpu.cycle()
 
     if should_call:
-        # PC should be set to target address
         assert cpu.pc == target_addr
-        # SP should be incremented by 2
         assert cpu.reg["SP"] == (initial_sp + 2) & 0xFFFF
     else:
-        # PC should advance by instruction length (3 bytes)
         assert cpu.pc == (initial_pc + 3) & 0xFFFF
-        # SP should not change
         assert cpu.reg["SP"] == initial_sp
 
 
@@ -104,7 +96,6 @@ def test_ret_nz(
     return_addr = 0x1234
     initial_pc = cpu.pc
 
-    # Set up return address in stack (split into high and low bytes due to emulator implementation)
     cpu.reg["SP"] = 0x8000
     cpu.mmu[cpu.reg["SP"]] = return_addr & 0xFF  # low byte at SP
     cpu.mmu[cpu.reg["SP"] + 1] = (return_addr >> 8) & 0xFF  # high byte at SP+1
@@ -115,13 +106,8 @@ def test_ret_nz(
     cpu.cycle()
 
     if flag_value == 0:
-        # Return should be taken, PC set to return address (but only low byte due to pop implementation)
-        # The pop() method reads only 1 byte, so PC will be set to the low byte
         assert cpu.pc == (return_addr & 0xFF)
-        # SP should be decremented by 2
         assert cpu.reg["SP"] == (0x8000 - 2) & 0xFFFF
     else:
-        # Return should not be taken, PC should increment by instruction length (1 byte for RET)
         assert cpu.pc == (initial_pc + 1) & 0xFFFF
-        # SP should not change
         assert cpu.reg["SP"] == 0x8000

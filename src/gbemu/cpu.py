@@ -135,15 +135,20 @@ class CPU:
 
         self.reg[register] = src_location
 
-    def ld_reg16(self, reg: str, src_register: str) -> None:
-        """Load value from memory from 16bit address into register."""
-        self.ld(reg, self.mmu[self.reg[src_register]])  # ty:ignore[invalid-argument-type]
+    def ld_reg16(self, reg: str, src_register: str | int) -> None:
+        """Load value from memory from a register-pair address or immediate address."""
+        address = self.reg[src_register] if isinstance(src_register, str) else src_register
+        self.ld(reg, self.mmu[address])  # ty:ignore[invalid-argument-type]
 
     def ld_mem(self, dest_register: str, src: str | int) -> None:
         """Load value into memory."""
         if isinstance(src, str):
             src: int = self.reg[src]
         self.mmu[self.reg[dest_register]] = src
+
+    def ld_mem16(self, register: str, src: int) -> None:
+        """Load register value into memory at 16-bit address."""
+        self.mmu[src] = self.reg[register]
 
     def ld_a_hl_mod(self, mod: int = 1, from_register: bool = False) -> None:
         """Load value into memory at HL or reg A, then increment or decrement HL."""

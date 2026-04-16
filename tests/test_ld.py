@@ -225,3 +225,43 @@ def test_ld_a_hl_mod_memory(address: int, value: int, hl_mod: int, opcode: int) 
 
     assert cpu.mmu[address] == value
     assert cpu.reg["HL"] == address + hl_mod
+
+
+@pytest.mark.parametrize(
+    ("address", "value"),
+    [
+        (0x1234, 0xCD),
+        (0x00F0, 0x12),
+        (0xC123, 0xFF),
+    ],
+)
+def test_ld_a16_from_a_opcode_ea(address: int, value: int) -> None:
+    """Test LD [a16], A (0xEA)."""
+    cpu = CPU(MMU())
+    cpu.reg["A"] = value
+    low = address & 0xFF
+    high = (address >> 8) & 0xFF
+    cpu.insert_instruction(bytearray([0xEA, low, high]))
+    cpu.cycle()
+
+    assert cpu.mmu[address] == value
+
+
+@pytest.mark.parametrize(
+    ("address", "value"),
+    [
+        (0x1234, 0xCD),
+        (0x00F0, 0x12),
+        (0xC123, 0xFF),
+    ],
+)
+def test_ld_a_from_a16_opcode_fa(address: int, value: int) -> None:
+    """Test LD A, [a16] (0xFA)."""
+    cpu = CPU(MMU())
+    cpu.mmu[address] = value
+    low = address & 0xFF
+    high = (address >> 8) & 0xFF
+    cpu.insert_instruction(bytearray([0xFA, low, high]))
+    cpu.cycle()
+
+    assert cpu.reg["A"] == value

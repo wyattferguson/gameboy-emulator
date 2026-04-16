@@ -1,4 +1,4 @@
-DEFAULT_ROM = "./roms/puzzle.gb"
+DEFAULT_ROM = "./roms/hello.gb"
 MEMORY_SIZE: int = 65536  # 64kb of totally memory (ROM + RAM + IO)
 PC_START: int = 0x100  # rom load location
 SP_START: int = 0xFFFE  # stack pointer start location

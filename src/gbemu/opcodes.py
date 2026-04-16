@@ -469,22 +469,22 @@ OPCODES: dict[str, OpCode] = {
     "0xc4": OpCode("CALL NZ, a16", 3, 24, "callc", args=["Z", 0], pc_inc=False),
     "0xc5": OpCode("PUSH BC", 1, 16, "push", args=["BC"]),
     "0xc6": OpCode("ADD A, d8", 2, 8, "add", args=["A", False], flags={"N": 0}),
-    "0xc7": OpCode("RST $00", 1, 16, "rst", args=[0x00], pc_inc=False),  # NEEDS TESTING
+    "0xc7": OpCode("RST $00", 1, 16, "rst", args=[0x00], pc_inc=False),
     "0xca": OpCode("JP Z, a16", 3, 16, "jpc", args=["Z", 1], pc_inc=False),
     "0xcc": OpCode("CALL Z, a16", 3, 24, "callc", args=["Z", 1], pc_inc=False),
     "0xcd": OpCode("CALL a16", 3, 24, "call", pc_inc=False),
     "0xce": OpCode("ADC A, d8", 2, 8, "add", args=["A", True], flags={"N": 0}),
-    "0xcf": OpCode("RST $08", 1, 16, "rst", args=[0x08], pc_inc=False),  # NEEDS TESTING
+    "0xcf": OpCode("RST $08", 1, 16, "rst", args=[0x08], pc_inc=False),
     "0xd1": OpCode("POP DE", 1, 12, "pop", args=["DE"]),
     "0xd2": OpCode("JP NC, a16", 3, 16, "jpc", args=["C", 0], pc_inc=False),
     "0xd4": OpCode("CALL NC, a16", 3, 24, "callc", args=["C", 0], pc_inc=False),
     "0xd5": OpCode("PUSH DE", 1, 16, "push", args=["DE"]),
     "0xd6": OpCode("SUB A, d8", 2, 8, "sub", args=["A", False], flags={"N": 1}),
-    "0xd7": OpCode("RST $10", 1, 16, "rst", args=[0x10], pc_inc=False),  # NEEDS TESTING
+    "0xd7": OpCode("RST $10", 1, 16, "rst", args=[0x10], pc_inc=False),
     "0xda": OpCode("JP C, a16", 3, 16, "jpc", args=["C", 1], pc_inc=False),
     "0xdc": OpCode("CALL C, a16", 3, 24, "callc", args=["C", 1], pc_inc=False),
     "0xde": OpCode("SBC A, d8", 2, 8, "sub", args=["A", True], flags={"N": 1}),
-    "0xdf": OpCode("RST $18", 1, 16, "rst", args=[0x18], pc_inc=False),  # NEEDS TESTING
+    "0xdf": OpCode("RST $18", 1, 16, "rst", args=[0x18], pc_inc=False),
     "0xe1": OpCode("POP HL", 1, 12, "pop", args=["HL"]),
     "0xe5": OpCode("PUSH HL", 1, 16, "push", args=["HL"]),
     "0xe6": OpCode(
@@ -495,8 +495,9 @@ OPCODES: dict[str, OpCode] = {
         args=[Bitwise.AND, "A"],
         flags={"N": 0, "H": 1, "C": 0},
     ),
-    "0xe7": OpCode("RST $20", 1, 16, "rst", args=[0x20], pc_inc=False),  # NEEDS TESTING
+    "0xe7": OpCode("RST $20", 1, 16, "rst", args=[0x20], pc_inc=False),
     "0xe9": OpCode("JP HL", 1, 4, "jp", args=["HL"], pc_inc=False),
+    "0xea": OpCode("LD [a16], A", 3, 16, "ld_mem16", args=["A"]),
     "0xee": OpCode(
         "XOR A, d8",
         2,
@@ -505,7 +506,7 @@ OPCODES: dict[str, OpCode] = {
         args=[Bitwise.XOR, "A"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
-    "0xef": OpCode("RST $28", 1, 16, "rst", args=[0x28], pc_inc=False),  # NEEDS TESTING
+    "0xef": OpCode("RST $28", 1, 16, "rst", args=[0x28], pc_inc=False),
     "0xf1": OpCode("POP AF", 1, 12, "pop", args=["AF"]),
     "0xf3": OpCode("DI", 1, 4, "di"),
     "0xf5": OpCode("PUSH AF", 1, 16, "push", args=["AF"]),
@@ -517,7 +518,8 @@ OPCODES: dict[str, OpCode] = {
         args=[Bitwise.OR, "A"],
         flags={"N": 0, "H": 0, "C": 0},
     ),
-    "0xf7": OpCode("RST $30", 1, 16, "rst", args=[0x30], pc_inc=False),  # NEEDS TESTING
+    "0xf7": OpCode("RST $30", 1, 16, "rst", args=[0x30], pc_inc=False),
+    "0xfa": OpCode("LD A, [a16]", 3, 16, "ld_reg16", args=["A"]),
     "0xfb": OpCode("EI", 1, 4, "ei"),
     "0xfe": OpCode(
         "CP A, d8",
@@ -527,7 +529,7 @@ OPCODES: dict[str, OpCode] = {
         args=["A"],
         flags={"N": 1},
     ),
-    "0xff": OpCode("RST $38", 1, 16, "rst", args=[0x38], pc_inc=False),  # NEEDS TESTING
+    "0xff": OpCode("RST $38", 1, 16, "rst", args=[0x38], pc_inc=False),
 }
 
 

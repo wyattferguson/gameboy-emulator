@@ -1,7 +1,7 @@
 import click
 
-from gbemu import Gbemu
 from gbemu.config import DEFAULT_ROM
+from gbemu.gbemu import Gbemu
 
 
 @click.command()
@@ -20,5 +20,5 @@ from gbemu.config import DEFAULT_ROM
     help="Enable debug mode. Used only for development.",
 )
 def run(rom: str = DEFAULT_ROM, debug: bool = False) -> None:
-    """Run the Kanban application."""
+    """Run the emulator."""
     Gbemu(rom=rom, debug=debug).run()
