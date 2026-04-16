@@ -199,9 +199,11 @@ class CPU:
 
         self.flags["Z"] = 1 if self.reg[dest_register] == 0 else 0
 
-    def cp(self, dest_register: str, src_register: str) -> None:
+    def cp(self, dest_register: str, src_register: str | int) -> None:
         """Compare registers."""
-        value: int = self.get_stored_value(src_register)
+        value: int = (
+            self.get_stored_value(src_register) if isinstance(src_register, str) else src_register
+        )
         result: int = self.reg[dest_register] - value
         self._set_sub_flags(result, self.reg[dest_register], value)
 

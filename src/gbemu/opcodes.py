@@ -512,6 +512,14 @@ OPCODES: dict[str, OpCode] = {
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xfb": OpCode("EI", 1, 4, "ei"),
+    "0xfe": OpCode(
+        "CP A, d8",
+        2,
+        8,
+        "cp",
+        args=["A"],
+        flags={"N": 1},
+    ),
 }
 
 
