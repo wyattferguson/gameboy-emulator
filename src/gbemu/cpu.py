@@ -51,7 +51,7 @@ class CPU:
 
     def fetch(self) -> None:
         """Fetch instruction from memory at PC."""
-        op_code = hex(self.mmu[self.pc])  # ty:ignore[invalid-argument-type]
+        op_code = hex(self.mmu[self.pc])
         try:
             if op_code == "0xcb":
                 op_code = self.fetch_cb_prefixed()
@@ -70,14 +70,14 @@ class CPU:
     def fetch_cb_prefixed(self) -> str:
         """Fetch CB-prefixed instruction."""
         self.pc += 1
-        return hex(self.mmu[self.pc])  # ty:ignore
+        return hex(self.mmu[self.pc])
 
     def decode(self) -> None:
         """Decode instruction and its arguments."""
         try:
             self.args = list(self.instruction.args or [])  # ty:ignore[invalid-assignment]
             if self.instruction.length > 1 and not self.cb_prefixed:
-                b = bytes([self.mmu[self.pc + i] for i in range(1, self.instruction.length)])  # ty:ignore[invalid-argument-type]
+                b = bytes([self.mmu[self.pc + i] for i in range(1, self.instruction.length)])
                 self.args.append(int.from_bytes(b, byteorder="little"))
 
             logger.debug(f"Decoded: {self.instruction}, {self.args}")
@@ -138,7 +138,7 @@ class CPU:
     def ld_reg16(self, reg: str, src_register: str | int) -> None:
         """Load value from memory from a register-pair address or immediate address."""
         address = self.reg[src_register] if isinstance(src_register, str) else src_register
-        self.ld(reg, self.mmu[address])  # ty:ignore[invalid-argument-type]
+        self.ld(reg, self.mmu[address])
 
     def ld_mem(self, dest_register: str, src: str | int) -> None:
         """Load value into memory."""
@@ -229,7 +229,7 @@ class CPU:
     def get_stored_value(self, register: str, from_memory: bool = False) -> int:
         """Get value stored in register or memory."""
         if register == "HL" or from_memory:
-            return self.mmu[self.reg[register]]  # ty:ignore[invalid-return-type]
+            return self.mmu[self.reg[register]]
         return self.reg[register]
 
     def _resolve_operand(
@@ -272,14 +272,14 @@ class CPU:
         """Increment value at address in HL."""
         addr: int = self.reg[register]
         self.mmu[addr] += 1
-        self._set_inc_dec_flags(self.mmu[addr], self.mmu[addr])  # ty:ignore[invalid-argument-type]
+        self._set_inc_dec_flags(self.mmu[addr], self.mmu[addr])
 
     def dec_mem(self, register: str) -> None:
         """Decrement value at address in HL."""
         addr: int = self.reg[register]
-        value: int = self.mmu[addr]  # ty:ignore[invalid-assignment]
+        value: int = self.mmu[addr]
         self.mmu[addr] = value - 1
-        self._set_inc_dec_flags(self.mmu[addr], value)  # ty:ignore[invalid-argument-type]
+        self._set_inc_dec_flags(self.mmu[addr], value)
 
     def dec(self, register: str) -> None:
         """Decrement register or HL address."""
@@ -354,7 +354,7 @@ class CPU:
 
     def pop(self, register: str) -> int:
         """Pop value from stack."""
-        value: int = self.mmu[self.reg[register]]  # ty:ignore[invalid-assignment]
+        value: int = self.mmu[self.reg[register]]
         self.reg[register] -= 2
 
         # AF lower 4 bits set flags

@@ -1,3 +1,5 @@
+from typing import overload
+
 from gbemu.cart import Cart
 from gbemu.config import BIOS, MEMORY_SIZE, PC_START
 from gbemu.exceptions import RamError
@@ -17,6 +19,12 @@ class MMU:
 
     def __len__(self) -> int:
         return self.size
+
+    @overload
+    def __getitem__(self, address: int) -> int: ...
+
+    @overload
+    def __getitem__(self, address: slice) -> list[int]: ...
 
     def __getitem__(self, address: int | slice) -> int | list[int]:
         if isinstance(address, slice):
