@@ -160,9 +160,11 @@ class CPU:
 
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
+        self.halted = True
 
     def stop(self, d8: int = 0) -> None:
         """Halt CPU and LCD until button pressed. Used for power saving."""
+        self.stopped = True
 
     def add(
         self,
@@ -441,14 +443,29 @@ class CPU:
         """Enable interrupts."""
         self.interrupts = True
 
+    def set_stored_value(self, register: str, value: int) -> None:
+        """Set value in register or memory."""
+        if register == "HL":
+            self.mmu[self.reg[register]] = value
+        else:
+            self.reg[register] = value
+
     def swap(self, register: str) -> None:
         """Swap upper and lower nibbles."""
         value: int = self.get_stored_value(register)
         result: int = ((value & 0xF) << 4) | ((value & 0xF0) >> 4)
 
-        if register == "HL":
-            self.mmu[self.reg["HL"]] = result
-        else:
-            self.reg[register] = result
-
+        self.set_stored_value(register, result)
         self.flags["Z"] = 1 if result == 0 else 0
+
+    def res(self, bit_num: int, register: str) -> None:
+        """Reset bit in register or memory."""
+        value: int = self.get_stored_value(register)
+        result: int = value & ~(1 << bit_num)
+        self.set_stored_value(register, result)
+
+    def set(self, bit_num: int, register: str) -> None:
+        """Set bit in register or memory."""
+        value: int = self.get_stored_value(register)
+        result: int = value | (1 << bit_num)
+        self.set_stored_value(register, result)
