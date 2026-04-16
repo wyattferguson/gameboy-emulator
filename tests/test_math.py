@@ -298,3 +298,57 @@ def test_daa(
 
     assert cpu.reg["A"] == result
     verify_flags(cpu, z_flag=z_flag, n_flag=n_flag, h_flag=0, c_flag=c_flag)
+
+
+@pytest.mark.parametrize(
+    (
+        "a_val",
+        "immediate",
+        "carry",
+        "z_flag",
+        "n_flag",
+        "h_flag",
+        "c_flag",
+        "result",
+        "opcode",
+    ),
+    [
+        (0x12, 0x34, 0, 0, 0, 0, 0, 0x46, 0xC6),  # ADD A, d8
+        (0x00, 0x00, 0, 1, 0, 0, 0, 0x00, 0xC6),  # ADD A, d8 with zero result
+        (0x1D, 0x11, 0, 0, 0, 0, 0, 0x2E, 0xC6),  # ADD A, d8 with no carry
+        (0x4F, 0x15, 0, 0, 0, 1, 0, 0x64, 0xC6),  # ADD A, d8 with half-carry
+        (0xFF, 0xFF, 0, 0, 0, 1, 1, 0xFE, 0xC6),  # ADD A, d8 with carry
+        (0x0F, 0x01, 0, 0, 0, 1, 0, 0x10, 0xC6),  # ADD A, d8 half-carry
+        (0x0F, 0xFF, 0, 0, 0, 1, 1, 0x0E, 0xC6),  # ADD A, d8 carry and half-carry
+        (0xFF, 0x0F, 1, 0, 0, 1, 1, 0x0F, 0xCE),  # ADC A, d8 with carry
+        (0x3F, 0x0F, 1, 0, 0, 1, 0, 0x4F, 0xCE),  # ADC A, d8 with carry
+        (0xFF, 0xFF, 0, 0, 0, 1, 1, 0xFE, 0xCE),  # ADC A, d8 no carry input
+        (0x34, 0x12, 0, 0, 1, 0, 0, 0x22, 0xD6),  # SUB A, d8
+        (0x12, 0x34, 0, 0, 1, 1, 1, 0xDE, 0xD6),  # SUB A, d8 with borrow
+        (0x00, 0x00, 0, 1, 1, 0, 0, 0x00, 0xD6),  # SUB A, d8 with zero result
+        (0x1F, 0x1C, 0, 0, 1, 0, 0, 0x03, 0xDE),  # SBC A, d8 with carry
+        (0x10, 0x0F, 1, 1, 1, 1, 0, 0x00, 0xDE),  # SBC A, d8 with carry and zero
+        (0x65, 0x23, 1, 0, 1, 0, 0, 0x41, 0xDE),  # SBC A, d8 with carry
+    ],
+)
+def test_immediate_arithmetic(
+    a_val: int,
+    immediate: int,
+    carry: int,
+    z_flag: int,
+    n_flag: int,
+    h_flag: int,
+    c_flag: int,
+    result: int,
+    opcode: int,
+) -> None:
+    """Test ADD A, d8, ADC A, d8, SUB A, d8, SBC A, d8 instructions."""
+    cpu = CPU(MMU())
+    cpu.reg["A"] = a_val
+    cpu.flags["C"] = carry
+    # Instruction: opcode (1 byte) + immediate (1 byte)
+    cpu.insert_instruction(bytearray([opcode, immediate]))
+    cpu.cycle()
+
+    assert cpu.reg["A"] == result
+    verify_flags(cpu, z_flag=z_flag, n_flag=n_flag, h_flag=h_flag, c_flag=c_flag)

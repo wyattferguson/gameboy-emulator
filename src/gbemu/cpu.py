@@ -149,23 +149,20 @@ class CPU:
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
 
-    def stop(self) -> None:
+    def stop(self, d8: int = 0) -> None:
         """Halt CPU and LCD until button pressed. Used for power saving."""
 
     def add(
         self,
         dest_register: str,
-        register: str,
-        with_carry: bool = False,
-        number: int | None = None,
+        register: str | bool,
+        with_carry: bool | int = False,
     ) -> None:
         """Add value from source to dest, optionally with carry."""
-        carry: int = self.flags["C"] if with_carry else 0
-        value: int = number if number is not None else self.get_stored_value(register)
+        with_carry_flag, value = self._resolve_operand(register, with_carry)
+        carry: int = self.flags["C"] if with_carry_flag else 0
         total: int = self.reg[dest_register] + value + carry
-        self.flags["Z"] = 1 if (total & 0xFF) == 0 else 0
-        self.flags["H"] = 1 if (self.reg[dest_register] & 0xF) + (value & 0xF) + carry > 0xF else 0
-        self.flags["C"] = 1 if total > 0xFF else 0
+        self._set_add_flags(total, self.reg[dest_register], value, carry)
         self.reg[dest_register] = total & 0xFF
 
     def add16(self, dest_register: str, src_register: str) -> None:
@@ -179,13 +176,12 @@ class CPU:
     def sub(
         self,
         dest_register: str,
-        register: str,
-        with_carry: bool = False,
-        number: int | None = None,
+        register: str | bool,
+        with_carry: bool | int = False,
     ) -> None:
         """Subtract value from source to dest, optionally with carry."""
-        carry: int = self.flags["C"] if with_carry else 0
-        value: int = number if number is not None else self.get_stored_value(register)
+        with_carry_flag, value = self._resolve_operand(register, with_carry)
+        carry: int = self.flags["C"] if with_carry_flag else 0
         result: int = self.reg[dest_register] - value - carry
         self._set_sub_flags(result, self.reg[dest_register], value, carry)
         self.reg[dest_register] = result & 0xFF
@@ -214,6 +210,28 @@ class CPU:
         if register == "HL" or from_memory:
             return self.mmu[self.reg[register]]  # ty:ignore[invalid-return-type]
         return self.reg[register]
+
+    def _resolve_operand(
+        self,
+        register: str | bool,
+        with_carry: bool | int,
+    ) -> tuple[bool, int]:
+        """Resolve operand for add/sub operations."""
+        if isinstance(register, bool):
+            # Immediate mode: register parameter is actually the with_carry flag
+            with_carry_flag = register
+            value = with_carry if isinstance(with_carry, int) else 0
+        else:
+            # Register mode: normal register operation
+            with_carry_flag = with_carry if isinstance(with_carry, bool) else False
+            value = self.get_stored_value(register)
+        return with_carry_flag, value
+
+    def _set_add_flags(self, total: int, a: int, b: int, carry: int = 0) -> None:
+        """Set flags for addition operations."""
+        self.flags["Z"] = 1 if (total & 0xFF) == 0 else 0
+        self.flags["H"] = 1 if (a & 0xF) + (b & 0xF) + carry > 0xF else 0
+        self.flags["C"] = 1 if total > 0xFF else 0
 
     def _set_sub_flags(self, result: int, a: int, b: int, carry: int = 0) -> None:
         """Set flags for subtraction operations."""
@@ -284,6 +302,10 @@ class CPU:
         """Jump to address if condition is met."""
         if self.flags[flag] == condition:
             self.jp(addr)
+        else:
+            # If condition not met, advance PC by instruction length
+            # Conditional JP instructions are 3 bytes
+            self.pc += 3
 
     def jp(self, addr: int | str) -> None:
         """Jump to Address."""
@@ -305,10 +327,10 @@ class CPU:
             value &= 0xF0
         return value
 
-    def push(self, register: str) -> None:
+    def push(self, register: str | int) -> None:
         """Push value onto stack."""
         self.reg["SP"] += 2
-        self.mmu[self.reg["SP"]] = self.reg[register]
+        self.mmu[self.reg["SP"]] = self.reg[register] if isinstance(register, str) else register  # ty:ignore[invalid-argument-type]
 
     # def rst(self, addr: int) -> None:
     #     """Store PC, move to addr."""
@@ -358,16 +380,24 @@ class CPU:
         """Call subroutine at address if condition is met."""
         if self.flags[flag] == condition:
             self.call(addr)
+        else:
+            # If condition not met, advance PC by instruction length
+            # Conditional CALL instructions are 3 bytes
+            self.pc += 3
 
     def call(self, addr: int) -> None:
         """Call subroutine at address."""
-        self.push("PC")
+        self.push(self.pc)
         self.pc = addr
 
     def ret(self, condition_flag: str | None = None, condition_value: int | None = None) -> None:
         """Return from subroutine, optionally if condition is met."""
         if condition_flag is None or self.flags[condition_flag] == condition_value:
+            # Pop return address from stack
             self.pc = self.pop("SP")
+        else:
+            # If condition not met, advance PC by instruction length
+            self.pc += 1
 
     def di(self) -> None:
         """Disable interrupts."""

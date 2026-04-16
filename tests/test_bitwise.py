@@ -104,3 +104,37 @@ def test_ccf(
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
     verify_flags(cpu, n_flag=0, h_flag=0, c_flag=c_flag_after)
+
+
+@pytest.mark.parametrize(
+    (
+        "a_value",
+        "immediate",
+        "z_flag",
+        "result",
+    ),
+    [
+        (0x12, 0x34, 0, 0x10),  # AND A, d8
+        (0x00, 0xDD, 1, 0x00),  # AND A, d8 with zero result
+        (0xFF, 0xDD, 0, 0xDD),  # AND A, d8 with all bits
+        (0x0F, 0xF0, 1, 0x00),  # AND A, d8 no overlap
+        (0xFF, 0xFF, 0, 0xFF),  # AND A, d8 identity
+        (0xAA, 0x55, 1, 0x00),  # AND A, d8 alternating bits
+        (0xF0, 0x0F, 1, 0x00),  # AND A, d8 no overlap
+        (0xF0, 0xF0, 0, 0xF0),  # AND A, d8 same bits
+    ],
+)
+def test_and_immediate(
+    a_value: int,
+    immediate: int,
+    z_flag: int,
+    result: int,
+) -> None:
+    """Test AND A, d8 instruction."""
+    cpu = CPU(MMU())
+    cpu.reg["A"] = a_value
+    cpu.insert_instruction(bytearray([0xE6, immediate]))
+    cpu.cycle()
+
+    assert cpu.reg["A"] == result
+    verify_flags(cpu, z_flag=z_flag, n_flag=0, h_flag=1, c_flag=0)

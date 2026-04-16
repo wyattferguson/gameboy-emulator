@@ -75,4 +75,76 @@ def test_jrc(
     assert cpu.pc == result_pc
 
 
-# TODO: test JP, CALL, and RET instructions
+@pytest.mark.parametrize(
+    "addr",
+    [
+        0x1234,  # JP a16
+        0x8000,  # JP a16 high address
+        0x0000,  # JP a16 low address
+        0xFFFF,  # JP a16 max address
+    ],
+)
+def test_jp(
+    addr: int,
+) -> None:
+    """Test JP instruction. Jump to absolute address."""
+    cpu = CPU(MMU())
+    # Instruction: opcode (1 byte) + address (2 bytes, little-endian)
+    addr_low = addr & 0xFF
+    addr_high = (addr >> 8) & 0xFF
+    cpu.insert_instruction(bytearray([0xC3, addr_low, addr_high]))
+    cpu.cycle()
+
+    assert cpu.pc == addr
+
+
+@pytest.mark.parametrize(
+    (
+        "opcode",
+        "flag",
+        "flag_value",
+        "addr",
+        "should_jump",
+    ),
+    [
+        (0xC2, "Z", 0, 0x1234, True),  # JP NZ, a16 w/ Z = 0 (jump taken)
+        (0xC2, "Z", 1, 0x1234, False),  # JP NZ, a16 w/ Z = 1 (jump not taken)
+        (0xCA, "Z", 1, 0x5678, True),  # JP Z, a16 w/ Z = 1 (jump taken)
+        (0xCA, "Z", 0, 0x5678, False),  # JP Z, a16 w/ Z = 0 (jump not taken)
+        (0xD2, "C", 0, 0x8000, True),  # JP NC, a16 w/ C = 0 (jump taken)
+        (0xD2, "C", 1, 0x8000, False),  # JP NC, a16 w/ C = 1 (jump not taken)
+        (0xDA, "C", 1, 0xABCD, True),  # JP C, a16 w/ C = 1 (jump taken)
+        (0xDA, "C", 0, 0xABCD, False),  # JP C, a16 w/ C = 0 (jump not taken)
+    ],
+)
+def test_jpc(
+    opcode: int,
+    flag: str,
+    flag_value: int,
+    addr: int,
+    should_jump: bool,
+) -> None:
+    """Test conditional JP."""
+    cpu = CPU(MMU())
+    initial_pc = cpu.pc
+    result_pc = addr if should_jump else (initial_pc + 3)
+    cpu.flags[flag] = flag_value
+    addr_low = addr & 0xFF
+    addr_high = (addr >> 8) & 0xFF
+    cpu.insert_instruction(bytearray([opcode, addr_low, addr_high]))
+
+    cpu.cycle()
+
+    assert cpu.pc == result_pc
+
+
+def test_jp_hl() -> None:
+    """Test JP HL. Jump to address stored in HL register."""
+    cpu = CPU(MMU())
+    target_addr = 0x4321
+    cpu.reg["H"] = (target_addr >> 8) & 0xFF
+    cpu.reg["L"] = target_addr & 0xFF
+    cpu.insert_instruction(bytearray([0xE9]))
+    cpu.cycle()
+
+    assert cpu.pc == target_addr
