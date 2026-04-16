@@ -114,7 +114,6 @@ indent-style = "space"
 "tests/**/*.py" = [
     "PLC0415",  # Import outside top-level (tests often need scoped imports)
     "PLR2004",  # Magic values
-    "F841",     # Unused variable (fixtures, etc.)
     "PT001",    # Use @pytest.fixture() over @pytest.fixture
     "S101",     # Use of assert detected
     "D101",     # Missing docstring in public class

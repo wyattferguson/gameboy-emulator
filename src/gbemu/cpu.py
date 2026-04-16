@@ -293,7 +293,6 @@ class CPU:
         left: bool = False,
         circular: bool = False,
         insert_carry: bool = False,
-        preserve_msb: bool = False,
     ) -> None:
         """Rotate bits left or right."""
         value: int = self.get_stored_value(register)
@@ -302,11 +301,11 @@ class CPU:
 
         shifted: int = new_carry if left else new_carry << 7
         if insert_carry:
-            shifted = old_carry if left else old_carry << 7
+            shifted: int = old_carry if left else old_carry << 7
         elif not circular:
-            shifted = (value & 0x80) if preserve_msb and not left else 0
+            shifted = (value & 0x80) if not left else 0
 
-        result = (value << 1 | shifted) & 0xFF if left else value >> 1 | shifted
+        result: int = (value << 1 | shifted) & 0xFF if left else value >> 1 | shifted
 
         if register == "HL":
             self.mmu[self.reg["HL"]] = result
@@ -428,6 +427,11 @@ class CPU:
             self.pc = self.pop("SP")
         else:
             self.pc += 1
+
+    def bit(self, bit_num: int, register: str) -> None:
+        """Test if bit is set in register or memory."""
+        value: int = self.get_stored_value(register)
+        self.flags["Z"] = 0 if (value >> bit_num) & 0x1 else 1
 
     def di(self) -> None:
         """Disable interrupts."""

@@ -1,9 +1,7 @@
 import pytest
 
-from gbemu.config import PC_START
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU
-from gbemu.opcodes import OPCODES, OpCode
 
 
 def test_nop() -> None:
