@@ -101,6 +101,9 @@ ignore = [
     "FBT002",   # bool argument in lambda
     "FBT001",   # bool argument in function definition
     "PLR2004",  # Magic values
+    "FIX002",   # TODOs can hang out
+    "TD002",    # missing todo authoer
+    "TD003",    # missing todo link
 ]
 
 [tool.ruff.format]

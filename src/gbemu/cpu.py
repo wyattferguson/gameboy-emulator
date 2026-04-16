@@ -152,10 +152,16 @@ class CPU:
     def stop(self) -> None:
         """Halt CPU and LCD until button pressed. Used for power saving."""
 
-    def add(self, dest_register: str, src_register: str, with_carry: bool = False) -> None:
+    def add(
+        self,
+        dest_register: str,
+        register: str,
+        with_carry: bool = False,
+        number: int | None = None,
+    ) -> None:
         """Add value from source to dest, optionally with carry."""
         carry: int = self.flags["C"] if with_carry else 0
-        value: int = self.get_stored_value(src_register)
+        value: int = number if number is not None else self.get_stored_value(register)
         total: int = self.reg[dest_register] + value + carry
         self.flags["Z"] = 1 if (total & 0xFF) == 0 else 0
         self.flags["H"] = 1 if (self.reg[dest_register] & 0xF) + (value & 0xF) + carry > 0xF else 0
@@ -170,17 +176,23 @@ class CPU:
         self.flags["C"] = 1 if total > 0xFFFF else 0
         self.reg[dest_register] = total & 0xFFFF
 
-    def sub(self, dest_register: str, src_register: str, with_carry: bool = False) -> None:
+    def sub(
+        self,
+        dest_register: str,
+        register: str,
+        with_carry: bool = False,
+        number: int | None = None,
+    ) -> None:
         """Subtract value from source to dest, optionally with carry."""
         carry: int = self.flags["C"] if with_carry else 0
-        value: int = self.get_stored_value(src_register)
+        value: int = number if number is not None else self.get_stored_value(register)
         result: int = self.reg[dest_register] - value - carry
         self._set_sub_flags(result, self.reg[dest_register], value, carry)
         self.reg[dest_register] = result & 0xFF
 
-    def bitwise(self, operation: Bitwise, dest_register: str, src_register: str) -> None:
+    def bitwise(self, operation: Bitwise, dest_register: str, source: str | int) -> None:
         """Perform bitwise operation (AND, XOR, OR)."""
-        value: int = self.get_stored_value(src_register)
+        value: int = self.get_stored_value(source) if isinstance(source, str) else source
 
         if operation == Bitwise.AND:
             self.reg[dest_register] &= value

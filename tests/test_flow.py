@@ -73,3 +73,6 @@ def test_jrc(
     cpu.cycle()
 
     assert cpu.pc == result_pc
+
+
+# TODO: test JP, CALL, and RET instructions
