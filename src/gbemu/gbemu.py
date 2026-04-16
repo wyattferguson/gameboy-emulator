@@ -9,7 +9,6 @@ from gbemu.controller import Controller
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU
 from gbemu.ppu import PPU
-from gbemu.screen import Screen
 
 
 class Gbemu:
@@ -21,16 +20,15 @@ class Gbemu:
         self.cart = Cart(self.rom)
         self.mmu = MMU(self.cart)
         self.controller = Controller(self.mmu)
-        self.screen = Screen()
         self.audio = Audio()
-        self.ppu = PPU(self.mmu, self.screen)
+        self.ppu = PPU(self.mmu)
         self.cpu = CPU(self.mmu)
 
     def run(self) -> None:
         """Run the emulator."""
         while True:
-            self.cpu.cycle()
-            self.screen.update()
-            self.audio.update()
-            sleep(0.05)  # sleep to prevent 100% CPU usage
             self.controller.update()
+            self.cpu.cycle()
+            self.audio.update()
+            self.ppu.update()
+            sleep(0.05)  # sleep to prevent 100% CPU usage

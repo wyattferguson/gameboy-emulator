@@ -1,5 +1,7 @@
 from enum import StrEnum
 
+type Color = tuple[int, int, int]
+
 
 class CallableDict(dict):
     """Run callable values when accessed."""
