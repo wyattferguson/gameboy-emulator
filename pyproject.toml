@@ -104,6 +104,7 @@ ignore = [
     "FIX002",   # TODOs can hang out
     "TD002",    # missing todo authoer
     "TD003",    # missing todo link
+    "TC001",    # move import into type-checking block
 ]
 
 [tool.ruff.format]

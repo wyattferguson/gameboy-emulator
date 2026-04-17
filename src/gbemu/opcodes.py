@@ -1,23 +1,4 @@
-from dataclasses import dataclass
-
-from gbemu.ctypes import Bitwise
-
-
-@dataclass(frozen=True)
-class OpCode:
-    """GB CPU instruction."""
-
-    label: str  # mnemonic name
-    length: int  # length of instruction in bytes
-    cycles: int  # number of cpu cyles
-    call: str | None = None  # CPU method name to call
-    args: list[str | bool | int | Bitwise] | None = None  # give arguments to send to CPU method
-    flags: dict[str, int] | None = None  # set CPU flags after execution
-    pc_inc: bool = True  # whether to increment PC after execution
-
-    def __str__(self) -> str:
-        return f"{self.label} {self.length} - {self.args} - {self.flags}"
-
+from gbemu.ctypes import Bitwise, OpCode
 
 OPCODES: dict[str, OpCode] = {
     "0x0": OpCode("NOP", 1, 4, "nop"),
@@ -485,7 +466,9 @@ OPCODES: dict[str, OpCode] = {
     "0xdc": OpCode("CALL C, a16", 3, 24, "callc", args=["C", 1], pc_inc=False),
     "0xde": OpCode("SBC A, d8", 2, 8, "sub", args=["A", True], flags={"N": 1}),
     "0xdf": OpCode("RST $18", 1, 16, "rst", args=[0x18], pc_inc=False),
+    "0xe0": OpCode("LDH [a8], A", 2, 12, "ldh_mem", args=["A"]),
     "0xe1": OpCode("POP HL", 1, 12, "pop", args=["HL"]),
+    "0xe2": OpCode("LDH [C], A", 1, 8, "ldh_mem", args=["A", "C"]),
     "0xe5": OpCode("PUSH HL", 1, 16, "push", args=["HL"]),
     "0xe6": OpCode(
         "AND A, d8",
@@ -507,7 +490,9 @@ OPCODES: dict[str, OpCode] = {
         flags={"N": 0, "H": 0, "C": 0},
     ),
     "0xef": OpCode("RST $28", 1, 16, "rst", args=[0x28], pc_inc=False),
+    "0xf0": OpCode("LDH A, [a8]", 2, 12, "ldh_reg", args=["A"]),
     "0xf1": OpCode("POP AF", 1, 12, "pop", args=["AF"]),
+    "0xf2": OpCode("LDH A, [C]", 1, 8, "ldh_reg", args=["A", "C"]),
     "0xf3": OpCode("DI", 1, 4, "di"),
     "0xf5": OpCode("PUSH AF", 1, 16, "push", args=["AF"]),
     "0xf6": OpCode(

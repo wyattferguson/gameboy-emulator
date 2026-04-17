@@ -15,7 +15,8 @@ class CPU:
 
     def __init__(self, mmu: MMU) -> None:
         self.debug: bool = DEBUG
-        self.pc: int = PC_START  # program counter
+        # self.pc: int = PC_START  # program counter
+        self.pc = 0x000
         self.mmu: MMU = mmu
         self.interrupts: bool = False
         self.halted: bool = False
@@ -59,7 +60,8 @@ class CPU:
                 self.cb_prefixed = True
             else:
                 self.instruction = OPCODES[op_code]
-            logger.debug(f"Fetch: {hex(self.pc)} - {self.instruction}")
+            if self.debug:
+                logger.debug(f"Fetch: {hex(self.pc)} - {self.instruction}")
         except Exception:
             # raise FetchError(
             #     f"Error fetching instruction: PC = {self.pc} OPCODE = {op_code} - {e}"
@@ -80,7 +82,8 @@ class CPU:
                 b = bytes([self.mmu[self.pc + i] for i in range(1, self.instruction.length)])
                 self.args.append(int.from_bytes(b, byteorder="little"))
 
-            logger.debug(f"Decoded: {self.instruction}, {self.args}")
+            if self.debug:
+                logger.debug(f"Decoded: {self.instruction}, {self.args}")
         except Exception as e:
             # raise DecodeError(
             #     f"Error decoding instr: PC={self.pc} SP={self.sp} INSTR={self.instruction} - {e}"
@@ -91,7 +94,8 @@ class CPU:
     def execute(self) -> None:
         """Run instruction and update PC, SP, registers, and flags."""
         try:
-            logger.debug(f"Execute: {self.instruction.call}, {self.args}")
+            if self.debug:
+                logger.debug(f"Execute: {self.instruction.call}, {self.args}")
 
             # Set flags with static values from instruction definition
             if self.instruction.flags:
@@ -128,12 +132,13 @@ class CPU:
     def nop(self) -> None:
         """No Operation."""
 
-    def ld(self, register: str, src_location: int | str) -> None:
-        """Load value in register."""
-        if isinstance(src_location, str):
-            src_location: int = self.reg[src_location]
+    def get_reg(self, register: str | int) -> int:
+        """Get value of 8-bit register."""
+        return self.reg[register] if isinstance(register, str) else register
 
-        self.reg[register] = src_location
+    def ld(self, register: str, src: int | str) -> None:
+        """Load value in register."""
+        self.reg[register] = self.get_reg(src)
 
     def ld_reg16(self, reg: str, src_register: str | int) -> None:
         """Load value from memory from a register-pair address or immediate address."""
@@ -142,9 +147,17 @@ class CPU:
 
     def ld_mem(self, dest_register: str, src: str | int) -> None:
         """Load value into memory."""
-        if isinstance(src, str):
-            src: int = self.reg[src]
-        self.mmu[self.reg[dest_register]] = src
+        self.mmu[self.reg[dest_register]] = self.get_reg(src)
+
+    def ldh_reg(self, register: str, offset: int | str) -> None:
+        """Load value into register from memory at address 0xFF00 + offset."""
+        offset = self.get_reg(offset)
+        self.reg[register] = self.mmu[0xFF00 + offset]
+
+    def ldh_mem(self, register: str, offset: int | str) -> None:
+        """Load value from register into memory at address 0xFF00 + offset."""
+        offset = self.get_reg(offset)
+        self.mmu[0xFF00 + offset] = self.reg[register]
 
     def ld_mem16(self, register: str, src: int) -> None:
         """Load register value into memory at 16-bit address."""

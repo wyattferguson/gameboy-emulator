@@ -265,3 +265,77 @@ def test_ld_a_from_a16_opcode_fa(address: int, value: int) -> None:
     cpu.cycle()
 
     assert cpu.reg["A"] == value
+
+
+@pytest.mark.parametrize(
+    ("offset", "value"),
+    [
+        (0x00, 0x12),
+        (0x42, 0xCD),
+        (0xFF, 0x7E),
+    ],
+)
+def test_ldh_mem_a_opcode_e0(offset: int, value: int) -> None:
+    """Test LDH [a8], A (0xE0)."""
+    cpu = CPU(MMU())
+    cpu.reg["A"] = value
+    cpu.insert_instruction(bytearray([0xE0, offset]))
+    cpu.cycle()
+
+    assert cpu.mmu[0xFF00 + offset] == value
+
+
+@pytest.mark.parametrize(
+    ("offset", "value"),
+    [
+        (0x00, 0x3C),
+        (0x42, 0xAA),
+        (0xFF, 0x01),
+    ],
+)
+def test_ldh_a_mem_opcode_f0(offset: int, value: int) -> None:
+    """Test LDH A, [a8] (0xF0)."""
+    cpu = CPU(MMU())
+    cpu.mmu[0xFF00 + offset] = value
+    cpu.insert_instruction(bytearray([0xF0, offset]))
+    cpu.cycle()
+
+    assert cpu.reg["A"] == value
+
+
+@pytest.mark.parametrize(
+    ("c_value", "a_value"),
+    [
+        (0x00, 0x9A),
+        (0x4C, 0x11),
+        (0xFF, 0xE7),
+    ],
+)
+def test_ldh_mem_c_a_opcode_e2(c_value: int, a_value: int) -> None:
+    """Test LDH [C], A (0xE2)."""
+    cpu = CPU(MMU())
+    cpu.reg["C"] = c_value
+    cpu.reg["A"] = a_value
+    cpu.insert_instruction(bytearray([0xE2]))
+    cpu.cycle()
+
+    assert cpu.mmu[0xFF00 + c_value] == a_value
+
+
+@pytest.mark.parametrize(
+    ("c_value", "mem_value"),
+    [
+        (0x00, 0x66),
+        (0x4C, 0xB2),
+        (0xFF, 0x19),
+    ],
+)
+def test_ldh_a_mem_c_opcode_f2(c_value: int, mem_value: int) -> None:
+    """Test LDH A, [C] (0xF2)."""
+    cpu = CPU(MMU())
+    cpu.reg["C"] = c_value
+    cpu.mmu[0xFF00 + c_value] = mem_value
+    cpu.insert_instruction(bytearray([0xF2]))
+    cpu.cycle()
+
+    assert cpu.reg["A"] == mem_value

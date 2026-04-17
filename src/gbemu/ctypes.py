@@ -1,4 +1,5 @@
-from enum import StrEnum
+from dataclasses import dataclass
+from enum import IntEnum, StrEnum
 
 type Color = tuple[int, int, int]
 
@@ -32,3 +33,43 @@ class Bitwise(StrEnum):
     OR = "OR"
     XOR = "XOR"
     NOT = "NOT"
+
+
+@dataclass(frozen=True)
+class OpCode:
+    """GB CPU instruction."""
+
+    label: str  # mnemonic name
+    length: int  # length of instruction in bytes
+    cycles: int  # number of cpu cyles
+    call: str | None = None  # CPU method name to call
+    args: list[str | bool | int | Bitwise] | None = None  # give arguments to send to CPU method
+    flags: dict[str, int] | None = None  # set CPU flags after execution
+    pc_inc: bool = True  # whether to increment PC after execution
+
+    def __str__(self) -> str:
+        return f"{self.label} {self.length} - {self.args} - {self.flags}"
+
+
+class TileSize(IntEnum):
+    """Tile sizes."""
+
+    SMALL = 8
+    LARGE = 16
+
+
+@dataclass()
+class Tile:
+    """GB tile + attributes."""
+
+    index: int
+    data: list[int]
+    height: TileSize = TileSize.SMALL
+    x: int = 0
+    y: int = 0
+    x_flipped: bool = False
+    y_flipped: bool = False
+    bank: int = 0
+    dmg_palette: int = 0
+    cgb_palette: int = 0
+    priority: bool = False

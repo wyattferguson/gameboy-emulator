@@ -11,11 +11,11 @@ class MMU:
     def __init__(self, cart: Cart | None = None, size: int = MEMORY_SIZE) -> None:
         self.size = size
         self._memory = [0] * self.size
-        # self._memory[0 : len(BIOS)] = BIOS  # load system bios
-        self._cart = cart
         if cart:
             # FIX: Load max 32kb of ROM and bank switching for larger ROMs
             self._memory[0 : len(cart.rom)] = cart.rom
+        self._memory[0 : len(BIOS)] = BIOS  # load system bios
+        self._cart = cart
 
     def __len__(self) -> int:
         return self.size
