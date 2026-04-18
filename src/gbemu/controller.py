@@ -7,8 +7,10 @@ from gbemu.mmu import MMU
 
 
 class Controller:
-    def __init__(self, ram: MMU) -> None:
-        self.mmu = ram
+    """Gameboy Controller."""
+
+    def __init__(self, mmu: MMU) -> None:
+        self.mmu = mmu
         self.mmu[M_JOYPAD] = 0xFF  # Set all buttons to not pressed
         self.dpad_pressed = False
 
