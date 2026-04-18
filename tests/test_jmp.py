@@ -23,7 +23,7 @@ def test_jr(
 ) -> None:
     """Test JR instruction. Jump to address relative to current PC."""
     cpu = CPU(MMU())
-    result_pc = cpu.pc + hex_to_signed(offset, 8)
+    result_pc = (cpu.pc + 2 + hex_to_signed(offset, 8)) & 0xFFFF
     cpu.insert_instruction(bytearray([opcode, offset]))
     cpu.cycle()
 
@@ -66,7 +66,9 @@ def test_jrc(
 ) -> None:
     """Test conditional JR."""
     cpu = CPU(MMU())
-    result_pc = cpu.pc + (hex_to_signed(offset, 8) if should_jump else 0)
+    result_pc = (
+        (cpu.pc + 2 + hex_to_signed(offset, 8)) & 0xFFFF if should_jump else (cpu.pc + 2) & 0xFFFF
+    )
     cpu.flags[flag] = flag_value
     cpu.insert_instruction(bytearray([opcode, offset]))
 

@@ -1,4 +1,18 @@
-from src.gbemu.cpu import CPU
+from gbemu.cpu import CPU
+from gbemu.mmu import MMU
+
+SAFE_HL_ADDRESS = 0xC000
+
+
+def make_cpu() -> CPU:
+    """Create a CPU with a fresh MMU for tests."""
+    return CPU(MMU())
+
+
+def set_hl_value(cpu: CPU, value: int, address: int = SAFE_HL_ADDRESS) -> None:
+    """Set HL to a safe RAM address and write a byte at [HL]."""
+    cpu.reg["HL"] = address
+    cpu.mmu[address] = value
 
 
 def verify_flags(

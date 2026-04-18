@@ -451,6 +451,7 @@ OPCODES: dict[str, OpCode] = {
     "0xc5": OpCode("PUSH BC", 1, 16, "push", args=["BC"]),
     "0xc6": OpCode("ADD A, d8", 2, 8, "add", args=["A", False], flags={"N": 0}),
     "0xc7": OpCode("RST $00", 1, 16, "rst", args=[0x00], pc_inc=False),
+    "0xc9": OpCode("RET", 1, 16, "ret", pc_inc=False),
     "0xca": OpCode("JP Z, a16", 3, 16, "jpc", args=["Z", 1], pc_inc=False),
     "0xcc": OpCode("CALL Z, a16", 3, 24, "callc", args=["Z", 1], pc_inc=False),
     "0xcd": OpCode("CALL a16", 3, 24, "call", pc_inc=False),

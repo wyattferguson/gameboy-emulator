@@ -176,6 +176,22 @@ class CPU:
         self.mmu[address] = self.reg["SP"] & 0xFF
         self.mmu[address + 1] = (self.reg["SP"] >> 8) & 0xFF
 
+    def _push_u16(self, value: int) -> None:
+        """Push a 16-bit value onto the stack (stack grows downward)."""
+        value &= 0xFFFF
+        self.reg["SP"] = (self.reg["SP"] - 1) & 0xFFFF
+        self.mmu[self.reg["SP"]] = (value >> 8) & 0xFF
+        self.reg["SP"] = (self.reg["SP"] - 1) & 0xFFFF
+        self.mmu[self.reg["SP"]] = value & 0xFF
+
+    def _pop_u16(self) -> int:
+        """Pop a 16-bit value from the stack (little-endian)."""
+        low = self.mmu[self.reg["SP"]]
+        self.reg["SP"] = (self.reg["SP"] + 1) & 0xFFFF
+        high = self.mmu[self.reg["SP"]]
+        self.reg["SP"] = (self.reg["SP"] + 1) & 0xFFFF
+        return to_u16(high, low)
+
     def halt(self) -> None:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
         self.halted = True
@@ -366,28 +382,26 @@ class CPU:
         self.pc = addr
 
     def pop(self, register: str) -> int:
-        """Pop value from stack."""
-        value: int = self.mmu[self.reg[register]]
-        self.reg[register] -= 2
-
-        # AF lower 4 bits set flags
+        """Pop 16-bit value from stack into register-pair."""
+        value = self._pop_u16()
         if register == "AF":
+            value &= 0xFFF0
             self.flags["Z"] = (value >> 7) & 0x1
             self.flags["N"] = (value >> 6) & 0x1
             self.flags["H"] = (value >> 5) & 0x1
             self.flags["C"] = (value >> 4) & 0x1
-            value &= 0xF0
+        self.reg[register] = value
         return value
 
     def push(self, register: str | int) -> None:
         """Push value onto stack."""
-        self.reg["SP"] += 2
-        self.mmu[self.reg["SP"]] = self.reg[register] if isinstance(register, str) else register
+        value = self.reg[register] if isinstance(register, str) else register
+        self._push_u16(value)
 
     def rst(self, addr: int, msb: int = 0) -> None:
         """Call to the absolute fixed address."""
         value: int = to_u16(msb, addr)
-        self.push(self.pc)
+        self.push((self.pc + 1) & 0xFFFF)
         self.pc = value
 
     def cpl(self, register: str) -> None:
@@ -422,11 +436,13 @@ class CPU:
         """Relative Jump to address if condition is met."""
         if self.flags[flag] == condition:
             self.jr(offset)
+        else:
+            self.pc = (self.pc + 2) & 0xFFFF
 
     def jr(self, offset: int = 0) -> None:
         """Relative Jump to address."""
         signed_offset: int = hex_to_signed(offset, 8)
-        self.pc += signed_offset
+        self.pc = (self.pc + 2 + signed_offset) & 0xFFFF
 
     def callc(self, flag: str, condition: int, addr: int) -> None:
         """Call subroutine at address if condition is met."""
@@ -437,13 +453,13 @@ class CPU:
 
     def call(self, addr: int) -> None:
         """Call subroutine at address."""
-        self.push(self.pc)
+        self.push((self.pc + 3) & 0xFFFF)
         self.pc = addr
 
     def ret(self, condition_flag: str | None = None, condition_value: int | None = None) -> None:
         """Return from subroutine, optionally if condition is met."""
         if condition_flag is None or self.flags[condition_flag] == condition_value:
-            self.pc = self.pop("SP")
+            self.pc = self._pop_u16()
         else:
             self.pc += 1
 

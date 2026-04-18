@@ -1,9 +1,7 @@
 import pytest
 
-from gbemu.cpu import CPU
-from gbemu.mmu import MMU
 from gbemu.opcodes import OPCODES
-from tests.utils import verify_flags
+from tests.utils import make_cpu, set_hl_value, verify_flags
 
 
 @pytest.mark.parametrize(
@@ -40,10 +38,10 @@ def test_bitwise(
     result: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["A"] = a_value
     if register == "HL":
-        cpu.mmu[cpu.reg["HL"]] = value
+        set_hl_value(cpu, value)
     else:
         cpu.reg[register] = value
     cpu.insert_instruction(bytearray([opcode]))
@@ -72,7 +70,7 @@ def test_cpl(
     result: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["A"] = value
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
@@ -99,7 +97,7 @@ def test_ccf(
     c_flag_after: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.flags["C"] = c_flag_before
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
@@ -143,7 +141,7 @@ def test_and_immediate(
     result: int,
 ) -> None:
     """Test AND A, d8 instruction."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["A"] = a_value
     cpu.insert_instruction(bytearray([opcode, immediate]))
     cpu.cycle()

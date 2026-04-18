@@ -1,6 +1,5 @@
 import pytest
 
-from gbemu.config import PC_START
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU
 
@@ -30,11 +29,12 @@ def test_rst_vectors(opcode: int, target_addr: int) -> None:
     # pc_inc=False on all RST opcodes, so PC is exactly the target vector.
     assert cpu.pc == target_addr
 
-    # Emulator stack model increments SP by 2 on push.
-    assert cpu.reg["SP"] == (initial_sp + 2) & 0xFFFF
+    # RST pushes return address (PC + 1) and stack grows downward.
+    assert cpu.reg["SP"] == (initial_sp - 2) & 0xFFFF
 
-    # MMU stores one byte at SP: low byte of pushed PC.
-    assert cpu.mmu[cpu.reg["SP"]] == (initial_pc & 0xFF)
+    return_addr = (initial_pc + 1) & 0xFFFF
+    assert cpu.mmu[cpu.reg["SP"]] == (return_addr & 0xFF)
+    assert cpu.mmu[(cpu.reg["SP"] + 1) & 0xFFFF] == ((return_addr >> 8) & 0xFF)
 
 
 def test_rst_uses_current_pc_value() -> None:
@@ -47,17 +47,18 @@ def test_rst_uses_current_pc_value() -> None:
     cpu.cycle()
 
     assert cpu.pc == 0x38
-    assert cpu.reg["SP"] == (initial_sp + 2) & 0xFFFF
-    assert cpu.mmu[cpu.reg["SP"]] == 0x34
+    assert cpu.reg["SP"] == (initial_sp - 2) & 0xFFFF
+    assert cpu.mmu[cpu.reg["SP"]] == 0x35
+    assert cpu.mmu[(cpu.reg["SP"] + 1) & 0xFFFF] == 0x12
 
 
-def test_rst_from_default_pc_start() -> None:
-    """Sanity check default start PC is pushed as low byte on RST."""
+def test_rst_from_default_pc_pushes_next_instruction() -> None:
+    """RST from reset should push next instruction address (0x0001)."""
     cpu = CPU(MMU())
-    assert cpu.pc == PC_START
+    assert cpu.pc == 0x0000
 
     cpu.insert_instruction(bytearray([0xC7]))  # RST $00
     cpu.cycle()
 
     assert cpu.pc == 0x00
-    assert cpu.mmu[cpu.reg["SP"]] == (PC_START & 0xFF)
+    assert cpu.mmu[cpu.reg["SP"]] == 0x01

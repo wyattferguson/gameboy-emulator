@@ -3,7 +3,7 @@ import pytest
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU
 from gbemu.opcodes import OPCODES, OpCode
-from tests.utils import verify_flags
+from tests.utils import set_hl_value, verify_flags
 
 
 @pytest.mark.parametrize(
@@ -216,7 +216,7 @@ def test_dec_inc_mem(
     opcode: int,
 ) -> None:
     cpu = CPU(MMU())
-    cpu.mmu[cpu.reg[dest]] = value
+    set_hl_value(cpu, value)
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
 

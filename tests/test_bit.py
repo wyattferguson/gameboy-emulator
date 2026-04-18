@@ -33,6 +33,7 @@ from tests.utils import verify_flags
 def test_cb_bit_b(bit_num: int, value: int, z_flag: int, opcode: int) -> None:
     """Test BIT B register (bit positions 0-7)."""
     cpu = CPU(MMU())
+    assert opcode == (0x40 + (bit_num * 8))
     cpu.reg["B"] = value
     cpu.insert_instruction(bytearray([0xCB, opcode]))
     cpu.cycle()
@@ -76,6 +77,8 @@ def test_cb_bit_registers(
 ) -> None:
     """Test BIT on various registers (C through A)."""
     cpu = CPU(MMU())
+    register_index = {"B": 0, "C": 1, "D": 2, "E": 3, "H": 4, "L": 5, "A": 7}[dest]
+    assert opcode == (0x40 + (bit_num * 8) + register_index)
     cpu.reg[dest] = value
     cpu.insert_instruction(bytearray([0xCB, opcode]))
     cpu.cycle()

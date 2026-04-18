@@ -28,7 +28,7 @@ def test_call(
 
     cpu.cycle()
     assert cpu.pc == target_addr
-    assert cpu.reg["SP"] == (initial_sp + 2) & 0xFFFF
+    assert cpu.reg["SP"] == (initial_sp - 2) & 0xFFFF
 
 
 @pytest.mark.parametrize(
@@ -71,7 +71,7 @@ def test_callc(
 
     if should_call:
         assert cpu.pc == target_addr
-        assert cpu.reg["SP"] == (initial_sp + 2) & 0xFFFF
+        assert cpu.reg["SP"] == (initial_sp - 2) & 0xFFFF
     else:
         assert cpu.pc == (initial_pc + 3) & 0xFFFF
         assert cpu.reg["SP"] == initial_sp
@@ -106,8 +106,8 @@ def test_ret_nz(
     cpu.cycle()
 
     if flag_value == 0:
-        assert cpu.pc == (return_addr & 0xFF)
-        assert cpu.reg["SP"] == (0x8000 - 2) & 0xFFFF
+        assert cpu.pc == return_addr
+        assert cpu.reg["SP"] == (0x8000 + 2) & 0xFFFF
     else:
         assert cpu.pc == (initial_pc + 1) & 0xFFFF
         assert cpu.reg["SP"] == 0x8000
