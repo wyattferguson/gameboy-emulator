@@ -40,7 +40,7 @@ class MMU:
         self._memory[address] = value & 0xFF  # Ensure value is 8-bit
 
     def dump(self, start: int = 0, end: int = 0xFFFF) -> None:
-        """Print memory from start to end in 16 byte chunks."""
+        """Print memory slice in formatted rows."""
         chunk_size: int = 16
         print(f"\n################## MMU: {start:04x}-{end:04x}  ##################\n")
         for i in range(start, end + 1, chunk_size):
