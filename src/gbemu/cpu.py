@@ -463,6 +463,11 @@ class CPU:
         else:
             self.pc += 1
 
+    def reti(self) -> None:
+        """Return from interrupt and enable interrupts."""
+        self.pc = self._pop_u16()
+        self.interrupts = True
+
     def bit(self, bit_num: int, register: str) -> None:
         """Test if bit is set in register or memory."""
         value: int = self.get_stored_value(register)

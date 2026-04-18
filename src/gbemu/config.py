@@ -5,6 +5,7 @@ MEMORY_SIZE: int = 65536  # 64kb of totally memory (ROM + RAM + IO)
 PC_START: int = 0x100  # rom load location
 SP_START: int = 0xFFFE  # stack pointer start location
 DEBUG = False
+HEADLESS = False
 
 # fmt: off
 BIOS: list[int] = [

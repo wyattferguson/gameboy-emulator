@@ -4,7 +4,7 @@ from loguru import logger
 
 from gbemu.apu import APU
 from gbemu.cart import Cart
-from gbemu.config import DEBUG, DEFAULT_ROM
+from gbemu.config import DEBUG, DEFAULT_ROM, HEADLESS
 from gbemu.controller import Controller
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU
@@ -14,14 +14,19 @@ from gbemu.ppu import PPU
 class Gbemu:
     """Gameboy Emulator."""
 
-    def __init__(self, rom: str = DEFAULT_ROM, debug: bool = DEBUG) -> None:
+    def __init__(
+        self,
+        rom: str = DEFAULT_ROM,
+        debug: bool = DEBUG,
+        headless: bool = HEADLESS,
+    ) -> None:
         self.debug = debug
         self.rom = rom
         self.cart = Cart(self.rom)
         self.mmu = MMU(self.cart)
         self.controller = Controller(self.mmu)
         self.audio = APU()
-        self.ppu = PPU(self.mmu)
+        self.ppu = PPU(self.mmu, headless)
         self.cpu = CPU(self.mmu)
 
     def run(self) -> None:

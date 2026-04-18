@@ -29,7 +29,7 @@ class PPUMode(IntEnum):
 class PPU:
     """Picture Processing Unit (PPU) for the Gameboy."""
 
-    def __init__(self, mmu: MMU) -> None:
+    def __init__(self, mmu: MMU, headless: bool = False) -> None:
         self.mmu: MMU = mmu
         self.screen: Screen = Screen()
         # self.index_methods = {
