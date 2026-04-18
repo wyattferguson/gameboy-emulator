@@ -2,7 +2,7 @@ from time import sleep
 
 from loguru import logger
 
-from gbemu.audio import Audio
+from gbemu.apu import APU
 from gbemu.cart import Cart
 from gbemu.config import DEBUG, DEFAULT_ROM
 from gbemu.controller import Controller
@@ -20,7 +20,7 @@ class Gbemu:
         self.cart = Cart(self.rom)
         self.mmu = MMU(self.cart)
         self.controller = Controller(self.mmu)
-        self.audio = Audio()
+        self.audio = APU()
         self.ppu = PPU(self.mmu)
         self.cpu = CPU(self.mmu)
 

@@ -14,6 +14,7 @@ from gbemu.config import (
 from gbemu.ctypes import Tile
 from gbemu.mmu import MMU
 from gbemu.screen import Screen
+from gbemu.utils import bit
 
 
 class PPUMode(IntEnum):
@@ -42,30 +43,63 @@ class PPU:
         self.scan_line: int = 0
         self.frame: int = 0
         self.mode: PPUMode = PPUMode.OAM
+        self.lcd_enabled: int = 0
+        self.window_tile_map: int = 0
+        self.window_enabled: int = 0
+        self.bg_tiles: int = 0
+        self.bg_tile_map: int = 0
+        self.obj_size: int = 0
+        self.obj_enabled: int = 0
+        self.bg_priority: int = 0
 
     def update(self) -> None:
         """Update the screen."""
         # for address in range(M_VRAM_START, M_VRAM_END + 1):
         #     value = self.mmu[address]
         #     # logger.debug(f"PPU: Read value {value:02x} from VRAM address {address:04x}")
-        print("\n################### PPU: Dumping Cart Ram ##################\n")
-        self.dump_ram(0, 128)
+        # print("\n################### PPU: Dumping Cart Ram ##################\n")
+        # self.dump_ram(0, 128)
 
         # print("\n################### PPU: Bank 1 VRAM ##################\n")
         # self.dump_ram(0x9800, 128)
-        for line in range(SCAN_LINES):
-            self.update_scanline(line)
-            # logger.debug(f"PPU: Updated scanline to {self.scan_line}")
+        # for line in range(SCAN_LINES):
+        #     self.update_scanline(line)
+        # logger.debug(f"PPU: Updated scanline to {self.scan_line}")
+
+        self.refresh_status()
+        self.dump_ram(0x9800, 128)
+
+        self.frame += 1
         self.screen.update()
+
+    def refresh_status(self) -> None:
+        """Refresh the PPU status based on the LCD control register."""
+        lcd_control = self.mmu[M_LCD_CONTROL]
+        self.lcd_enabled = bit(lcd_control, 7)
+        self.window_tile_map = bit(lcd_control, 6)
+        self.window_enabled = bit(lcd_control, 5)
+        self.bg_tiles = bit(lcd_control, 4)
+        self.bg_tile_map = bit(lcd_control, 3)
+        self.obj_size = bit(lcd_control, 2)
+        self.obj_enabled = bit(lcd_control, 1)
+        self.bg_priority = bit(lcd_control, 0)
 
     def dump_ram(self, address_start: int, size: int) -> None:
         """Dump a range of RAM for debugging."""
+        dump = False
         for x in range(size):
             addr = address_start + (x * 16)
             row = self.mmu[addr : addr + 16]
-            bytes_str = " ".join(f"{byte:02x}" for byte in row)
-            line = f"{addr:04x}"
-            print(f"{line}: {bytes_str}")
+            dump = any(byte != 0 for byte in row)
+
+        if dump:
+            print("\n################### PPU: Bank 0 VRAM ##################\n")
+            for x in range(size):
+                addr = address_start + (x * 16)
+                row = self.mmu[addr : addr + 16]
+                bytes_str = " ".join(f"{byte:02x}" for byte in row)
+                line = f"{addr:04x}"
+                print(f"{line}: {bytes_str}")
 
     def read_tile(self, tile_index: int) -> list[int]:
         """Read a tile from VRAM."""
@@ -73,6 +107,9 @@ class PPU:
         for i in range(TILE_BITS):
             tile_data.append(self.mmu[M_VRAM_START + tile_index * TILE_BITS + i])
         return tile_data
+
+    def transfer_pixel_data(self) -> None:
+        """Transfer pixel data from OAM to the screen."""
 
     def cycle(self) -> None:
         """Advance the PPU by one cycle."""

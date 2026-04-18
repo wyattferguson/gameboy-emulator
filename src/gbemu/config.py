@@ -4,7 +4,7 @@ DEFAULT_ROM = "./roms/hello.gb"
 MEMORY_SIZE: int = 65536  # 64kb of totally memory (ROM + RAM + IO)
 PC_START: int = 0x100  # rom load location
 SP_START: int = 0xFFFE  # stack pointer start location
-DEBUG = True
+DEBUG = False
 
 # fmt: off
 BIOS: list[int] = [
@@ -111,7 +111,7 @@ M_BOOT_ROM_MAPPING_CONTROL: int = 0xFF50
 # Video registers
 M_VRAM_START: int = 0x8000
 M_VRAM_END: int = 0x9FFF
-M_TILE_MAP_VRAM: list[list] = [[0x9800, 0x9BFF], [0x9C00, 0x9FFF]]
+M_TILE_MAP_VRAM: list[list[int]] = [[0x9800, 0x9BFF], [0x9C00, 0x9FFF]]
 M_VRAM_DMA_SOURCE_HIGH: int = 0xFF51
 M_VRAM_DMA_SOURCE_LOW: int = 0xFF52
 M_VRAM_DMA_DESTINATION_HIGH: int = 0xFF53
