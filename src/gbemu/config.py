@@ -112,7 +112,11 @@ M_BOOT_ROM_MAPPING_CONTROL: int = 0xFF50
 # Video registers
 M_VRAM_START: int = 0x8000
 M_VRAM_END: int = 0x9FFF
-M_TILE_MAP_VRAM: list[list[int]] = [[0x9800, 0x9BFF], [0x9C00, 0x9FFF]]
+M_OAM_START: int = 0xFE00
+M_OAM_END: int = 0xFE9F
+M_WIN_MAP_VRAM: list[list[int]] = [[0x9800, 0x9BFF], [0x9C00, 0x9FFF]]
+M_BG_TILE_DATA_VRAM: list[list[int]] = [[0x8800, 0x97FF], [0x8000, 0x8FFF]]
+M_BG_TILE_MAP_VRAM: list[list[int]] = [[0x9800, 0x9BFF], [0x9C00, 0x9FFF]]
 M_VRAM_DMA_SOURCE_HIGH: int = 0xFF51
 M_VRAM_DMA_SOURCE_LOW: int = 0xFF52
 M_VRAM_DMA_DESTINATION_HIGH: int = 0xFF53

@@ -16,7 +16,7 @@ class CPU:
     def __init__(self, mmu: MMU) -> None:
         self.debug: bool = DEBUG
         # self.pc: int = PC_START  # program counter
-        self.pc = 0x000
+        self.pc = 0x0000
         self.mmu: MMU = mmu
         self.interrupts: bool = False
         self.halted: bool = False

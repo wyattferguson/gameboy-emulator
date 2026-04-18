@@ -18,7 +18,7 @@ class Screen:
 
     def update(self) -> None:
         """Update the display."""
-        pg.display.flip()
+        pg.display.update()
 
     def draw_buffer(self, buffer: list[list[int]]) -> None:
         """Draw entire buffer to screen."""
@@ -37,15 +37,29 @@ class Screen:
         rect = pg.Rect(x * self.scaler, y * self.scaler, self.scaler, self.scaler)
         pg.draw.rect(self.screen, color, rect)
 
-    def draw_tile(self, tile_data: list[int], x: int, y: int) -> None:
+    def draw_tile(self, tile_data: list[list[int]], x: int, y: int) -> None:
         """Draw a tile on the screen."""
-        for i in range(8):
-            byte1 = tile_data[i * 2]
-            byte2 = tile_data[i * 2 + 1]
-            for j in range(8):
-                color_id = ((byte2 >> (7 - j)) & 1) << 1 | ((byte1 >> (7 - j)) & 1)
+        for tile_cnt, tile in enumerate(tile_data):
+            tile_x = x + tile_cnt * 8
+            for row in range(8):
+                byte1 = tile[row * 2]
+                byte2 = tile[row * 2 + 1]
+                for col in range(8):
+                    color_id = ((byte2 >> (7 - col)) & 1) << 1 | ((byte1 >> (7 - col)) & 1)
+                    color: Color = self.color_from_id(color_id)
+                    self.draw_pixel(tile_x + col, y + row, color)
+        pg.display.flip()
+
+    def ds(self, tile: list[int], x: int, y: int) -> None:
+        """Draw a simple pattern on the screen for testing."""
+        for row in range(len(tile) // 2):
+            for col in range(8):
+                byte1 = tile[row * 2]
+                byte2 = tile[row * 2 + 1]
+                color_id = ((byte2 >> (7 - col)) & 1) << 1 | ((byte1 >> (7 - col)) & 1)
                 color: Color = self.color_from_id(color_id)
-                self.draw_pixel(x + j, y + i, color)
+                self.draw_pixel(x + col, y + row, color)
+        pg.display.flip()
 
     # def draw_background(self, bg_data: list[int]) -> None:
     #     """Draw the background on the screen."""
