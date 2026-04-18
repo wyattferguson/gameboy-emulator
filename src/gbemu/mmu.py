@@ -1,8 +1,9 @@
 from typing import overload
 
+from loguru import logger
+
 from gbemu.cart import Cart
 from gbemu.config import BIOS, MEMORY_SIZE, PC_START
-from gbemu.exceptions import RamError
 
 
 class MMU:
@@ -30,12 +31,12 @@ class MMU:
         if isinstance(address, slice):
             return self._memory[address]
         if address < 0 or address >= len(self):
-            raise RamError(f"Address {address} is out of bounds.")
+            logger.error(f"Address {address} is out of bounds.")
         return self._memory[address]
 
     def __setitem__(self, address: int, value: int) -> None:
         if address < 0 or address >= len(self):
-            raise RamError(f"Address {address} is out of bounds.")
+            logger.error(f"Address {address} is out of bounds.")
         self._memory[address] = value & 0xFF  # Ensure value is 8-bit
 
     def dump(self, start: int = 0, end: int = 0xFFFF) -> None:
@@ -46,12 +47,3 @@ class MMU:
             chunk = self._memory[i : i + chunk_size]
             print(f"{i:04x}: " + " ".join(f"{byte:02x}" for byte in chunk))
         print("\n#####################################################\n")
-
-    def __str__(self) -> str:
-        """Return memory in 16 byte chunks."""
-        chunk_size: int = 16
-        print_rows: int = 4
-        return "\n".join(
-            " ".join(f"{byte:02x}" for byte in self._memory[i : i + chunk_size])
-            for i in range(PC_START, PC_START + (chunk_size * print_rows), chunk_size)
-        )

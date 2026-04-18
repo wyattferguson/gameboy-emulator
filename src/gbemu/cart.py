@@ -3,7 +3,6 @@ from pathlib import Path
 from loguru import logger
 
 from gbemu.config import DEFAULT_ROM
-from gbemu.exceptions import CartError, RomError
 
 
 class Cart:
@@ -29,7 +28,7 @@ class Cart:
                 else OLD_LICENSEE[f"{self.rom[0x14B]}"]
             )
         except Exception as e:
-            raise CartError(f"Error decoding cartridge header: {self.filename} - {e}") from e
+            logger.exception(f"Error decoding cartridge header: {self.filename} - {e}")
 
     def load(self) -> bytearray:
         """Load ROM file into memory and verify checksum."""
@@ -40,7 +39,7 @@ class Cart:
                     logger.error(f"ROM checksum failed for {self.filename}")
                 return rom
         except Exception as e:
-            raise RomError(f"Error loading ROM: {self.filename} - {e}") from e
+            logger.exception(f"Error loading ROM: {self.filename} - {e}")
 
     def _verify_checksum(self, rom: bytearray) -> bool:
         """Calculate and verify the ROM checksum."""
@@ -57,14 +56,14 @@ class Cart:
     def read(self, address: int = 0x0) -> int:
         """Read a byte from the cartridge at the specified address."""
         if address < 0 or address >= len(self.rom):
-            raise CartError(f"Attempted to read out of bounds. Address: {address}")
+            logger.error(f"Attempted to read out of bounds. Address: {address}")
 
         return self.rom[address]
 
     def write(self, address: int = 0x0, value: int = 0) -> None:
         """Write a byte to the cartridge at the specified address."""
         if address < 0 or address >= len(self.rom):
-            raise CartError(f"Attempted to write out of bounds. Address: {address}, Value: {value}")
+            logger.error(f"Attempted to write out of bounds. Address: {address}, Value: {value}")
 
         self.rom[address] = value
 

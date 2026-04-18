@@ -4,7 +4,6 @@ from loguru import logger
 
 from gbemu.config import DEBUG, PC_START, SP_START
 from gbemu.ctypes import Bitwise, CallableDict
-from gbemu.exceptions import DecodeError, ExecuteError, FetchError
 from gbemu.mmu import MMU
 from gbemu.opcodes import CB_PREFIXED, OPCODES, OpCode
 from gbemu.utils import hex_to_signed, to_u16
@@ -31,10 +30,10 @@ class CPU:
                 "F": 0,
                 "H": 0,
                 "L": 0,
-                "HL": lambda: self.get_reg16("H", "L"),
-                "BC": lambda: self.get_reg16("B", "C"),
-                "DE": lambda: self.get_reg16("D", "E"),
-                "AF": lambda: self.get_reg16("A", "F"),
+                "HL": lambda: self.reg16("H", "L"),
+                "BC": lambda: self.reg16("B", "C"),
+                "DE": lambda: self.reg16("D", "E"),
+                "AF": lambda: self.reg16("A", "F"),
                 "SP": SP_START,  # stack pointer
             },
         )
@@ -63,11 +62,9 @@ class CPU:
             if self.debug:
                 logger.debug(f"Fetch: {hex(self.pc)} - {self.instruction}")
         except Exception:
-            # raise FetchError(
-            #     f"Error fetching instruction: PC = {self.pc} OPCODE = {op_code} - {e}"
-            # ) from e
-            logger.debug(f"Not Found: {hex(self.pc)} - {op_code}")
-            sys.exit()
+            logger.exception(
+                f"Fetch - PC: {self.pc}({hex(self.pc)}) OP: {op_code} MEM: {self.mmu[self.pc]}",
+            )
 
     def fetch_cb_prefixed(self) -> str:
         """Fetch CB-prefixed instruction."""
@@ -85,11 +82,10 @@ class CPU:
             if self.debug:
                 logger.debug(f"Decoded: {self.instruction}, {self.args}")
         except Exception as e:
-            # raise DecodeError(
-            #     f"Error decoding instr: PC={self.pc} SP={self.sp} INSTR={self.instruction} - {e}"
-            # ) from e
-            logger.debug(f"Decode Error: {e}")
-            sys.exit()
+            logger.exception(
+                f"Decode - PC: {self.pc}({hex(self.pc)}) OP: {hex(self.mmu[self.pc])}",
+                f"INSTR: {self.instruction} - {e}",
+            )
 
     def execute(self) -> None:
         """Run instruction and update PC, SP, registers, and flags."""
@@ -107,16 +103,17 @@ class CPU:
                 getattr(self, self.instruction.call)(*self.args)
 
         except Exception as e:
-            # raise ExecuteError(f"Error executing: {self.instruction} - {e}") from e
-            logger.debug(f"Execute Error: {e}")
-            sys.exit()
+            logger.exception(
+                f"Execute - PC: {self.pc}({hex(self.pc)}) MEM: {hex(self.mmu[self.pc])}",
+                f"INSTR: {self.instruction} - {e}",
+            )
 
     def insert_instruction(self, instruction: bytearray) -> None:
         """Insert instruction into MMU at current PC. Used for Testing."""
         for i, byte in enumerate(instruction):
             self.mmu[self.pc + i] = byte
 
-    def get_reg16(self, register_a: str, register_b: str) -> int:
+    def reg16(self, register_a: str, register_b: str) -> int:
         """Get value of 16-bit register pair."""
         return to_u16(self.reg[register_a], self.reg[register_b])
 

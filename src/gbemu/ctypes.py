@@ -54,8 +54,8 @@ class OpCode:
 class TileSize(IntEnum):
     """Tile sizes."""
 
-    SMALL = 8
-    LARGE = 16
+    SMALL = 8  # 8x8 pixels
+    LARGE = 16  # 8x16 pixels
 
 
 @dataclass()
