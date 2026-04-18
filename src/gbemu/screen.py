@@ -1,3 +1,5 @@
+from time import sleep
+
 import pygame as pg
 
 from gbemu.config import BG_COLOR, DISPLAY_SCALER, ERROR_COLOR, PALLETE, SCREEN_HEIGHT, SCREEN_WIDTH
@@ -8,17 +10,27 @@ class Screen:
     """GB Screen."""
 
     def __init__(self, scaler: int = DISPLAY_SCALER) -> None:
-        pg.init()
-        pg.display.set_caption("Gameboy Emulator")
+        self.pg = pg
+        self.pg.init()
+        self.pg.display.set_caption("Gameboy Emulator")
         self.scaler = scaler
         self.palette = PALLETE
         self.screen_size = (SCREEN_WIDTH * scaler, SCREEN_HEIGHT * scaler)
-        self.screen = pg.display.set_mode(self.screen_size)
+        self.screen = self.pg.display.set_mode(self.screen_size)
         self.clear_screen()
 
     def update(self) -> None:
         """Update the display."""
-        pg.display.update()
+        # # fmt: off
+        # logo = [[0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0C, 0x00, 0x0D],
+        #         [0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E, 0xDC, 0xCC, 0x6E, 0xE6, 0xDD, 0xDD, 0xD9, 0x99],
+        #         [0xBB, 0xBB, 0x67, 0x63, 0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E]]
+        # # fmt: on
+        # # logo = [[0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B]]
+        # for tile in range(len(logo)):
+        #     self.ds(logo[tile], 0, tile + 1)
+        # # sleep(60)
+        self.pg.display.update()
 
     def draw_buffer(self, buffer: list[list[int]]) -> None:
         """Draw entire buffer to screen."""
@@ -34,48 +46,8 @@ class Screen:
 
     def draw_pixel(self, x: int, y: int, color: Color) -> None:
         """Draw a pixel on the screen."""
-        rect = pg.Rect(x * self.scaler, y * self.scaler, self.scaler, self.scaler)
-        pg.draw.rect(self.screen, color, rect)
-
-    def draw_tile(self, tile_data: list[list[int]], x: int, y: int) -> None:
-        """Draw a tile on the screen."""
-        for tile_cnt, tile in enumerate(tile_data):
-            tile_x = x + tile_cnt * 8
-            for row in range(8):
-                byte1 = tile[row * 2]
-                byte2 = tile[row * 2 + 1]
-                for col in range(8):
-                    color_id = ((byte2 >> (7 - col)) & 1) << 1 | ((byte1 >> (7 - col)) & 1)
-                    color: Color = self.color_from_id(color_id)
-                    self.draw_pixel(tile_x + col, y + row, color)
-        pg.display.flip()
-
-    def ds(self, tile: list[int], x: int, y: int) -> None:
-        """Draw a simple pattern on the screen for testing."""
-        for row in range(len(tile) // 2):
-            for col in range(8):
-                byte1 = tile[row * 2]
-                byte2 = tile[row * 2 + 1]
-                color_id = ((byte2 >> (7 - col)) & 1) << 1 | ((byte1 >> (7 - col)) & 1)
-                color: Color = self.color_from_id(color_id)
-                self.draw_pixel(x + col, y + row, color)
-        pg.display.flip()
-
-    # def draw_background(self, bg_data: list[int]) -> None:
-    #     """Draw the background on the screen."""
-    #     for i in range(32):
-    #         for j in range(32):
-    #             tile_index = bg_data[i * 32 + j]
-    #             tile_data = self.get_tile_data(tile_index)
-    #             self.draw_tile(tile_data, j * 8, i * 8)
-
-    # def draw_window(self, window_data: list[int], x: int, y: int) -> None:
-    #     """Draw the window on the screen."""
-    #     for i in range(32):
-    #         for j in range(32):
-    #             tile_index = window_data[i * 32 + j]
-    #             tile_data = self.get_tile_data(tile_index)
-    #             self.draw_tile(tile_data, x + j * 8, y + i * 8)
+        rect = self.pg.Rect(x * self.scaler, y * self.scaler, self.scaler, self.scaler)
+        self.pg.draw.rect(self.screen, color, rect)
 
     def clear_screen(self) -> None:
         """Wipe entire screen."""

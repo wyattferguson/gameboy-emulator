@@ -106,7 +106,7 @@ class PPU:
         # for tile_map_offset in range(8):
         #     tile_data = self.read_bg_tile_map(tile_map_offset)
         #     self.screen.draw_tile(tile_data, tile_map_offset * 8, tile_map_offset % 8)
-        self.read_bg_tile_map(0)
+        # self.read_bg_tile_map(0)
         # print(tile_data)
         # self.mmu.dump(M_BG_TILE_DATA_VRAM[self.bg_tiles][0], M_BG_TILE_DATA_VRAM[self.bg_tiles][1])
         # self.mmu.dump(M_BG_MAP_VRAM[self.bg_tile_map][0], M_BG_MAP_VRAM[self.bg_tile_map][1])
