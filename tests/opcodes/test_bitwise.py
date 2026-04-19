@@ -48,7 +48,7 @@ def test_bitwise(
     cpu.cycle()
 
     assert cpu.reg["A"] == result
-    verify_flags(cpu, z_flag, 0, h_flag, 0)
+    verify_flags(cpu, z_flag=z_flag, n_flag=0, h_flag=h_flag, c_flag=0)
 
 
 @pytest.mark.parametrize(

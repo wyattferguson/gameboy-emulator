@@ -2,6 +2,7 @@ from gbemu.cpu import CPU
 from gbemu.mmu import MMU
 
 SAFE_HL_ADDRESS = 0xC000
+REGISTER_ORDER = ("B", "C", "D", "E", "H", "L", "HL", "A")
 
 
 def make_cpu() -> CPU:
@@ -15,18 +16,39 @@ def set_hl_value(cpu: CPU, value: int, address: int = SAFE_HL_ADDRESS) -> None:
     cpu.mmu[address] = value
 
 
-def verify_flags(
+def set_target_value(
     cpu: CPU,
-    z_flag: int | None = None,
-    n_flag: int | None = None,
-    h_flag: int | None = None,
-    c_flag: int | None = None,
-) -> None:
-    if z_flag is not None:
-        assert cpu.flags["Z"] == z_flag
-    if n_flag is not None:
-        assert cpu.flags["N"] == n_flag
-    if h_flag is not None:
-        assert cpu.flags["H"] == h_flag
-    if c_flag is not None:
-        assert cpu.flags["C"] == c_flag
+    target: str,
+    value: int,
+    address: int = SAFE_HL_ADDRESS,
+) -> int:
+    """Write a test value to a register target or [HL] and return the backing address."""
+    if target == "HL":
+        set_hl_value(cpu, value, address)
+        return address
+
+    cpu.reg[target] = value
+    return address
+
+
+def get_target_value(cpu: CPU, target: str, address: int = SAFE_HL_ADDRESS) -> int:
+    """Read back a register target or the byte stored at [HL]."""
+    if target == "HL":
+        return cpu.mmu[address]
+
+    return cpu.reg[target]
+
+
+def verify_flags(cpu: CPU, **expected_flags: int) -> None:
+    """Assert only the flags explicitly passed by name."""
+    flag_names = {
+        "z_flag": "Z",
+        "n_flag": "N",
+        "h_flag": "H",
+        "c_flag": "C",
+    }
+    unexpected_flags = set(expected_flags) - set(flag_names)
+    assert not unexpected_flags, f"Unexpected flag names: {sorted(unexpected_flags)}"
+
+    for expected_name, expected_value in expected_flags.items():
+        assert cpu.flags[flag_names[expected_name]] == expected_value

@@ -117,14 +117,18 @@ class CPU:
         """Get value of 16-bit register pair."""
         return to_u16(self.reg[register_a], self.reg[register_b])
 
-    def cycle(self) -> None:
-        """Execute next CPU cycle."""
+    def cycle(self) -> int:
+        """Execute one instruction and return elapsed CPU cycles."""
         self.fetch()
         self.decode()
         self.execute()
         self.cb_prefixed = False
         if self.instruction.pc_inc:
             self.pc += self.instruction.length
+
+        # Keep a running total and return this instruction's timing to drive other hardware.
+        self.cycles += self.instruction.cycles
+        return self.instruction.cycles
 
     def nop(self) -> None:
         """No Operation."""

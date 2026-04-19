@@ -5,6 +5,23 @@ import pygame as pg
 from gbemu.config import M_JOYPAD
 from gbemu.mmu import MMU
 
+KEYMAP: dict[int, tuple[int, bool]] = {
+    pg.K_UP: (0b0100, True),
+    pg.K_w: (0b0100, True),
+    pg.K_DOWN: (0b1000, True),
+    pg.K_s: (0b1000, True),
+    pg.K_LEFT: (0b0010, True),
+    pg.K_RIGHT: (0b0001, True),
+    pg.K_d: (0b0001, True),
+    pg.K_a: (0b0001, False),
+    pg.K_j: (0b0001, False),
+    pg.K_b: (0b0010, False),
+    pg.K_k: (0b0010, False),
+    pg.K_RETURN: (0b1000, False),
+    pg.K_LSHIFT: (0x0100, False),
+    pg.K_RSHIFT: (0x0100, False),
+}
+
 
 class Controller:
     """Gameboy Controller."""
@@ -30,23 +47,12 @@ class Controller:
             if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
                 pg.quit()
                 sys.exit()
-            elif event.type in (pg.KEYDOWN, pg.KEYUP):
-                match event.key:
-                    case pg.K_UP:
-                        self.flip(0b0100, True)
-                    case pg.K_DOWN:
-                        self.flip(0b1000, True)
-                    case pg.K_LEFT:
-                        self.flip(0b0010, True)
-                    case pg.K_RIGHT:
-                        self.flip(0b0001, True)
-                    case pg.K_a:
-                        self.flip(0b0001)
-                    case pg.K_b:
-                        self.flip(0b0010)
-                    case pg.K_RETURN:
-                        self.flip(0b1000)
-                    case pg.K_LSHIFT:
-                        self.flip(0x0100)
-                    case _:
-                        pass
+            if event.type not in (pg.KEYDOWN, pg.KEYUP):
+                continue
+
+            keybind = KEYMAP.get(event.key)
+            if keybind is None:
+                continue
+
+            bits, dpad = keybind
+            self.flip(bits, dpad)

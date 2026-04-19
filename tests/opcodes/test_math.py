@@ -1,9 +1,7 @@
 import pytest
 
-from gbemu.cpu import CPU
-from gbemu.mmu import MMU
-from gbemu.opcodes import OPCODES, OpCode
-from tests.utils import set_hl_value, verify_flags
+from gbemu.opcodes import OPCODES
+from tests.utils import make_cpu, set_hl_value, verify_flags
 
 
 @pytest.mark.parametrize(
@@ -46,7 +44,7 @@ def test_reg_to_reg(
     result: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[dest] = dest_val
     cpu.reg[src] = src_val
     cpu.flags["C"] = carry
@@ -54,7 +52,7 @@ def test_reg_to_reg(
     cpu.cycle()
 
     assert cpu.reg[dest] == result
-    verify_flags(cpu, z_flag, n_flag, h_flag, c_flag)
+    verify_flags(cpu, z_flag=z_flag, n_flag=n_flag, h_flag=h_flag, c_flag=c_flag)
 
 
 @pytest.mark.parametrize(
@@ -96,7 +94,7 @@ def test_hl_to_reg(
     result: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[dest] = dest_val
     cpu.reg["HL"] = hl
     cpu.flags["C"] = carry
@@ -105,7 +103,7 @@ def test_hl_to_reg(
     cpu.cycle()
 
     assert cpu.reg[dest] == result
-    verify_flags(cpu, z_flag, n_flag, h_flag, c_flag)
+    verify_flags(cpu, z_flag=z_flag, n_flag=n_flag, h_flag=h_flag, c_flag=c_flag)
 
 
 @pytest.mark.parametrize(
@@ -128,7 +126,7 @@ def test_inc_16(
     result: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[dest] = value
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
@@ -178,13 +176,13 @@ def test_dec_inc_mixed(
     n_flag: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[dest] = value
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
 
     assert cpu.reg[dest] == result
-    verify_flags(cpu, z_flag, n_flag, h_flag)
+    verify_flags(cpu, z_flag=z_flag, n_flag=n_flag, h_flag=h_flag)
 
 
 @pytest.mark.parametrize(
@@ -215,13 +213,13 @@ def test_dec_inc_mem(
     h_flag: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     set_hl_value(cpu, value)
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
 
     assert cpu.mmu[cpu.reg[dest]] == result
-    verify_flags(cpu, z_flag, n_flag, h_flag)
+    verify_flags(cpu, z_flag=z_flag, n_flag=n_flag, h_flag=h_flag)
 
 
 @pytest.mark.parametrize(
@@ -251,7 +249,7 @@ def test_add16(
     result: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[dest] = dest_val
     cpu.reg[src] = src_val
     cpu.insert_instruction(bytearray([opcode]))
@@ -288,7 +286,7 @@ def test_daa(
     n_flag: int,
     c_flag: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["A"] = a_start
     cpu.flags["N"] = n_start
     cpu.flags["C"] = c_start
@@ -343,7 +341,7 @@ def test_immediate_arithmetic(
     opcode: int,
 ) -> None:
     """Test ADD A, d8, ADC A, d8, SUB A, d8, SBC A, d8 instructions."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["A"] = a_val
     cpu.flags["C"] = carry
     # Instruction: opcode (1 byte) + immediate (1 byte)

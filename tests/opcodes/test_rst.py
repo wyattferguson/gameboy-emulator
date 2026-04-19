@@ -1,7 +1,6 @@
 import pytest
 
-from gbemu.cpu import CPU
-from gbemu.mmu import MMU
+from tests.utils import make_cpu
 
 
 @pytest.mark.parametrize(
@@ -19,7 +18,7 @@ from gbemu.mmu import MMU
 )
 def test_rst_vectors(opcode: int, target_addr: int) -> None:
     """RST should push PC and jump to its fixed vector address."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     initial_pc = cpu.pc
     initial_sp = cpu.reg["SP"]
 
@@ -39,7 +38,7 @@ def test_rst_vectors(opcode: int, target_addr: int) -> None:
 
 def test_rst_uses_current_pc_value() -> None:
     """RST should push the current PC low byte, not a fixed constant."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.pc = 0x1234
     initial_sp = cpu.reg["SP"]
 
@@ -54,7 +53,7 @@ def test_rst_uses_current_pc_value() -> None:
 
 def test_rst_from_default_pc_pushes_next_instruction() -> None:
     """RST from reset should push next instruction address (0x0001)."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     assert cpu.pc == 0x0000
 
     cpu.insert_instruction(bytearray([0xC7]))  # RST $00

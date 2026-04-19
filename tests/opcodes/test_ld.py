@@ -1,8 +1,6 @@
 import pytest
 
-from gbemu.cpu import CPU
-from gbemu.mmu import MMU
-from gbemu.opcodes import OPCODES, OpCode
+from tests.utils import make_cpu
 
 
 @pytest.mark.parametrize(
@@ -39,7 +37,7 @@ from gbemu.opcodes import OPCODES, OpCode
     ],
 )
 def test_ld(dest: str, src: str, value: int, opcode: int) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[src] = value
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
@@ -64,7 +62,7 @@ def test_ld(dest: str, src: str, value: int, opcode: int) -> None:
     ],
 )
 def test_ld_hl(reg: str, pair_reg: str, address: int, value: int, opcode: int) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.mmu[address] = value
     cpu.insert_instruction(bytearray([opcode]))
     cpu.reg[pair_reg] = address
@@ -86,7 +84,7 @@ def test_ld_hl(reg: str, pair_reg: str, address: int, value: int, opcode: int) -
     ],
 )
 def test_ld_hl_r(dest: str, hl: int, value: int, opcode: int) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["HL"] = hl
     cpu.insert_instruction(bytearray([opcode]))
     cpu.reg[dest] = value
@@ -105,7 +103,7 @@ def test_ld_hl_r(dest: str, hl: int, value: int, opcode: int) -> None:
     ],
 )
 def test_ld_16(dest: str, value: int, opcode: int) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     top = (value >> 8) & 0xFF
     bottom = value & 0xFF
     cpu.insert_instruction(bytearray([opcode, bottom, top]))
@@ -125,7 +123,7 @@ def test_ld_16(dest: str, value: int, opcode: int) -> None:
     ],
 )
 def test_ld_16_reg(dest: str, src: str, value: int, opcode: int) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[src] = value
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
@@ -147,7 +145,7 @@ def test_ld_16_reg(dest: str, src: str, value: int, opcode: int) -> None:
 )
 def test_ld_8(dest: str, value: int, opcode: int) -> None:
     """Test LD r, d8 instruction. Load 8-bit value into register."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.insert_instruction(bytearray([opcode, value]))
     cpu.cycle()
     assert cpu.reg[dest] == value
@@ -163,7 +161,7 @@ def test_ld_8(dest: str, value: int, opcode: int) -> None:
 )
 def test_ld_mem_8(dest: str, address: int, value: int, opcode: int) -> None:
     """Test LD [HL], d8 instruction. Load 8-bit value into memory at address in HL."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[dest] = address
     cpu.insert_instruction(bytearray([opcode, value]))
     cpu.cycle()
@@ -178,7 +176,7 @@ def test_ld_mem_8(dest: str, address: int, value: int, opcode: int) -> None:
 )
 def test_ld_mem_imm(opcode: int, msb: int, lsb: int, sp_value: int) -> None:
     """Test LD [16a], SP instruction. Load SP into memory at 16-bit address."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["SP"] = sp_value
     cpu.insert_instruction(bytearray([opcode, lsb, msb]))
     cpu.cycle()
@@ -197,7 +195,7 @@ def test_ld_mem_imm(opcode: int, msb: int, lsb: int, sp_value: int) -> None:
     ],
 )
 def test_ld_a_hl_mod_register(address: int, value: int, hl_mod: int, opcode: int) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["HL"] = address
     cpu.mmu[address] = value
     cpu.insert_instruction(bytearray([opcode]))
@@ -217,7 +215,7 @@ def test_ld_a_hl_mod_register(address: int, value: int, hl_mod: int, opcode: int
     ],
 )
 def test_ld_a_hl_mod_memory(address: int, value: int, hl_mod: int, opcode: int) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["A"] = value
     cpu.reg["HL"] = address
     cpu.insert_instruction(bytearray([opcode]))
@@ -237,7 +235,7 @@ def test_ld_a_hl_mod_memory(address: int, value: int, hl_mod: int, opcode: int) 
 )
 def test_ld_a16_from_a_opcode_ea(address: int, value: int) -> None:
     """Test LD [a16], A (0xEA)."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["A"] = value
     low = address & 0xFF
     high = (address >> 8) & 0xFF
@@ -257,7 +255,7 @@ def test_ld_a16_from_a_opcode_ea(address: int, value: int) -> None:
 )
 def test_ld_a_from_a16_opcode_fa(address: int, value: int) -> None:
     """Test LD A, [a16] (0xFA)."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.mmu[address] = value
     low = address & 0xFF
     high = (address >> 8) & 0xFF
@@ -277,7 +275,7 @@ def test_ld_a_from_a16_opcode_fa(address: int, value: int) -> None:
 )
 def test_ldh_mem_a_opcode_e0(offset: int, value: int) -> None:
     """Test LDH [a8], A (0xE0)."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["A"] = value
     cpu.insert_instruction(bytearray([0xE0, offset]))
     cpu.cycle()
@@ -295,7 +293,7 @@ def test_ldh_mem_a_opcode_e0(offset: int, value: int) -> None:
 )
 def test_ldh_a_mem_opcode_f0(offset: int, value: int) -> None:
     """Test LDH A, [a8] (0xF0)."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.mmu[0xFF00 + offset] = value
     cpu.insert_instruction(bytearray([0xF0, offset]))
     cpu.cycle()
@@ -313,7 +311,7 @@ def test_ldh_a_mem_opcode_f0(offset: int, value: int) -> None:
 )
 def test_ldh_mem_c_a_opcode_e2(c_value: int, a_value: int) -> None:
     """Test LDH [C], A (0xE2)."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["C"] = c_value
     cpu.reg["A"] = a_value
     cpu.insert_instruction(bytearray([0xE2]))
@@ -332,7 +330,7 @@ def test_ldh_mem_c_a_opcode_e2(c_value: int, a_value: int) -> None:
 )
 def test_ldh_a_mem_c_opcode_f2(c_value: int, mem_value: int) -> None:
     """Test LDH A, [C] (0xF2)."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["C"] = c_value
     cpu.mmu[0xFF00 + c_value] = mem_value
     cpu.insert_instruction(bytearray([0xF2]))

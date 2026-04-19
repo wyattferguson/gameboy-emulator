@@ -1,8 +1,7 @@
 import pytest
 
 from gbemu.config import SP_START
-from gbemu.cpu import CPU
-from gbemu.mmu import MMU
+from tests.utils import make_cpu
 
 
 @pytest.mark.parametrize(
@@ -16,7 +15,7 @@ from gbemu.mmu import MMU
 )
 def test_push(opcode: int, reg_high: str, reg_low: str, high: int, low: int) -> None:
     """PUSH stores 16-bit value on stack and decrements SP by 2."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     initial_sp = cpu.reg["SP"]
     cpu.reg[reg_high] = high
     cpu.reg[reg_low] = low
@@ -38,7 +37,7 @@ def test_push(opcode: int, reg_high: str, reg_low: str, high: int, low: int) -> 
 )
 def test_pop(opcode: int, reg_pair: str, initial_sp: int, low: int, high: int) -> None:
     """POP loads register-pair from stack and increments SP by 2."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["SP"] = initial_sp
     cpu.mmu[initial_sp] = low
     cpu.mmu[(initial_sp + 1) & 0xFFFF] = high
@@ -51,7 +50,7 @@ def test_pop(opcode: int, reg_pair: str, initial_sp: int, low: int, high: int) -
 
 def test_push_bc_then_pop_bc_round_trip() -> None:
     """PUSH BC then POP BC should preserve register value."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     start_sp = cpu.reg["SP"]
     cpu.reg["B"] = 0xBE
     cpu.reg["C"] = 0xEF
@@ -66,7 +65,7 @@ def test_push_bc_then_pop_bc_round_trip() -> None:
 
 def test_pop_af_sets_flags_and_masks_low_nibble() -> None:
     """POP AF should update flags from upper nibble and clear F low nibble."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["SP"] = 0x8000
     cpu.mmu[0x8000] = 0xF7  # F low byte; low nibble should be masked away
     cpu.mmu[0x8001] = 0x12  # A high byte
@@ -83,7 +82,7 @@ def test_pop_af_sets_flags_and_masks_low_nibble() -> None:
 
 def test_push_pop_increment_pc_by_one() -> None:
     """PUSH and POP should both advance PC by 1."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["BC"] = 0x1234
     cpu.insert_instruction(bytearray([0xC5, 0xC1]))
     cpu.cycle()
@@ -94,7 +93,7 @@ def test_push_pop_increment_pc_by_one() -> None:
 
 def test_push_boundary_sp_wraps_downward() -> None:
     """PUSH should wrap SP downward at memory boundary."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg["SP"] = 0x0001
     cpu.reg["B"] = 0x42
     cpu.reg["C"] = 0x24
@@ -109,5 +108,5 @@ def test_push_boundary_sp_wraps_downward() -> None:
 
 def test_default_sp_start() -> None:
     """Sanity check CPU stack pointer start value."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     assert cpu.reg["SP"] == SP_START

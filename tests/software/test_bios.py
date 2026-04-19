@@ -5,6 +5,7 @@ import pytest
 from gbemu.cart import Cart
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU
+from tests.utils import make_cpu
 
 
 def _run_until_pc(
@@ -42,7 +43,7 @@ def _run_until(
 
 def test_bios_starts_vram_clear_process() -> None:
     """BIOS startup should begin clearing VRAM at the top of tile memory."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
 
     # Seed representative addresses to ensure the clear loop actually writes zeros.
     cpu.mmu[0x8000] = 0xAA
@@ -60,7 +61,7 @@ def test_bios_starts_vram_clear_process() -> None:
 
 def test_bios_initializes_audio_and_palette_io() -> None:
     """BIOS should initialize core audio registers and BG palette in the IO area."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
 
     _run_until_pc(cpu, target_pc=0x21, max_steps=50000)
 
@@ -89,7 +90,7 @@ def test_bios_processes_logo_and_sets_display_state() -> None:
 
 def test_cpu_runs_initial_bios_sequence() -> None:
     """Run BIOS from reset through the first call-site and verify side effects."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
 
     # Stop before executing the first CALL instruction in BIOS.
     _run_until_pc(cpu, target_pc=0x28, max_steps=50000)

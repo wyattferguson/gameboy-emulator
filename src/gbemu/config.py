@@ -1,6 +1,6 @@
 from gbemu.ctypes import Color
 
-DEFAULT_ROM = "./roms/hello.gb"
+DEFAULT_ROM = "./roms/tetris.gb"
 MEMORY_SIZE: int = 65536  # 64kb of totally memory (ROM + RAM + IO)
 PC_START: int = 0x100  # rom load location
 SP_START: int = 0xFFFE  # stack pointer start location
@@ -41,17 +41,21 @@ SCREEN_HEIGHT: int = 144
 
 DELAY: int = 1
 BG_COLOR: Color = (202, 220, 159)
-ERROR_COLOR: Color = (219, 18, 18)  # red
+ERROR_COLOR: Color = (219, 18, 18)
 PALLETE: list[Color] = [
-    (15, 56, 15),  # dark green
-    (48, 98, 48),  # medium green
-    (139, 172, 15),  # light green
-    (155, 188, 15),  # lightest green
+    (155, 188, 15),
+    (139, 172, 15),
+    (48, 98, 48),
+    (15, 56, 15),
 ]
 TILE_WIDTH: int = 8
 TILE_BITS: int = 16
 SCAN_LINES: int = 154
 CYCLES_PER_SCANLINE: int = 456
+# Total t-cycles for one full frame: 154 scanlines x 456 dots each.
+CYCLES_PER_FRAME: int = SCAN_LINES * CYCLES_PER_SCANLINE  # 70224
+CPU_CLOCK_HZ: int = 4_194_304
+TARGET_FPS: float = CPU_CLOCK_HZ / CYCLES_PER_FRAME  # ~59.73 fps
 
 # Hardware Registers
 M_JOYPAD: int = 0xFF00

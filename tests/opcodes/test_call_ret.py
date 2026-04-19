@@ -1,8 +1,6 @@
 import pytest
 
-from gbemu.config import PC_START, SP_START
-from gbemu.cpu import CPU
-from gbemu.mmu import MMU
+from tests.utils import make_cpu
 
 
 @pytest.mark.parametrize(
@@ -18,7 +16,7 @@ def test_call(
     target_addr: int,
 ) -> None:
     """Test CALL instruction. Push PC to stack and jump to address."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     initial_sp = cpu.reg["SP"]
 
     # Instruction: opcode (1 byte) + address (2 bytes, little-endian)
@@ -58,7 +56,7 @@ def test_callc(
     should_call: bool,
 ) -> None:
     """Test conditional CALL instructions."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     initial_pc = cpu.pc
     initial_sp = cpu.reg["SP"]
 
@@ -92,7 +90,7 @@ def test_ret_nz(
     flag_value: int,
 ) -> None:
     """Test RET NZ instruction. Return from subroutine if Z flag is 0."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     return_addr = 0x1234
     initial_pc = cpu.pc
 

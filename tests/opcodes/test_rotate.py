@@ -1,9 +1,6 @@
 import pytest
 
-from gbemu.cpu import CPU
-from gbemu.mmu import MMU
-from gbemu.opcodes import OPCODES, OpCode
-from tests.utils import verify_flags
+from tests.utils import SAFE_HL_ADDRESS, make_cpu, set_hl_value, verify_flags
 
 
 @pytest.mark.parametrize(
@@ -16,7 +13,7 @@ from tests.utils import verify_flags
     ],
 )
 def test_rot_circular(dest: str, value: int, c_flag: int, result: int, opcode: int) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[dest] = value
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
@@ -46,7 +43,7 @@ def test_rot_carry(
     result: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[dest] = value
     cpu.flags["C"] = start_c_flag
     cpu.insert_instruction(bytearray([opcode]))
@@ -78,7 +75,7 @@ def test_cb_rot(
     result: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[dest] = value
     cpu.flags["C"] = start_c_flag
     cpu.insert_instruction(bytearray([0xCB, opcode]))
@@ -98,17 +95,13 @@ def test_cb_rot(
     ],
 )
 def test_cb_rot_hl(value: int, start_c_flag: int, c_flag: int, result: int) -> None:
-    mmu = MMU()
-    cpu = CPU(mmu)
-    addr = 0xC000
-    cpu.reg["H"] = addr >> 8
-    cpu.reg["L"] = addr & 0xFF
-    mmu[addr] = value
+    cpu = make_cpu()
+    set_hl_value(cpu, value)
     cpu.flags["C"] = start_c_flag
     cpu.insert_instruction(bytearray([0xCB, 0x6]))
     cpu.cycle()
 
-    assert mmu[addr] == result
+    assert cpu.mmu[SAFE_HL_ADDRESS] == result
     verify_flags(cpu, c_flag=c_flag)
 
 
@@ -147,7 +140,7 @@ def test_cb_rot_remaining_registers(
     result: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[dest] = value
     cpu.flags["C"] = start_c_flag
     cpu.insert_instruction(bytearray([0xCB, opcode]))
@@ -172,17 +165,13 @@ def test_cb_rot_remaining_hl(
     c_flag: int,
     result: int,
 ) -> None:
-    mmu = MMU()
-    cpu = CPU(mmu)
-    addr = 0xC000
-    cpu.reg["H"] = addr >> 8
-    cpu.reg["L"] = addr & 0xFF
-    mmu[addr] = value
+    cpu = make_cpu()
+    set_hl_value(cpu, value)
     cpu.flags["C"] = start_c_flag
     cpu.insert_instruction(bytearray([0xCB, opcode]))
     cpu.cycle()
 
-    assert mmu[addr] == result
+    assert cpu.mmu[SAFE_HL_ADDRESS] == result
     verify_flags(cpu, c_flag=c_flag)
 
 
@@ -212,7 +201,7 @@ def test_cb_shift_selected_registers(
     result: int,
     opcode: int,
 ) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[dest] = value
     cpu.insert_instruction(bytearray([0xCB, opcode]))
     cpu.cycle()
@@ -229,16 +218,12 @@ def test_cb_shift_selected_registers(
     ],
 )
 def test_cb_shift_selected_hl(opcode: int, value: int, c_flag: int, result: int) -> None:
-    mmu = MMU()
-    cpu = CPU(mmu)
-    addr = 0xC000
-    cpu.reg["H"] = addr >> 8
-    cpu.reg["L"] = addr & 0xFF
-    mmu[addr] = value
+    cpu = make_cpu()
+    set_hl_value(cpu, value)
     cpu.insert_instruction(bytearray([0xCB, opcode]))
     cpu.cycle()
 
-    assert mmu[addr] == result
+    assert cpu.mmu[SAFE_HL_ADDRESS] == result
     verify_flags(cpu, c_flag=c_flag)
 
 
@@ -255,7 +240,7 @@ def test_cb_shift_selected_hl(opcode: int, value: int, c_flag: int, result: int)
     ],
 )
 def test_cb_swap_registers(dest: str, value: int, z_flag: int, result: int, opcode: int) -> None:
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.reg[dest] = value
     cpu.insert_instruction(bytearray([0xCB, opcode]))
     cpu.cycle()
@@ -273,14 +258,10 @@ def test_cb_swap_registers(dest: str, value: int, z_flag: int, result: int, opco
     ],
 )
 def test_cb_swap_hl(value: int, z_flag: int, result: int) -> None:
-    mmu = MMU()
-    cpu = CPU(mmu)
-    addr = 0xC000
-    cpu.reg["H"] = addr >> 8
-    cpu.reg["L"] = addr & 0xFF
-    mmu[addr] = value
+    cpu = make_cpu()
+    set_hl_value(cpu, value)
     cpu.insert_instruction(bytearray([0xCB, 0x36]))
     cpu.cycle()
 
-    assert mmu[addr] == result
+    assert cpu.mmu[SAFE_HL_ADDRESS] == result
     verify_flags(cpu, z_flag=z_flag, n_flag=0, h_flag=0, c_flag=0)

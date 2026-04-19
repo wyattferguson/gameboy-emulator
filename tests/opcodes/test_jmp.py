@@ -1,8 +1,7 @@
 import pytest
 
-from gbemu.cpu import CPU
-from gbemu.mmu import MMU
 from gbemu.utils import hex_to_signed
+from tests.utils import make_cpu
 
 
 @pytest.mark.parametrize(
@@ -22,7 +21,7 @@ def test_jr(
     opcode: int,
 ) -> None:
     """Test JR instruction. Jump to address relative to current PC."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     result_pc = (cpu.pc + 2 + hex_to_signed(offset, 8)) & 0xFFFF
     cpu.insert_instruction(bytearray([opcode, offset]))
     cpu.cycle()
@@ -65,7 +64,7 @@ def test_jrc(
     should_jump: bool,
 ) -> None:
     """Test conditional JR."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     result_pc = (
         (cpu.pc + 2 + hex_to_signed(offset, 8)) & 0xFFFF if should_jump else (cpu.pc + 2) & 0xFFFF
     )
@@ -90,7 +89,7 @@ def test_jp(
     addr: int,
 ) -> None:
     """Test JP instruction. Jump to absolute address."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     # Instruction: opcode (1 byte) + address (2 bytes, little-endian)
     addr_low = addr & 0xFF
     addr_high = (addr >> 8) & 0xFF
@@ -127,7 +126,7 @@ def test_jpc(
     should_jump: bool,
 ) -> None:
     """Test conditional JP."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     initial_pc = cpu.pc
     result_pc = addr if should_jump else (initial_pc + 3)
     cpu.flags[flag] = flag_value
@@ -142,7 +141,7 @@ def test_jpc(
 
 def test_jp_hl() -> None:
     """Test JP HL. Jump to address stored in HL register."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     target_addr = 0x4321
     cpu.reg["H"] = (target_addr >> 8) & 0xFF
     cpu.reg["L"] = target_addr & 0xFF

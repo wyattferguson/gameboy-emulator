@@ -1,10 +1,6 @@
 import pytest
 
-from gbemu.cpu import CPU
-from gbemu.mmu import MMU
-from tests.utils import verify_flags
-
-REGISTER_ORDER = ["B", "C", "D", "E", "H", "L", "HL", "A"]
+from tests.utils import REGISTER_ORDER, get_target_value, make_cpu, set_target_value, verify_flags
 
 
 @pytest.mark.parametrize(
@@ -13,8 +9,7 @@ REGISTER_ORDER = ["B", "C", "D", "E", "H", "L", "HL", "A"]
 )
 def test_cb_res_all_targets(bit_num: int, target_index: int) -> None:
     """Test all CB-prefixed RES opcodes for registers and [HL]."""
-    mmu = MMU()
-    cpu = CPU(mmu)
+    cpu = make_cpu()
     target = REGISTER_ORDER[target_index]
     opcode = 0x80 + (bit_num * 8) + target_index
     initial_value = 0xFF
@@ -25,21 +20,12 @@ def test_cb_res_all_targets(bit_num: int, target_index: int) -> None:
     cpu.flags["H"] = 1
     cpu.flags["C"] = 0
 
-    if target == "HL":
-        addr = 0xC000
-        cpu.reg["H"] = addr >> 8
-        cpu.reg["L"] = addr & 0xFF
-        mmu[addr] = initial_value
-    else:
-        cpu.reg[target] = initial_value
+    address = set_target_value(cpu, target, initial_value)
 
     cpu.insert_instruction(bytearray([0xCB, opcode]))
     cpu.cycle()
 
-    if target == "HL":
-        assert mmu[addr] == expected_value
-    else:
-        assert cpu.reg[target] == expected_value
+    assert get_target_value(cpu, target, address) == expected_value
 
     verify_flags(cpu, z_flag=1, n_flag=0, h_flag=1, c_flag=0)
 
@@ -60,24 +46,13 @@ def test_cb_res_preserves_unrelated_bits(
     expected_value: int,
 ) -> None:
     """Test RES only clears the selected bit and leaves all others unchanged."""
-    mmu = MMU()
-    cpu = CPU(mmu)
+    cpu = make_cpu()
     target = REGISTER_ORDER[opcode % 8]
-
-    if target == "HL":
-        addr = 0xC100
-        cpu.reg["H"] = addr >> 8
-        cpu.reg["L"] = addr & 0xFF
-        mmu[addr] = value
-    else:
-        cpu.reg[target] = value
+    address = set_target_value(cpu, target, value, address=0xC100)
 
     cpu.insert_instruction(bytearray([0xCB, opcode]))
     cpu.cycle()
 
-    if target == "HL":
-        assert mmu[addr] == expected_value
-    else:
-        assert cpu.reg[target] == expected_value
+    assert get_target_value(cpu, target, address) == expected_value
 
     assert ((expected_value >> bit_num) & 0x1) == 0

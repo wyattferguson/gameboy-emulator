@@ -1,8 +1,6 @@
 import pytest
 
-from gbemu.cpu import CPU
-from gbemu.mmu import MMU
-from tests.utils import verify_flags
+from tests.utils import SAFE_HL_ADDRESS, make_cpu, set_hl_value, verify_flags
 
 
 @pytest.mark.parametrize(
@@ -32,7 +30,7 @@ from tests.utils import verify_flags
 )
 def test_cb_bit_b(bit_num: int, value: int, z_flag: int, opcode: int) -> None:
     """Test BIT B register (bit positions 0-7)."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     assert opcode == (0x40 + (bit_num * 8))
     cpu.reg["B"] = value
     cpu.insert_instruction(bytearray([0xCB, opcode]))
@@ -76,7 +74,7 @@ def test_cb_bit_registers(
     opcode: int,
 ) -> None:
     """Test BIT on various registers (C through A)."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     register_index = {"B": 0, "C": 1, "D": 2, "E": 3, "H": 4, "L": 5, "A": 7}[dest]
     assert opcode == (0x40 + (bit_num * 8) + register_index)
     cpu.reg[dest] = value
@@ -112,23 +110,19 @@ def test_cb_bit_registers(
 )
 def test_cb_bit_hl(value: int, z_flag: int, opcode: int) -> None:
     """Test BIT on memory location [HL]."""
-    mmu = MMU()
-    cpu = CPU(mmu)
-    addr = 0xC000
-    cpu.reg["H"] = addr >> 8
-    cpu.reg["L"] = addr & 0xFF
-    mmu[addr] = value
+    cpu = make_cpu()
+    set_hl_value(cpu, value)
     cpu.insert_instruction(bytearray([0xCB, opcode]))
     cpu.cycle()
 
     # BIT doesn't modify memory
-    assert mmu[addr] == value
+    assert cpu.mmu[SAFE_HL_ADDRESS] == value
     verify_flags(cpu, z_flag=z_flag, n_flag=0, h_flag=1)
 
 
 def test_cb_bit_all_bits_register() -> None:
     """Test BIT on all bit positions (0-7) for a single register."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     value = 0xAA  # 10101010 - alternating bits set
 
     for bit_num in range(8):

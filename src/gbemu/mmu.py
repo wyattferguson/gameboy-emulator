@@ -1,9 +1,7 @@
 from typing import overload
 
-from loguru import logger
-
 from gbemu.cart import Cart
-from gbemu.config import BIOS, MEMORY_SIZE, PC_START
+from gbemu.config import BIOS, M_BOOT_ROM_MAPPING_CONTROL, MEMORY_SIZE
 
 
 class MMU:
@@ -12,6 +10,7 @@ class MMU:
     def __init__(self, cart: Cart | None = None, size: int = MEMORY_SIZE) -> None:
         self.size = size
         self._memory = [0] * self.size
+        self._boot_rom_mapped = True
         if cart:
             # FIX: Load max 32kb of ROM and bank switching for larger ROMs
             self._memory[0 : len(cart.rom)] = cart.rom
@@ -21,6 +20,11 @@ class MMU:
     def __len__(self) -> int:
         return self.size
 
+    @property
+    def memory(self) -> list[int]:
+        """Expose raw memory for performance-sensitive subsystems."""
+        return self._memory
+
     @overload
     def __getitem__(self, address: int) -> int: ...
 
@@ -28,16 +32,21 @@ class MMU:
     def __getitem__(self, address: slice) -> list[int]: ...
 
     def __getitem__(self, address: int | slice) -> int | list[int]:
-        if isinstance(address, slice):
-            return self._memory[address]
-        if address < 0 or address >= len(self):
-            logger.error(f"Address {address} is out of bounds.")
-        return self._memory[address]
+        return self.memory[address]
 
     def __setitem__(self, address: int, value: int) -> None:
-        if address < 0 or address >= len(self):
-            logger.error(f"Address {address} is out of bounds.")
-        self._memory[address] = value & 0xFF  # Ensure value is 8-bit
+        # Direct assignment with 8-bit masking
+        value &= 0xFF
+        self._memory[address] = value
+
+        if (
+            address == M_BOOT_ROM_MAPPING_CONTROL
+            and value != 0
+            and self._boot_rom_mapped
+            and self._cart is not None
+        ):
+            self._memory[0 : len(BIOS)] = self._cart.rom[0 : len(BIOS)]
+            self._boot_rom_mapped = False
 
     def dump(self, start: int = 0, end: int = 0xFFFF) -> None:
         """Print memory slice in formatted rows."""

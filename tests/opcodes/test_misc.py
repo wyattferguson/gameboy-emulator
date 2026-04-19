@@ -1,12 +1,11 @@
 import pytest
 
-from gbemu.cpu import CPU
-from gbemu.mmu import MMU
+from tests.utils import make_cpu
 
 
 def test_nop() -> None:
     """Test NOP instruction. Should do nothing except advance PC."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     initial_pc = cpu.pc
     cpu.insert_instruction(bytearray([0x00]))  # NOP
     cpu.cycle()
@@ -17,7 +16,7 @@ def test_nop() -> None:
 
 def test_halt() -> None:
     """Test HALT instruction. Enter low-power mode until interrupt."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     initial_pc = cpu.pc
     cpu.insert_instruction(bytearray([0x76]))  # HALT
     cpu.cycle()
@@ -28,7 +27,7 @@ def test_halt() -> None:
 
 def test_di() -> None:
     """Test DI instruction. Disable interrupts."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     # Start with interrupts enabled
     cpu.interrupts = True
     initial_pc = cpu.pc
@@ -43,7 +42,7 @@ def test_di() -> None:
 
 def test_ei() -> None:
     """Test EI instruction. Enable interrupts."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     # Start with interrupts disabled
     cpu.interrupts = False
     initial_pc = cpu.pc
@@ -67,7 +66,7 @@ def test_di_multiple(
     initial_state: bool,
 ) -> None:
     """Test DI instruction multiple times."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.interrupts = initial_state
 
     cpu.insert_instruction(bytearray([0xF3]))  # DI
@@ -91,7 +90,7 @@ def test_ei_multiple(
     initial_state: bool,
 ) -> None:
     """Test EI instruction multiple times."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.interrupts = initial_state
 
     cpu.insert_instruction(bytearray([0xFB]))  # EI
@@ -106,7 +105,7 @@ def test_ei_multiple(
 
 def test_di_ei_sequence() -> None:
     """Test DI followed by EI sequence."""
-    cpu = CPU(MMU())
+    cpu = make_cpu()
     cpu.interrupts = True
 
     # Disable interrupts
