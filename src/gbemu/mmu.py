@@ -115,22 +115,23 @@ class MMU:
 
     def __getitem__(self, address: int | slice) -> int | list[int]:
         if isinstance(address, int):
+            memory = self._memory
             if address == M_JOYPAD:
                 self._sync_joypad_register()
-                return self._memory[address]
+                return memory[address]
 
             # FEA0-FEFF is unusable memory area and reads as 0xFF.
-            if self._is_unusable(address):
+            if MMU_UNUSABLE_START <= address <= MMU_UNUSABLE_END:
                 return 0xFF
 
             # During mode 2/3, CPU cannot access OAM.
-            if self._oam_locked and self._is_oam(address):
+            if self._oam_locked and M_OAM_START <= address <= M_OAM_END:
                 return 0xFF
 
             # During mode 3, CPU cannot access VRAM.
-            if self._vram_locked and self._is_vram(address):
+            if self._vram_locked and M_VRAM_START <= address <= M_VRAM_END:
                 return 0xFF
-        return self.memory[address]
+        return self._memory[address]
 
     def _handle_io_write(self, address: int, value: int) -> bool:
         # FF04 DIV resets to 0 on any write.

@@ -37,12 +37,24 @@ class Gbemu:
         """Run the GB emulator."""
         # Target wall-clock seconds per frame (1 / ~59.73).
         frame_duration = 1.0 / TARGET_FPS
+        smoothed_fps: float | None = None
 
         while True:
             frame_start = perf_counter()
 
             self._run_frame()
             self._pace_frame(frame_start, frame_duration)
+
+            frame_elapsed = perf_counter() - frame_start
+            if frame_elapsed > 0:
+                instant_fps = 1.0 / frame_elapsed
+                smoothed_fps = (
+                    instant_fps
+                    if smoothed_fps is None
+                    else (smoothed_fps * 0.9) + (instant_fps * 0.1)
+                )
+                if self.ppu.screen:
+                    self.ppu.screen.set_fps(smoothed_fps)
 
     def _run_frame(self) -> None:
         # Poll input once per frame; per-instruction event pumping is too expensive.

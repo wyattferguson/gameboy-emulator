@@ -22,9 +22,10 @@ class Timer:
 
         # DIV increments at 16384 Hz -> every 256 CPU cycles.
         self._div_cycle_accumulator += elapsed_cycles
-        while self._div_cycle_accumulator >= 256:
-            self._div_cycle_accumulator -= 256
-            memory[M_DIVIDER] = (memory[M_DIVIDER] + 1) & 0xFF
+        div_increments = self._div_cycle_accumulator // 256
+        if div_increments:
+            self._div_cycle_accumulator %= 256
+            memory[M_DIVIDER] = (memory[M_DIVIDER] + div_increments) & 0xFF
 
         timer_control = memory[M_TIMER_CONTROL]
         timer_enabled = bool(timer_control & 0x04)

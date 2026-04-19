@@ -84,6 +84,7 @@ class PPU:
         # Legacy/public state used by tests and other modules.
         self.tiles: list[Tile] = []
         self.line_sprites: list[Tile] = []
+        self._line_sprites_draw_order: list[tuple[int, Tile]] = []
         self.scan_line = 0
         self.frame = 0
         self.mode = PPUMode.OAM
@@ -194,6 +195,7 @@ class PPU:
     def scan_oam_for_scanline(self) -> None:
         """Build the list of up to 10 sprites visible on the current scanline."""
         self.line_sprites = []
+        self._line_sprites_draw_order = []
         sprite_height = TileSize.LARGE if self.obj_size else TileSize.SMALL
         memory = self.mmu.memory
 
@@ -210,12 +212,24 @@ class PPU:
                     height=sprite_height,
                     x=memory[addr + 1] - 8,
                     y=y,
-                    x_flipped=bool(bit(attributes, 5)),
-                    y_flipped=bool(bit(attributes, 6)),
-                    dmg_palette=bit(attributes, 4),
-                    priority=bool(bit(attributes, 7)),
+                    x_flipped=bool((attributes >> 5) & 0x01),
+                    y_flipped=bool((attributes >> 6) & 0x01),
+                    dmg_palette=(attributes >> 4) & 0x01,
+                    priority=bool((attributes >> 7) & 0x01),
                 ),
             )
+
+            # Maintain draw order incrementally to avoid per-scanline sorting later.
+            # We draw low-priority sprites first: larger X first; for equal X, later OAM first.
+            sprite = self.line_sprites[-1]
+            sprite_idx = len(self.line_sprites) - 1
+            insert_at = len(self._line_sprites_draw_order)
+            while insert_at > 0:
+                prev_idx, prev = self._line_sprites_draw_order[insert_at - 1]
+                if (prev.x, prev_idx) >= (sprite.x, sprite_idx):
+                    break
+                insert_at -= 1
+            self._line_sprites_draw_order.insert(insert_at, (sprite_idx, sprite))
 
             if len(self.line_sprites) == 10:
                 break
@@ -268,9 +282,9 @@ class PPU:
         self.mmu.memory[M_LCD_STATUS] = stat
 
         if (
-            (mode == PPUMode.HBLANK and bit(stat, 3))
-            or (mode == PPUMode.VBLANK and bit(stat, 4))
-            or (mode == PPUMode.OAM and bit(stat, 5))
+            (mode == PPUMode.HBLANK and ((stat >> 3) & 0x01))
+            or (mode == PPUMode.VBLANK and ((stat >> 4) & 0x01))
+            or (mode == PPUMode.OAM and ((stat >> 5) & 0x01))
         ):
             self._request_interrupt(1)
 
@@ -281,7 +295,7 @@ class PPU:
 
         if ly == lyc:
             stat |= 0x04
-            if bit(stat, 6):
+            if (stat >> 6) & 0x01:
                 self._request_interrupt(1)
         else:
             stat &= 0xFB
@@ -295,6 +309,7 @@ class PPU:
         scy = memory[M_VIEWPORT_Y]
         wy = memory[M_WINDOW_Y]
         wx = memory[M_WINDOW_X_PLUS_7] - 7
+        bg_palette = memory[M_BG_PALETTE_DATA]
 
         palette_ids = [0] * SCREEN_WIDTH
         raw_color_ids = [0] * SCREEN_WIDTH
@@ -307,6 +322,10 @@ class PPU:
 
         # WX values below 7 are hardware-quirky; clamp start to x=0 for stable DMG behavior.
         window_start_x = max(wx, 0)
+
+        last_tile_key: tuple[int, int, int] | None = None
+        last_low = 0
+        last_high = 0
 
         for x in range(SCREEN_WIDTH):
             use_window = bool(window_active and x >= window_start_x)
@@ -323,10 +342,27 @@ class PPU:
             tile_y = map_y >> 3
             tile_number = memory[tile_map_base + tile_y * 32 + tile_x]
             tile_row = map_y & 0x07
-            color_id = self._read_tile_color(tile_number, tile_row, map_x & 0x07)
+
+            tile_key = (tile_map_base, tile_number, tile_row)
+            if tile_key != last_tile_key:
+                if self.bg_tile_idx:
+                    tile_addr = 0x8000 + tile_number * 16
+                else:
+                    signed_id = tile_number if tile_number < 128 else tile_number - 256
+                    tile_addr = 0x9000 + signed_id * 16
+
+                row_addr = tile_addr + tile_row * 2
+                last_low = memory[row_addr]
+                last_high = memory[row_addr + 1]
+                last_tile_key = tile_key
+
+            bit_index = 7 - (map_x & 0x07)
+            lo = (last_low >> bit_index) & 0x01
+            hi = (last_high >> bit_index) & 0x01
+            color_id = (hi << 1) | lo
 
             raw_color_ids[x] = color_id
-            palette_ids[x] = self.apply_bg_palette(color_id)
+            palette_ids[x] = (bg_palette >> (color_id * 2)) & 0x03
 
         return palette_ids, raw_color_ids
 
@@ -340,14 +376,8 @@ class PPU:
         out = list(bg_line)
         memory = self.mmu.memory
 
-        # DMG overlap priority: smaller X wins; for equal X, lower OAM index wins.
-        # Draw lowest-priority sprites first so highest-priority pixels remain on top.
-        ordered_sprites = sorted(
-            enumerate(self.line_sprites),
-            key=lambda item: (item[1].x, item[0]),
-            reverse=True,
-        )
-        for _, sprite in ordered_sprites:
+        # Draw in precomputed low->high priority order from OAM scan.
+        for _, sprite in self._line_sprites_draw_order:
             row = self.scan_line - sprite.y
             if sprite.y_flipped:
                 row = int(sprite.height) - 1 - row

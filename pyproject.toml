@@ -133,3 +133,8 @@ unsupported-operator = "ignore" # fix for MMU operations
 
 [tool.ty.src]
 include = ["src/gbemu/**/*.py"]
+
+[tool.pytest.ini_options]
+markers = [
+    "performance: performance benchmark-style tests (opt-in)",
+]

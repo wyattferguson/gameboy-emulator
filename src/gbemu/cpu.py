@@ -1,3 +1,5 @@
+from typing import Any
+
 from gbemu.config import (
     CPU_INVALID_UNPREFIXED_OPCODES,
     DEBUG,
@@ -11,6 +13,9 @@ from gbemu.mmu import MMU
 from gbemu.opcodes import CB_PREFIXED, OPCODES, OpCode
 from gbemu.timer import Timer
 from gbemu.utils import hex_to_signed, to_u16
+
+OPCODES_BY_BYTE = {int(key, 16): value for key, value in OPCODES.items()}
+CB_PREFIXED_BY_BYTE = {int(key, 16): value for key, value in CB_PREFIXED.items()}
 
 
 class CPU:
@@ -54,54 +59,70 @@ class CPU:
         self._cycle_adjust: int = 0
         self.args: list[int]
         self._illegal_opcode_log_once: set[tuple[int, int]] = set()
+        self._call_cache: dict[str, Any] = {}
         self._timer = Timer()
 
     def fetch(self) -> None:
         """Fetch instruction from memory at PC."""
         op_value = self.mmu[self.pc]
-        op_code = hex(op_value)
 
-        if op_code == "0xcb":
+        if op_value == 0xCB:
             cb_opcode = self.fetch_cb_prefixed()
-            if cb_opcode in CB_PREFIXED:
-                self.instruction = CB_PREFIXED[cb_opcode]
-            else:
-                self.instruction = self._illegal_opcode(cb_opcode, cb_prefixed=True)
+            instruction = CB_PREFIXED_BY_BYTE.get(cb_opcode)
+            self.instruction = (
+                instruction
+                if instruction is not None
+                else self._illegal_opcode(cb_opcode, cb_prefixed=True)
+            )
             self.cb_prefixed = True
-        elif op_code in OPCODES:
-            self.instruction = OPCODES[op_code]
         else:
-            self.instruction = self._illegal_opcode(op_code, cb_prefixed=False)
+            instruction = OPCODES_BY_BYTE.get(op_value)
+            self.instruction = (
+                instruction
+                if instruction is not None
+                else self._illegal_opcode(op_value, cb_prefixed=False)
+            )
 
         if self.debug:
             logger.debug(f"Fetch: {hex(self.pc)} - {self.instruction}")
 
-    def _illegal_opcode(self, op_code: str, cb_prefixed: bool = False) -> OpCode:
+    def _illegal_opcode(self, op_code: int, cb_prefixed: bool = False) -> OpCode:
         """Provide a deterministic fallback for opcodes missing from decode tables."""
         prefix = "CB " if cb_prefixed else ""
-        instruction = OpCode(f"ILLEGAL {prefix}{op_code}", 1, 4, "nop")
+        op_hex = f"0x{op_code:02x}"
+        instruction = OpCode(f"ILLEGAL {prefix}{op_hex}", 1, 4, "nop")
 
-        raw = int(op_code, 16)
-        key = (self.pc, raw)
+        key = (self.pc, op_code)
         if key not in self._illegal_opcode_log_once:
             self._illegal_opcode_log_once.add(key)
-            level = "warning" if raw in CPU_INVALID_UNPREFIXED_OPCODES else "error"
+            level = "warning" if op_code in CPU_INVALID_UNPREFIXED_OPCODES else "error"
             log = logger.warning if level == "warning" else logger.error
-            log(f"Illegal opcode {prefix}{op_code} at PC {hex(self.pc)}; falling back to NOP")
+            log(f"Illegal opcode {prefix}{op_hex} at PC {hex(self.pc)}; falling back to NOP")
 
         return instruction
 
-    def fetch_cb_prefixed(self) -> str:
+    def fetch_cb_prefixed(self) -> int:
         """Fetch CB-prefixed instruction."""
-        return hex(self.mmu[(self.pc + 1) & 0xFFFF])
+        return self.mmu[(self.pc + 1) & 0xFFFF]
 
     def decode(self) -> None:
         """Decode instruction and its arguments."""
         try:
-            self.args = list(self.instruction.args or [])  # ty:ignore[invalid-assignment]
+            base_args = self.instruction.args
+            self.args = list(base_args or [])  # ty:ignore[invalid-assignment]
             if self.instruction.length > 1 and not self.cb_prefixed:
-                b = bytes([self.mmu[self.pc + i] for i in range(1, self.instruction.length)])
-                self.args.append(int.from_bytes(b, byteorder="little"))
+                if self.instruction.length == 2:
+                    immediate = self.mmu[(self.pc + 1) & 0xFFFF]
+                elif self.instruction.length == 3:
+                    low = self.mmu[(self.pc + 1) & 0xFFFF]
+                    high = self.mmu[(self.pc + 2) & 0xFFFF]
+                    immediate = (high << 8) | low
+                else:
+                    b = bytes(
+                        self.mmu[(self.pc + i) & 0xFFFF] for i in range(1, self.instruction.length)
+                    )
+                    immediate = int.from_bytes(b, byteorder="little")
+                self.args.append(immediate)
 
             if self.debug:
                 logger.debug(f"Decoded: {self.instruction}, {self.args}")
@@ -124,7 +145,12 @@ class CPU:
 
             # Execute instruction logic
             if self.instruction.call:
-                getattr(self, self.instruction.call)(*self.args)
+                call_name = self.instruction.call
+                method_obj: Any = self._call_cache.get(call_name)
+                if method_obj is None:
+                    method_obj = getattr(self, call_name)
+                    self._call_cache[call_name] = method_obj
+                method_obj(*self.args)
 
         except Exception as e:
             logger.exception(

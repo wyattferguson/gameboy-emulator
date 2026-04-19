@@ -24,3 +24,26 @@ def test_pixel_drawing() -> None:
         for x in range(SCREEN_WIDTH):
             pixel = screen.screen.get_at((x * screen.scaler, y * screen.scaler))
             assert tuple(pixel[:3]) == expected_colors[(x, y)]
+
+
+def test_update_does_not_raise_with_preallocated_surface() -> None:
+    """Ensure update can scale from the frame surface into the cached target surface."""
+    screen = Screen(scaler=2)
+    screen.draw_scanline([0] * SCREEN_WIDTH, 0)
+    screen.update()
+
+
+def test_update_with_fps_overlay_enabled() -> None:
+    """Ensure the overlay path renders without raising when enabled."""
+    screen = Screen(scaler=1, show_fps_overlay=True)
+    screen.set_fps(60.0)
+    screen.draw_scanline([0] * SCREEN_WIDTH, 0)
+    screen.update()
+
+
+def test_update_with_fps_overlay_disabled() -> None:
+    """Ensure the overlay path can be disabled by flag."""
+    screen = Screen(scaler=1, show_fps_overlay=False)
+    screen.set_fps(60.0)
+    screen.draw_scanline([0] * SCREEN_WIDTH, 0)
+    screen.update()
