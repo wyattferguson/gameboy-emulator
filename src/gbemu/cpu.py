@@ -2,11 +2,33 @@ import sys
 
 from loguru import logger
 
-from gbemu.config import DEBUG, PC_START, SP_START
+from gbemu.config import (
+    DEBUG,
+    M_INTERRUPT_ENABLE,
+    M_INTERRUPT_FLAG,
+    PC_START,
+    SP_START,
+)
 from gbemu.ctypes import Bitwise, CallableDict
 from gbemu.mmu import MMU
 from gbemu.opcodes import CB_PREFIXED, OPCODES, OpCode
+from gbemu.timer import Timer
 from gbemu.utils import hex_to_signed, to_u16
+
+# Opcodes documented as invalid on LR35902 (no defined instruction semantics).
+INVALID_UNPREFIXED_OPCODES = {
+    0xD3,
+    0xDB,
+    0xDD,
+    0xE3,
+    0xE4,
+    0xEB,
+    0xEC,
+    0xED,
+    0xF4,
+    0xFC,
+    0xFD,
+}
 
 
 class CPU:
@@ -18,6 +40,7 @@ class CPU:
         self.pc = 0x0000
         self.mmu: MMU = mmu
         self.interrupts: bool = False
+        self._ime_delay: int = 0
         self.halted: bool = False
         self.cb_prefixed: bool = False
         self.reg = CallableDict(
@@ -47,29 +70,49 @@ class CPU:
 
         self.instruction: OpCode
         self.cycles: int = 0
+        self._cycle_adjust: int = 0
         self.args: list[int]
+        self._illegal_opcode_log_once: set[tuple[int, int]] = set()
+        self._timer = Timer()
 
     def fetch(self) -> None:
         """Fetch instruction from memory at PC."""
-        op_code = hex(self.mmu[self.pc])
-        try:
-            if op_code == "0xcb":
-                op_code = self.fetch_cb_prefixed()
-                self.instruction = CB_PREFIXED[op_code]
-                self.cb_prefixed = True
+        op_value = self.mmu[self.pc]
+        op_code = hex(op_value)
+
+        if op_code == "0xcb":
+            cb_opcode = self.fetch_cb_prefixed()
+            if cb_opcode in CB_PREFIXED:
+                self.instruction = CB_PREFIXED[cb_opcode]
             else:
-                self.instruction = OPCODES[op_code]
-            if self.debug:
-                logger.debug(f"Fetch: {hex(self.pc)} - {self.instruction}")
-        except Exception:
-            logger.exception(
-                f"Fetch - PC: {self.pc}({hex(self.pc)}) OP: {op_code} MEM: {self.mmu[self.pc]}",
-            )
+                self.instruction = self._illegal_opcode(cb_opcode, cb_prefixed=True)
+            self.cb_prefixed = True
+        elif op_code in OPCODES:
+            self.instruction = OPCODES[op_code]
+        else:
+            self.instruction = self._illegal_opcode(op_code, cb_prefixed=False)
+
+        if self.debug:
+            logger.debug(f"Fetch: {hex(self.pc)} - {self.instruction}")
+
+    def _illegal_opcode(self, op_code: str, cb_prefixed: bool = False) -> OpCode:
+        """Provide a deterministic fallback for opcodes missing from decode tables."""
+        prefix = "CB " if cb_prefixed else ""
+        instruction = OpCode(f"ILLEGAL {prefix}{op_code}", 1, 4, "nop")
+
+        raw = int(op_code, 16)
+        key = (self.pc, raw)
+        if key not in self._illegal_opcode_log_once:
+            self._illegal_opcode_log_once.add(key)
+            level = "warning" if raw in INVALID_UNPREFIXED_OPCODES else "error"
+            log = logger.warning if level == "warning" else logger.error
+            log(f"Illegal opcode {prefix}{op_code} at PC {hex(self.pc)}; falling back to NOP")
+
+        return instruction
 
     def fetch_cb_prefixed(self) -> str:
         """Fetch CB-prefixed instruction."""
-        self.pc += 1
-        return hex(self.mmu[self.pc])
+        return hex(self.mmu[(self.pc + 1) & 0xFFFF])
 
     def decode(self) -> None:
         """Decode instruction and its arguments."""
@@ -115,20 +158,75 @@ class CPU:
 
     def reg16(self, register_a: str, register_b: str) -> int:
         """Get value of 16-bit register pair."""
-        return to_u16(self.reg[register_a], self.reg[register_b])
+        low = self.reg[register_b]
+        if register_b == "F":
+            low = (
+                ((self.flags["Z"] & 0x1) << 7)
+                | ((self.flags["N"] & 0x1) << 6)
+                | ((self.flags["H"] & 0x1) << 5)
+                | ((self.flags["C"] & 0x1) << 4)
+            )
+        return to_u16(self.reg[register_a], low)
 
     def cycle(self) -> int:
         """Execute one instruction and return elapsed CPU cycles."""
+        pending_interrupts = self._pending_interrupts()
+
+        # HALT keeps CPU idle until an interrupt becomes pending.
+        if self.halted and pending_interrupts == 0:
+            self._timer.tick(self.mmu.memory, 4)
+            self.cycles += 4
+            return 4
+        if self.halted and pending_interrupts != 0:
+            self.halted = False
+
+        if self._service_interrupt():
+            self._timer.tick(self.mmu.memory, 20)
+            self.cycles += 20
+            return 20
+
         self.fetch()
         self.decode()
+        self._cycle_adjust = 0
         self.execute()
         self.cb_prefixed = False
         if self.instruction.pc_inc:
             self.pc += self.instruction.length
 
+        if self._ime_delay > 0:
+            self._ime_delay -= 1
+            if self._ime_delay == 0:
+                self.interrupts = True
+
         # Keep a running total and return this instruction's timing to drive other hardware.
-        self.cycles += self.instruction.cycles
-        return self.instruction.cycles
+        elapsed = self.instruction.cycles + self._cycle_adjust
+        self._timer.tick(self.mmu.memory, elapsed)
+        self.cycles += elapsed
+        return elapsed
+
+    def _pending_interrupts(self) -> int:
+        """Return bitmask of currently pending and enabled interrupts (bits 0..4)."""
+        return self.mmu[M_INTERRUPT_FLAG] & self.mmu[M_INTERRUPT_ENABLE] & 0x1F
+
+    def _service_interrupt(self) -> bool:
+        """Service highest-priority interrupt when IME is set."""
+        pending = self._pending_interrupts()
+        if pending == 0 or not self.interrupts:
+            return False
+
+        # IME is cleared when jumping to ISR.
+        self.interrupts = False
+        self._ime_delay = 0
+
+        vectors = [0x40, 0x48, 0x50, 0x58, 0x60]
+        for bit_index, vector in enumerate(vectors):
+            mask = 1 << bit_index
+            if pending & mask:
+                self.mmu[M_INTERRUPT_FLAG] &= (~mask) & 0xFF
+                self.push(self.pc)
+                self.pc = vector
+                return True
+        return False
 
     def nop(self) -> None:
         """No Operation."""
@@ -222,6 +320,28 @@ class CPU:
         self.flags["C"] = 1 if total > 0xFFFF else 0
         self.reg[dest_register] = total & 0xFFFF
 
+    def add_sp_e8(self, offset: int) -> None:
+        """Add signed immediate to SP, updating H/C from low-byte carry behavior."""
+        sp = self.reg["SP"]
+        signed_offset = hex_to_signed(offset, 8)
+        result = (sp + signed_offset) & 0xFFFF
+        self.flags["Z"] = 0
+        self.flags["N"] = 0
+        self.flags["H"] = 1 if ((sp ^ offset ^ result) & 0x10) != 0 else 0
+        self.flags["C"] = 1 if ((sp ^ offset ^ result) & 0x100) != 0 else 0
+        self.reg["SP"] = result
+
+    def ld_hl_sp_e8(self, offset: int) -> None:
+        """Store SP + signed immediate into HL, with ADD SP,e8 flag semantics."""
+        sp = self.reg["SP"]
+        signed_offset = hex_to_signed(offset, 8)
+        result = (sp + signed_offset) & 0xFFFF
+        self.flags["Z"] = 0
+        self.flags["N"] = 0
+        self.flags["H"] = 1 if ((sp ^ offset ^ result) & 0x10) != 0 else 0
+        self.flags["C"] = 1 if ((sp ^ offset ^ result) & 0x100) != 0 else 0
+        self.reg["HL"] = result
+
     def sub(
         self,
         dest_register: str,
@@ -292,17 +412,19 @@ class CPU:
 
     def inc(self, register: str) -> None:
         """Increment register."""
+        previous = self.reg[register]
         self.reg[register] += 1
 
         # Only set flags for 8-bit registers
         if len(register) == 1:
-            self._set_inc_dec_flags(self.reg[register], self.reg[register])
+            self._set_inc_dec_flags(self.reg[register], previous)
 
     def inc_mem(self, register: str) -> None:
         """Increment value at address in HL."""
         addr: int = self.reg[register]
+        value: int = self.mmu[addr]
         self.mmu[addr] += 1
-        self._set_inc_dec_flags(self.mmu[addr], self.mmu[addr])
+        self._set_inc_dec_flags(self.mmu[addr], value)
 
     def dec_mem(self, register: str) -> None:
         """Decrement value at address in HL."""
@@ -313,16 +435,22 @@ class CPU:
 
     def dec(self, register: str) -> None:
         """Decrement register or HL address."""
+        previous = self.reg[register]
         self.reg[register] -= 1
 
         # Only set flags for 8-bit registers
         if len(register) == 1:
-            self._set_inc_dec_flags(self.reg[register], self.reg[register])
+            self._set_inc_dec_flags(self.reg[register], previous)
 
     def _set_inc_dec_flags(self, result: int, value: int) -> None:
         """Set flags for INC and DEC operations."""
-        self.flags["Z"] = 1 if result == 0 else 0
-        self.flags["H"] = 1 if (value & 0xF) == 0 else 0
+        self.flags["Z"] = 1 if (result & 0xFF) == 0 else 0
+        if self.flags["N"] == 0:
+            # INC: half-carry when low nibble overflows (e.g. 0x0F -> 0x10).
+            self.flags["H"] = 1 if (value & 0x0F) == 0x0F else 0
+        else:
+            # DEC: half-borrow when low nibble underflows (e.g. 0x10 -> 0x0F).
+            self.flags["H"] = 1 if (value & 0x0F) == 0x00 else 0
 
     def rot(
         self,
@@ -349,6 +477,9 @@ class CPU:
         else:
             self.reg[register] = result
 
+        # CB-prefixed rotate ops update Z from result; unprefixed A rotates force Z=0 via opcode flags.
+        if self.cb_prefixed:
+            self.flags["Z"] = 1 if result == 0 else 0
         self.flags["C"] = new_carry
 
     def shift(self, register: str, left: bool = False, arithmetic: bool = False) -> None:
@@ -367,6 +498,8 @@ class CPU:
         else:
             self.reg[register] = result
 
+        # Shift opcodes are CB-prefixed and set Z from result.
+        self.flags["Z"] = 1 if result == 0 else 0
         self.flags["C"] = new_carry
 
     def jpc(self, flag: str, condition: int, addr: int) -> None:
@@ -374,7 +507,9 @@ class CPU:
         if self.flags[flag] == condition:
             self.jp(addr)
         else:
-            self.pc += 3
+            self.pc = (self.pc + 3) & 0xFFFF
+            # JP cc base timing is 16 cycles; not-taken timing is 12.
+            self._cycle_adjust = -4
 
     def jp(self, addr: int | str) -> None:
         """Jump to Address."""
@@ -439,6 +574,8 @@ class CPU:
             self.jr(offset)
         else:
             self.pc = (self.pc + 2) & 0xFFFF
+            # JR cc base timing is 12 cycles; not-taken timing is 8.
+            self._cycle_adjust = -4
 
     def jr(self, offset: int = 0) -> None:
         """Relative Jump to address."""
@@ -450,7 +587,9 @@ class CPU:
         if self.flags[flag] == condition:
             self.call(addr)
         else:
-            self.pc += 3
+            self.pc = (self.pc + 3) & 0xFFFF
+            # CALL cc base timing is 24 cycles; not-taken timing is 12.
+            self._cycle_adjust = -12
 
     def call(self, addr: int) -> None:
         """Call subroutine at address."""
@@ -462,12 +601,15 @@ class CPU:
         if condition_flag is None or self.flags[condition_flag] == condition_value:
             self.pc = self._pop_u16()
         else:
-            self.pc += 1
+            self.pc = (self.pc + 1) & 0xFFFF
+            # RET cc base timing is 20 cycles; not-taken timing is 8.
+            self._cycle_adjust = -12
 
     def reti(self) -> None:
         """Return from interrupt and enable interrupts."""
         self.pc = self._pop_u16()
         self.interrupts = True
+        self._ime_delay = 0
 
     def bit(self, bit_num: int, register: str) -> None:
         """Test if bit is set in register or memory."""
@@ -477,10 +619,11 @@ class CPU:
     def di(self) -> None:
         """Disable interrupts."""
         self.interrupts = False
+        self._ime_delay = 0
 
     def ei(self) -> None:
-        """Enable interrupts."""
-        self.interrupts = True
+        """Enable interrupts after the following instruction (DMG behavior)."""
+        self._ime_delay = 2
 
     def set_stored_value(self, register: str, value: int) -> None:
         """Set value in register or memory."""

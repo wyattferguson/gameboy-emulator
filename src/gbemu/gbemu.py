@@ -46,11 +46,12 @@ class Gbemu:
         while True:
             frame_start = perf_counter()
 
+            # Poll input once per frame; per-instruction event pumping is too expensive.
+            self.controller.update()
+
             # Process one full frame of CPU+PPU cycles before presenting.
             frame_cycles = 0
             while frame_cycles < CYCLES_PER_FRAME:
-                # Handle input once per instruction (cheap polling).
-                self.controller.update()
                 # CPU executes one instruction; PPU advances using the same cycle budget.
                 cpu_cycles = self.cpu.cycle()
                 self.ppu.update(cpu_cycles)

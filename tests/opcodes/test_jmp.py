@@ -71,9 +71,10 @@ def test_jrc(
     cpu.flags[flag] = flag_value
     cpu.insert_instruction(bytearray([opcode, offset]))
 
-    cpu.cycle()
+    cycles = cpu.cycle()
 
     assert cpu.pc == result_pc
+    assert cycles == (12 if should_jump else 8)
 
 
 @pytest.mark.parametrize(
@@ -134,9 +135,10 @@ def test_jpc(
     addr_high = (addr >> 8) & 0xFF
     cpu.insert_instruction(bytearray([opcode, addr_low, addr_high]))
 
-    cpu.cycle()
+    cycles = cpu.cycle()
 
     assert cpu.pc == result_pc
+    assert cycles == (16 if should_jump else 12)
 
 
 def test_jp_hl() -> None:

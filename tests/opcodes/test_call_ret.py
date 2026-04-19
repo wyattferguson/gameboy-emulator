@@ -65,14 +65,16 @@ def test_callc(
     addr_high = (target_addr >> 8) & 0xFF
     cpu.insert_instruction(bytearray([opcode, addr_low, addr_high]))
 
-    cpu.cycle()
+    cycles = cpu.cycle()
 
     if should_call:
         assert cpu.pc == target_addr
         assert cpu.reg["SP"] == (initial_sp - 2) & 0xFFFF
+        assert cycles == 24
     else:
         assert cpu.pc == (initial_pc + 3) & 0xFFFF
         assert cpu.reg["SP"] == initial_sp
+        assert cycles == 12
 
 
 @pytest.mark.parametrize(
@@ -101,11 +103,13 @@ def test_ret_nz(
     cpu.flags[flag] = flag_value
     cpu.insert_instruction(bytearray([0xC0]))
 
-    cpu.cycle()
+    cycles = cpu.cycle()
 
     if flag_value == 0:
         assert cpu.pc == return_addr
         assert cpu.reg["SP"] == (0x8000 + 2) & 0xFFFF
+        assert cycles == 20
     else:
         assert cpu.pc == (initial_pc + 1) & 0xFFFF
         assert cpu.reg["SP"] == 0x8000
+        assert cycles == 8

@@ -416,3 +416,53 @@ def test_ppu_scan_oam_for_scanline_sprite_attributes() -> None:
     assert sprite.y_flipped == True, "Bit 6 should set y_flipped"
     assert sprite.dmg_palette == 1, "Bit 4 should set dmg_palette"
     assert sprite.priority == True, "Bit 7 should set priority"
+
+
+def test_ppu_mode_oam_blocks_only_oam_cpu_access() -> None:
+    mmu = MMU(Cart("roms/hello.gb"))
+    ppu = PPU(mmu, headless=True)
+    mmu[M_LCD_CONTROL] = 0x80
+    ppu.refresh_lcd_control()
+
+    ppu._set_mode(PPUMode.OAM)
+
+    mmu[0xFE00] = 0x12
+    mmu[0x8000] = 0x34
+
+    assert mmu[0xFE00] == 0xFF
+    assert mmu.memory[0xFE00] == 0x00
+    assert mmu[0x8000] == 0x34
+
+
+def test_ppu_mode_pixel_transfer_blocks_oam_and_vram_cpu_access() -> None:
+    mmu = MMU(Cart("roms/hello.gb"))
+    ppu = PPU(mmu, headless=True)
+    mmu[M_LCD_CONTROL] = 0x80
+    ppu.refresh_lcd_control()
+
+    ppu._set_mode(PPUMode.PIXEL_TRANSFER)
+
+    mmu[0xFE00] = 0x56
+    mmu[0x8000] = 0x78
+
+    assert mmu[0xFE00] == 0xFF
+    assert mmu.memory[0xFE00] == 0x00
+    assert mmu[0x8000] == 0xFF
+    assert mmu.memory[0x8000] == 0x00
+
+
+def test_ppu_lcd_disable_opens_oam_and_vram_cpu_access() -> None:
+    mmu = MMU(Cart("roms/hello.gb"))
+    ppu = PPU(mmu, headless=True)
+    mmu[M_LCD_CONTROL] = 0x80
+    ppu.refresh_lcd_control()
+    ppu._set_mode(PPUMode.PIXEL_TRANSFER)
+
+    mmu[M_LCD_CONTROL] = 0x00
+    ppu.update(4)
+
+    mmu[0xFE00] = 0x9A
+    mmu[0x8000] = 0xBC
+
+    assert mmu[0xFE00] == 0x9A
+    assert mmu[0x8000] == 0xBC

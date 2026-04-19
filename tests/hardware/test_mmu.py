@@ -80,9 +80,21 @@ def test_mmu_boot_rom_unmap_is_one_way() -> None:
     mmu[0x0000] = 0x00
     mmu[M_BOOT_ROM_MAPPING_CONTROL] = 0x00
 
-    assert mmu[0x0000] == 0x00
+    assert mmu[0x0000] == original_rom_prefix[0]
     assert list(mmu[0x0000:0x0010]) != BIOS[:0x10]
     assert list(cart.rom[0x0000:0x0010]) == original_rom_prefix
+
+
+def test_mmu_ignores_writes_to_cartridge_rom_region() -> None:
+    cart = Cart("roms/hello.gb")
+    mmu = MMU(cart)
+
+    mmu[M_BOOT_ROM_MAPPING_CONTROL] = 0x01
+    original = mmu[0x5234]
+
+    mmu[0x5234] = original ^ 0xFF
+
+    assert mmu[0x5234] == original
 
 
 def test_mmu_write_to_ff50_without_cart_only_stores_register_value() -> None:
@@ -93,3 +105,59 @@ def test_mmu_write_to_ff50_without_cart_only_stores_register_value() -> None:
 
     assert mmu[M_BOOT_ROM_MAPPING_CONTROL] == 0x01
     assert list(mmu[0x0000:0x0010]) == bios_prefix
+
+
+def test_mmu_oam_dma_copies_160_bytes_from_selected_page() -> None:
+    mmu = MMU()
+
+    src_base = 0xC300
+    for i in range(160):
+        mmu[src_base + i] = (i * 3) & 0xFF
+
+    mmu[0xFF46] = 0xC3
+
+    assert list(mmu[0xFE00:0xFEA0]) == list(mmu[src_base : src_base + 160])
+
+
+def test_mmu_blocks_cpu_access_to_oam_when_locked() -> None:
+    mmu = MMU()
+    mmu.set_ppu_bus_access(oam_locked=True, vram_locked=False)
+
+    mmu[0xFE00] = 0x42
+
+    assert mmu[0xFE00] == 0xFF
+    assert mmu.memory[0xFE00] == 0x00
+
+
+def test_mmu_blocks_cpu_access_to_vram_when_locked() -> None:
+    mmu = MMU()
+    mmu.set_ppu_bus_access(oam_locked=False, vram_locked=True)
+
+    mmu[0x8000] = 0x77
+
+    assert mmu[0x8000] == 0xFF
+    assert mmu.memory[0x8000] == 0x00
+
+
+def test_mmu_unblocks_cpu_access_when_ppu_bus_open() -> None:
+    mmu = MMU()
+    mmu.set_ppu_bus_access(oam_locked=False, vram_locked=False)
+
+    mmu[0xFE00] = 0x11
+    mmu[0x8000] = 0x22
+
+    assert mmu[0xFE00] == 0x11
+    assert mmu[0x8000] == 0x22
+
+
+def test_mmu_handles_cart_with_unloaded_rom() -> None:
+    cart = Cart("roms/verification/cpu_instrs.gb")
+    mmu = MMU(cart)
+
+    assert cart.rom is None
+    assert list(mmu[0x0000:0x0010]) == BIOS[:0x10]
+
+    mmu[M_BOOT_ROM_MAPPING_CONTROL] = 0x01
+
+    # No cart ROM available, so BIOS region remains unchanged.
+    assert list(mmu[0x0000:0x0010]) == BIOS[:0x10]

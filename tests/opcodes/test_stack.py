@@ -18,12 +18,22 @@ def test_push(opcode: int, reg_high: str, reg_low: str, high: int, low: int) -> 
     cpu = make_cpu()
     initial_sp = cpu.reg["SP"]
     cpu.reg[reg_high] = high
-    cpu.reg[reg_low] = low
+
+    expected_low = low
+    if reg_low == "F":
+        cpu.flags["Z"] = 1 if (low & 0x80) else 0
+        cpu.flags["N"] = 1 if (low & 0x40) else 0
+        cpu.flags["H"] = 1 if (low & 0x20) else 0
+        cpu.flags["C"] = 1 if (low & 0x10) else 0
+        expected_low = low & 0xF0
+    else:
+        cpu.reg[reg_low] = low
+
     cpu.insert_instruction(bytearray([opcode]))
     cpu.cycle()
 
     assert cpu.reg["SP"] == (initial_sp - 2) & 0xFFFF
-    assert cpu.mmu[cpu.reg["SP"]] == low
+    assert cpu.mmu[cpu.reg["SP"]] == expected_low
     assert cpu.mmu[(cpu.reg["SP"] + 1) & 0xFFFF] == high
 
 

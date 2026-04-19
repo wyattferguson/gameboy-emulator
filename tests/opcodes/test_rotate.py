@@ -227,6 +227,16 @@ def test_cb_shift_selected_hl(opcode: int, value: int, c_flag: int, result: int)
     verify_flags(cpu, c_flag=c_flag)
 
 
+def test_cb_prefixed_instruction_advances_pc_by_two() -> None:
+    cpu = make_cpu()
+    initial_pc = cpu.pc
+    cpu.insert_instruction(bytearray([0xCB, 0x11]))  # RL C
+
+    cpu.cycle()
+
+    assert cpu.pc == (initial_pc + 2) & 0xFFFF
+
+
 @pytest.mark.parametrize(
     ("dest", "value", "z_flag", "result", "opcode"),
     [

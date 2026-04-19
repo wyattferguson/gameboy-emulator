@@ -42,7 +42,7 @@ def _run_until(
 
 
 def test_bios_starts_vram_clear_process() -> None:
-    """BIOS startup should begin clearing VRAM at the top of tile memory."""
+    """BIOS startup should complete the initial VRAM clear loop before 0x0C."""
     cpu = make_cpu()
 
     # Seed representative addresses to ensure the clear loop actually writes zeros.
@@ -54,8 +54,8 @@ def test_bios_starts_vram_clear_process() -> None:
 
     assert cpu.reg["SP"] == 0xFFFE
     assert cpu.reg["A"] == 0x00
-    # At this checkpoint the first clear write has occurred and HL moved down.
-    assert cpu.reg["HL"] == 0x9FFE
+    # At this checkpoint, the clear loop has finished with HL at 0x7FFF.
+    assert cpu.reg["HL"] == 0x7FFF
     assert cpu.mmu[0x9FFF] == 0x00
 
 
@@ -75,7 +75,7 @@ def test_bios_initializes_audio_and_palette_io() -> None:
 
 def test_bios_processes_logo_and_sets_display_state() -> None:
     """BIOS should process logo/tile setup and prime display control registers."""
-    cpu = CPU(MMU(Cart()))
+    cpu = CPU(MMU(Cart("roms/hello.gb")))
 
     # 0x64 is the start of the LY polling loop.
     _run_until_pc(cpu, target_pc=0x64, max_steps=250000)
@@ -108,7 +108,7 @@ def test_cpu_runs_initial_bios_sequence() -> None:
 
 def test_cpu_runs_full_bios_sequence() -> None:
     """Run boot ROM until it unmaps itself by writing 0x01 to 0xFF50."""
-    cpu = CPU(MMU(Cart()))
+    cpu = CPU(MMU(Cart("roms/hello.gb")))
 
     _run_until(
         cpu,

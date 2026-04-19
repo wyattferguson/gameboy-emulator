@@ -1,6 +1,6 @@
 import pytest
 
-from tests.utils import make_cpu
+from tests.utils import make_cpu, verify_flags
 
 
 @pytest.mark.parametrize(
@@ -337,3 +337,65 @@ def test_ldh_a_mem_c_opcode_f2(c_value: int, mem_value: int) -> None:
     cpu.cycle()
 
     assert cpu.reg["A"] == mem_value
+
+
+@pytest.mark.parametrize(
+    ("sp", "offset", "result", "h_flag", "c_flag"),
+    [
+        (0x0001, 0x01, 0x0002, 0, 0),
+        (0x000F, 0x01, 0x0010, 1, 0),
+        (0x00FF, 0x01, 0x0100, 1, 1),
+        (0x0000, 0xFF, 0xFFFF, 0, 1),
+    ],
+)
+def test_add_sp_e8_opcode_e8(sp: int, offset: int, result: int, h_flag: int, c_flag: int) -> None:
+    """Test ADD SP, e8 (0xE8)."""
+    cpu = make_cpu()
+    cpu.reg["SP"] = sp
+    cpu.flags["Z"] = 1
+    cpu.flags["N"] = 1
+    cpu.insert_instruction(bytearray([0xE8, offset]))
+    cpu.cycle()
+
+    assert cpu.reg["SP"] == result
+    verify_flags(cpu, z_flag=0, n_flag=0, h_flag=h_flag, c_flag=c_flag)
+
+
+@pytest.mark.parametrize(
+    ("sp", "offset", "result", "h_flag", "c_flag"),
+    [
+        (0x0100, 0x01, 0x0101, 0, 0),
+        (0x00FF, 0x01, 0x0100, 1, 1),
+        (0x0000, 0xFF, 0xFFFF, 0, 1),
+    ],
+)
+def test_ld_hl_sp_plus_e8_opcode_f8(
+    sp: int,
+    offset: int,
+    result: int,
+    h_flag: int,
+    c_flag: int,
+) -> None:
+    """Test LD HL, SP + e8 (0xF8)."""
+    cpu = make_cpu()
+    cpu.reg["SP"] = sp
+    cpu.flags["Z"] = 1
+    cpu.flags["N"] = 1
+    cpu.insert_instruction(bytearray([0xF8, offset]))
+    cpu.cycle()
+
+    assert cpu.reg["HL"] == result
+    assert cpu.reg["SP"] == sp
+    verify_flags(cpu, z_flag=0, n_flag=0, h_flag=h_flag, c_flag=c_flag)
+
+
+@pytest.mark.parametrize("hl", [0x0000, 0x1234, 0xFFFF])
+def test_ld_sp_hl_opcode_f9(hl: int) -> None:
+    """Test LD SP, HL (0xF9)."""
+    cpu = make_cpu()
+    cpu.reg["HL"] = hl
+    cpu.reg["SP"] = 0
+    cpu.insert_instruction(bytearray([0xF9]))
+    cpu.cycle()
+
+    assert cpu.reg["SP"] == hl
