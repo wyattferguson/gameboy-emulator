@@ -2,7 +2,7 @@ import pygame as pg
 
 from gbemu.ctypes import Color
 
-DEFAULT_ROM = "./roms/tetris.gb"
+DEFAULT_ROM = "./roms/puzzle.gb"
 MEMORY_SIZE: int = 65536  # 64kb of totally memory (ROM + RAM + IO)
 SP_START: int = 0xFFFE  # stack pointer start location
 DEBUG = False
