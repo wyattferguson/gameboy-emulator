@@ -5,6 +5,7 @@ import pytest
 from gbemu.cart import Cart
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU
+from gbemu.ppu import PPU
 from tests.utils import make_cpu
 
 

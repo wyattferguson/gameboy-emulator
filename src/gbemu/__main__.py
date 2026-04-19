@@ -22,3 +22,7 @@ from gbemu.gbemu import Gbemu
 def run(rom: str = DEFAULT_ROM, debug: bool = False) -> None:
     """Run the emulator."""
     Gbemu(rom=rom, debug=debug).run()
+
+
+if __name__ == "__main__":
+    run()

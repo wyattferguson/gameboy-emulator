@@ -1,6 +1,13 @@
 import pygame as pg
 
-from gbemu.config import BG_COLOR, DISPLAY_SCALER, ERROR_COLOR, PALLETE, SCREEN_HEIGHT, SCREEN_WIDTH
+from gbemu.config import (
+    BG_COLOR,
+    DISPLAY_SCALER,
+    ERROR_COLOR,
+    PALLETE,
+    SCREEN_HEIGHT,
+    SCREEN_WIDTH,
+)
 from gbemu.ctypes import Color
 
 
@@ -38,7 +45,9 @@ class Screen:
 
     def draw_buffer(self, buffer: list[list[int]]) -> None:
         """Draw a full frame represented as scanlines of palette IDs."""
-        for y, row in enumerate(buffer[:SCREEN_HEIGHT]):
+        for y, row in enumerate(buffer):
+            if y >= SCREEN_HEIGHT:
+                break
             self.draw_scanline(row, y)
 
     def draw_scanline(self, color_ids: list[int], y: int) -> None:
@@ -49,7 +58,8 @@ class Screen:
         y_offset_ids = y * SCREEN_WIDTH
         y_offset_rgb = y * SCREEN_WIDTH * 3
 
-        for x, color_id in enumerate(color_ids[:SCREEN_WIDTH]):
+        for x in range(min(len(color_ids), SCREEN_WIDTH)):
+            color_id = color_ids[x]
             palette_slot = color_id & 0x03
             self._color_ids[y_offset_ids + x] = palette_slot
             red, green, blue = self.color_from_id(palette_slot)
@@ -80,6 +90,6 @@ class Screen:
 
     def clear_screen(self) -> None:
         """Reset frame buffers and fill the output surface with BG color."""
-        self._color_ids[:] = bytes([0]) * (SCREEN_WIDTH * SCREEN_HEIGHT)
+        self._color_ids[:] = bytes(SCREEN_WIDTH * SCREEN_HEIGHT)
         self._pixel_rgb[:] = self._clear_rgb
         self.screen.fill(BG_COLOR)

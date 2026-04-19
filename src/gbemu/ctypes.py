@@ -16,14 +16,15 @@ class CallableDict(dict):
     def __setitem__(self, key: str, value: int) -> None:
         existing_value = super().get(key)
         if callable(existing_value):
-            register_a = (value >> 8) & 0xFF
-            register_b = value & 0xFF
-            super().__setitem__(key[0], register_a)
-            super().__setitem__(key[1], register_b)
+            self._set_register_pair(key, value)
         elif key == "SP":
             super().__setitem__("SP", value & 0xFFFF)
         else:
             super().__setitem__(key, value & 0xFF)
+
+    def _set_register_pair(self, pair: str, value: int) -> None:
+        super().__setitem__(pair[0], (value >> 8) & 0xFF)
+        super().__setitem__(pair[1], value & 0xFF)
 
 
 class Bitwise(StrEnum):

@@ -5,9 +5,23 @@ from gbemu.config import (
     BIOS,
     M_BOOT_ROM_MAPPING_CONTROL,
     M_DIVIDER,
+    M_INTERRUPT_FLAG,
+    M_JOYPAD,
     M_LCD_STATUS,
     M_OAM_DMA_SOURCE_START,
+    M_OAM_END,
+    M_OAM_START,
+    M_VRAM_END,
+    M_VRAM_START,
     MEMORY_SIZE,
+    MMU_ECHO_END,
+    MMU_ECHO_START,
+    MMU_ROM_END,
+    MMU_ROM_START,
+    MMU_UNUSABLE_END,
+    MMU_UNUSABLE_START,
+    MMU_WRAM_END,
+    MMU_WRAM_START,
 )
 
 
@@ -21,10 +35,64 @@ class MMU:
         self._cart = cart if (cart is not None and cart.rom is not None) else None
         if self._cart is not None:
             # FIX: Load max 32kb of ROM and bank switching for larger ROMs
-            self._memory[0 : len(self._cart.rom)] = self._cart.rom
+            rom = self._cart.rom
+            if rom is not None:
+                self._memory[0 : len(rom)] = rom
         self._memory[0 : len(BIOS)] = BIOS  # load system bios
         self._oam_locked = False
         self._vram_locked = False
+        self._joyp_select = 0x30
+        self._joyp_buttons = 0x0F
+        self._joyp_dpad = 0x0F
+        self._sync_joypad_register()
+
+    def _sync_joypad_register(self) -> None:
+        joypad = 0xCF | self._joyp_select
+        if (self._joyp_select & 0x10) == 0:
+            joypad &= 0xF0 | self._joyp_dpad
+        if (self._joyp_select & 0x20) == 0:
+            joypad &= 0xF0 | self._joyp_buttons
+        self._memory[M_JOYPAD] = joypad & 0xFF
+
+    @staticmethod
+    def _in_range(address: int, start: int, end: int) -> bool:
+        return start <= address <= end
+
+    def _is_unusable(self, address: int) -> bool:
+        return self._in_range(address, MMU_UNUSABLE_START, MMU_UNUSABLE_END)
+
+    def _is_oam(self, address: int) -> bool:
+        return self._in_range(address, M_OAM_START, M_OAM_END)
+
+    def _is_vram(self, address: int) -> bool:
+        return self._in_range(address, M_VRAM_START, M_VRAM_END)
+
+    def _is_cart_rom(self, address: int) -> bool:
+        return self._cart is not None and self._in_range(address, MMU_ROM_START, MMU_ROM_END)
+
+    def _is_wram(self, address: int) -> bool:
+        return self._in_range(address, MMU_WRAM_START, MMU_WRAM_END)
+
+    def _is_echo_ram(self, address: int) -> bool:
+        return self._in_range(address, MMU_ECHO_START, MMU_ECHO_END)
+
+    def set_joypad_pressed(self, mask: int, *, dpad: bool, pressed: bool) -> None:
+        """Update latched JOYP pressed-state bits and request interrupt on key press."""
+        target = self._joyp_dpad if dpad else self._joyp_buttons
+        previous = target
+        if pressed:
+            target &= (~mask) & 0x0F
+        else:
+            target |= mask & 0x0F
+
+        if dpad:
+            self._joyp_dpad = target
+        else:
+            self._joyp_buttons = target
+
+        if previous != target and pressed:
+            self._memory[M_INTERRUPT_FLAG] |= 0x10
+        self._sync_joypad_register()
 
     def set_ppu_bus_access(self, *, oam_locked: bool, vram_locked: bool) -> None:
         """Set CPU-visible OAM/VRAM bus lock state based on active PPU mode."""
@@ -47,74 +115,94 @@ class MMU:
 
     def __getitem__(self, address: int | slice) -> int | list[int]:
         if isinstance(address, int):
+            if address == M_JOYPAD:
+                self._sync_joypad_register()
+                return self._memory[address]
+
             # FEA0-FEFF is unusable memory area and reads as 0xFF.
-            if 0xFEA0 <= address <= 0xFEFF:
+            if self._is_unusable(address):
                 return 0xFF
 
             # During mode 2/3, CPU cannot access OAM.
-            if self._oam_locked and 0xFE00 <= address <= 0xFE9F:
+            if self._oam_locked and self._is_oam(address):
                 return 0xFF
 
             # During mode 3, CPU cannot access VRAM.
-            if self._vram_locked and 0x8000 <= address <= 0x9FFF:
+            if self._vram_locked and self._is_vram(address):
                 return 0xFF
         return self.memory[address]
 
-    def __setitem__(self, address: int, value: int) -> None:
-        value &= 0xFF
-
+    def _handle_io_write(self, address: int, value: int) -> bool:
         # FF04 DIV resets to 0 on any write.
         if address == M_DIVIDER:
             self._memory[address] = 0
-            return
+            return True
+
+        # FF00 JOYP only exposes writable select bits 4-5.
+        if address == M_JOYPAD:
+            self._joyp_select = value & 0x30
+            self._sync_joypad_register()
+            return True
 
         # FF41 STAT mode/coincidence bits (0-2) are read-only.
         if address == M_LCD_STATUS:
             self._memory[address] = (self._memory[address] & 0x07) | (value & 0xF8)
-            return
+            return True
 
         # FF50 controls one-way boot ROM unmap and is always writable as IO state.
         if address == M_BOOT_ROM_MAPPING_CONTROL:
             self._memory[address] = value
             if value != 0 and self._boot_rom_mapped and self._cart is not None:
-                self._memory[0 : len(BIOS)] = self._cart.rom[0 : len(BIOS)]
+                rom = self._cart.rom
+                if rom is not None:
+                    self._memory[0 : len(BIOS)] = rom[0 : len(BIOS)]
                 self._boot_rom_mapped = False
-            return
+            return True
 
         # OAM DMA: writing a page number triggers an instant 160-byte copy to OAM.
         # On hardware, writing to 0xFF46 copies 160 bytes from (value * 0x100) to OAM.
         if address == M_OAM_DMA_SOURCE_START:
             self._memory[address] = value
             src = value * 0x100
-            self._memory[0xFE00:0xFEA0] = self._memory[src : src + 160]
-            return
+            self._memory[M_OAM_START : M_OAM_END + 1] = self._memory[src : src + 160]
+            return True
 
+        return False
+
+    def _handle_memory_write(self, address: int, value: int) -> bool:
         # Cartridge ROM region is not directly writable on hardware.
         # Writes here are mapper control on MBC carts; for ROM-only carts they are ignored.
-        if self._cart is not None and 0x0000 <= address <= 0x7FFF:
-            return
+        if self._is_cart_rom(address):
+            return True
 
         # C000-DDFF work RAM is mirrored at E000-FDFF (echo RAM).
-        if 0xC000 <= address <= 0xDDFF:
+        if self._is_wram(address):
             self._memory[address] = value
             self._memory[address + 0x2000] = value
-            return
+            return True
 
-        if 0xE000 <= address <= 0xFDFF:
+        if self._is_echo_ram(address):
             self._memory[address] = value
             self._memory[address - 0x2000] = value
-            return
+            return True
 
         # FEA0-FEFF is unusable memory area; writes are ignored.
-        if 0xFEA0 <= address <= 0xFEFF:
-            return
+        if self._is_unusable(address):
+            return True
 
         # During mode 2/3, CPU writes to OAM are ignored.
-        if self._oam_locked and 0xFE00 <= address <= 0xFE9F:
-            return
+        if self._oam_locked and self._is_oam(address):
+            return True
 
         # During mode 3, CPU writes to VRAM are ignored.
-        if self._vram_locked and 0x8000 <= address <= 0x9FFF:
+        return bool(self._vram_locked and self._is_vram(address))
+
+    def __setitem__(self, address: int, value: int) -> None:
+        value &= 0xFF
+
+        if self._handle_io_write(address, value):
+            return
+        if self._handle_memory_write(address, value):
             return
 
         self._memory[address] = value

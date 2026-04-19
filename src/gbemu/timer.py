@@ -4,6 +4,7 @@ from gbemu.config import (
     M_TIMER_CONTROL,
     M_TIMER_COUNTER,
     M_TIMER_MODULO,
+    TIMER_PERIODS,
 )
 
 
@@ -30,12 +31,7 @@ class Timer:
         if not timer_enabled:
             return
 
-        timer_period = {
-            0x00: 1024,  # 4096 Hz
-            0x01: 16,  # 262144 Hz
-            0x02: 64,  # 65536 Hz
-            0x03: 256,  # 16384 Hz
-        }[timer_control & 0x03]
+        timer_period = TIMER_PERIODS[timer_control & 0x03]
 
         self._timer_cycle_accumulator += elapsed_cycles
         while self._timer_cycle_accumulator >= timer_period:

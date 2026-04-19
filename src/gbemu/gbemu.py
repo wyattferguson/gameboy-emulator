@@ -1,7 +1,4 @@
-import sys
 from time import perf_counter, sleep
-
-from loguru import logger
 
 from gbemu.apu import APU
 from gbemu.cart import Cart
@@ -10,8 +7,6 @@ from gbemu.config import (
     DEBUG,
     DEFAULT_ROM,
     HEADLESS,
-    M_VRAM_END,
-    M_VRAM_START,
     TARGET_FPS,
 )
 from gbemu.controller import Controller
@@ -46,20 +41,25 @@ class Gbemu:
         while True:
             frame_start = perf_counter()
 
-            # Poll input once per frame; per-instruction event pumping is too expensive.
-            self.controller.update()
+            self._run_frame()
+            self._pace_frame(frame_start, frame_duration)
 
-            # Process one full frame of CPU+PPU cycles before presenting.
-            frame_cycles = 0
-            while frame_cycles < CYCLES_PER_FRAME:
-                # CPU executes one instruction; PPU advances using the same cycle budget.
-                cpu_cycles = self.cpu.cycle()
-                self.ppu.update(cpu_cycles)
-                self.audio.update()
-                frame_cycles += cpu_cycles
+    def _run_frame(self) -> None:
+        # Poll input once per frame; per-instruction event pumping is too expensive.
+        self.controller.update()
 
-            # Pace to real-time: sleep the remainder of the frame budget if we ran fast.
-            elapsed = perf_counter() - frame_start
-            spare = frame_duration - elapsed
-            if spare > 0:
-                sleep(spare)
+        # Process one full frame of CPU+PPU cycles before presenting.
+        frame_cycles = 0
+        while frame_cycles < CYCLES_PER_FRAME:
+            # CPU executes one instruction; PPU advances using the same cycle budget.
+            cpu_cycles = self.cpu.cycle()
+            self.ppu.update(cpu_cycles)
+            self.audio.update()
+            frame_cycles += cpu_cycles
+
+    @staticmethod
+    def _pace_frame(frame_start: float, frame_duration: float) -> None:
+        # Pace to real-time: sleep the remainder of the frame budget if we ran fast.
+        spare = frame_duration - (perf_counter() - frame_start)
+        if spare > 0:
+            sleep(spare)

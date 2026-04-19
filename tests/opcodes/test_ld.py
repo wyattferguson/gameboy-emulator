@@ -1,5 +1,6 @@
 import pytest
 
+from gbemu.config import M_JOYPAD
 from tests.utils import make_cpu, verify_flags
 
 
@@ -268,7 +269,7 @@ def test_ld_a_from_a16_opcode_fa(address: int, value: int) -> None:
 @pytest.mark.parametrize(
     ("offset", "value"),
     [
-        (0x00, 0x12),
+        (0x01, 0x12),
         (0x42, 0xCD),
         (0xFF, 0x7E),
     ],
@@ -286,7 +287,7 @@ def test_ldh_mem_a_opcode_e0(offset: int, value: int) -> None:
 @pytest.mark.parametrize(
     ("offset", "value"),
     [
-        (0x00, 0x3C),
+        (0x01, 0x3C),
         (0x42, 0xAA),
         (0xFF, 0x01),
     ],
@@ -304,7 +305,7 @@ def test_ldh_a_mem_opcode_f0(offset: int, value: int) -> None:
 @pytest.mark.parametrize(
     ("c_value", "a_value"),
     [
-        (0x00, 0x9A),
+        (0x01, 0x9A),
         (0x4C, 0x11),
         (0xFF, 0xE7),
     ],
@@ -323,7 +324,7 @@ def test_ldh_mem_c_a_opcode_e2(c_value: int, a_value: int) -> None:
 @pytest.mark.parametrize(
     ("c_value", "mem_value"),
     [
-        (0x00, 0x66),
+        (0x01, 0x66),
         (0x4C, 0xB2),
         (0xFF, 0x19),
     ],
@@ -337,6 +338,27 @@ def test_ldh_a_mem_c_opcode_f2(c_value: int, mem_value: int) -> None:
     cpu.cycle()
 
     assert cpu.reg["A"] == mem_value
+
+
+def test_ldh_mem_a_opcode_e0_updates_joypad_selection() -> None:
+    """Test LDH [0x00], A against JOYP's select-line semantics."""
+    cpu = make_cpu()
+    cpu.reg["A"] = 0x10
+    cpu.insert_instruction(bytearray([0xE0, 0x00]))
+    cpu.cycle()
+
+    assert cpu.mmu[M_JOYPAD] == 0xDF
+
+
+def test_ldh_a_mem_opcode_f0_reads_joypad_state() -> None:
+    """Test LDH A, [0x00] against JOYP's selected active-low lines."""
+    cpu = make_cpu()
+    cpu.mmu[M_JOYPAD] = 0x20
+    cpu.mmu.set_joypad_pressed(0b0100, dpad=True, pressed=True)
+    cpu.insert_instruction(bytearray([0xF0, 0x00]))
+    cpu.cycle()
+
+    assert cpu.reg["A"] == 0xEB
 
 
 @pytest.mark.parametrize(

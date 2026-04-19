@@ -1,6 +1,3 @@
-from loguru import logger
-
-
 class APU:
     """Audio Processing Unit (APU)."""
 
@@ -8,4 +5,4 @@ class APU:
         self.volume: int = 100
 
     def update(self) -> None:
-        pass
+        """Advance APU state for the current CPU step (stub)."""

@@ -1,12 +1,10 @@
-import sys
-
 from loguru import logger
 
 from gbemu.config import (
+    CPU_INVALID_UNPREFIXED_OPCODES,
     DEBUG,
     M_INTERRUPT_ENABLE,
     M_INTERRUPT_FLAG,
-    PC_START,
     SP_START,
 )
 from gbemu.ctypes import Bitwise, CallableDict
@@ -15,28 +13,12 @@ from gbemu.opcodes import CB_PREFIXED, OPCODES, OpCode
 from gbemu.timer import Timer
 from gbemu.utils import hex_to_signed, to_u16
 
-# Opcodes documented as invalid on LR35902 (no defined instruction semantics).
-INVALID_UNPREFIXED_OPCODES = {
-    0xD3,
-    0xDB,
-    0xDD,
-    0xE3,
-    0xE4,
-    0xEB,
-    0xEC,
-    0xED,
-    0xF4,
-    0xFC,
-    0xFD,
-}
-
 
 class CPU:
     """GB CPU."""
 
     def __init__(self, mmu: MMU) -> None:
         self.debug: bool = DEBUG
-        # self.pc: int = PC_START  # program counter
         self.pc = 0x0000
         self.mmu: MMU = mmu
         self.interrupts: bool = False
@@ -104,7 +86,7 @@ class CPU:
         key = (self.pc, raw)
         if key not in self._illegal_opcode_log_once:
             self._illegal_opcode_log_once.add(key)
-            level = "warning" if raw in INVALID_UNPREFIXED_OPCODES else "error"
+            level = "warning" if raw in CPU_INVALID_UNPREFIXED_OPCODES else "error"
             log = logger.warning if level == "warning" else logger.error
             log(f"Illegal opcode {prefix}{op_code} at PC {hex(self.pc)}; falling back to NOP")
 
@@ -174,16 +156,12 @@ class CPU:
 
         # HALT keeps CPU idle until an interrupt becomes pending.
         if self.halted and pending_interrupts == 0:
-            self._timer.tick(self.mmu.memory, 4)
-            self.cycles += 4
-            return 4
+            return self._commit_cycles(4)
         if self.halted and pending_interrupts != 0:
             self.halted = False
 
         if self._service_interrupt():
-            self._timer.tick(self.mmu.memory, 20)
-            self.cycles += 20
-            return 20
+            return self._commit_cycles(20)
 
         self.fetch()
         self.decode()
@@ -191,7 +169,7 @@ class CPU:
         self.execute()
         self.cb_prefixed = False
         if self.instruction.pc_inc:
-            self.pc += self.instruction.length
+            self.pc = (self.pc + self.instruction.length) & 0xFFFF
 
         if self._ime_delay > 0:
             self._ime_delay -= 1
@@ -200,6 +178,10 @@ class CPU:
 
         # Keep a running total and return this instruction's timing to drive other hardware.
         elapsed = self.instruction.cycles + self._cycle_adjust
+        return self._commit_cycles(elapsed)
+
+    def _commit_cycles(self, elapsed: int) -> int:
+        """Tick timer and aggregate elapsed cycles for one CPU step."""
         self._timer.tick(self.mmu.memory, elapsed)
         self.cycles += elapsed
         return elapsed
@@ -297,6 +279,7 @@ class CPU:
 
     def stop(self, d8: int = 0) -> None:
         """Halt CPU and LCD until button pressed. Used for power saving."""
+        _ = d8
         self.stopped = True
 
     def add(
@@ -322,17 +305,14 @@ class CPU:
 
     def add_sp_e8(self, offset: int) -> None:
         """Add signed immediate to SP, updating H/C from low-byte carry behavior."""
-        sp = self.reg["SP"]
-        signed_offset = hex_to_signed(offset, 8)
-        result = (sp + signed_offset) & 0xFFFF
-        self.flags["Z"] = 0
-        self.flags["N"] = 0
-        self.flags["H"] = 1 if ((sp ^ offset ^ result) & 0x10) != 0 else 0
-        self.flags["C"] = 1 if ((sp ^ offset ^ result) & 0x100) != 0 else 0
-        self.reg["SP"] = result
+        self._set_sp_offset_result("SP", offset)
 
     def ld_hl_sp_e8(self, offset: int) -> None:
         """Store SP + signed immediate into HL, with ADD SP,e8 flag semantics."""
+        self._set_sp_offset_result("HL", offset)
+
+    def _set_sp_offset_result(self, target: str, offset: int) -> None:
+        """Apply SP + signed offset and set flags using ADD SP,e8 semantics."""
         sp = self.reg["SP"]
         signed_offset = hex_to_signed(offset, 8)
         result = (sp + signed_offset) & 0xFFFF
@@ -340,7 +320,7 @@ class CPU:
         self.flags["N"] = 0
         self.flags["H"] = 1 if ((sp ^ offset ^ result) & 0x10) != 0 else 0
         self.flags["C"] = 1 if ((sp ^ offset ^ result) & 0x100) != 0 else 0
-        self.reg["HL"] = result
+        self.reg[target] = result
 
     def sub(
         self,
@@ -376,9 +356,9 @@ class CPU:
         result: int = self.reg[dest_register] - value
         self._set_sub_flags(result, self.reg[dest_register], value)
 
-    def get_stored_value(self, register: str, from_memory: bool = False) -> int:
+    def get_stored_value(self, register: str) -> int:
         """Get value stored in register or memory."""
-        if register == "HL" or from_memory:
+        if register == "HL":
             return self.mmu[self.reg[register]]
         return self.reg[register]
 
@@ -421,17 +401,18 @@ class CPU:
 
     def inc_mem(self, register: str) -> None:
         """Increment value at address in HL."""
-        addr: int = self.reg[register]
-        value: int = self.mmu[addr]
-        self.mmu[addr] += 1
-        self._set_inc_dec_flags(self.mmu[addr], value)
+        self._adjust_mem(register, 1)
 
     def dec_mem(self, register: str) -> None:
         """Decrement value at address in HL."""
-        addr: int = self.reg[register]
-        value: int = self.mmu[addr]
-        self.mmu[addr] = value - 1
-        self._set_inc_dec_flags(self.mmu[addr], value)
+        self._adjust_mem(register, -1)
+
+    def _adjust_mem(self, register: str, delta: int) -> None:
+        addr = self.reg[register]
+        previous = self.mmu[addr]
+        updated = (previous + delta) & 0xFF
+        self.mmu[addr] = updated
+        self._set_inc_dec_flags(updated, previous)
 
     def dec(self, register: str) -> None:
         """Decrement register or HL address."""
@@ -477,7 +458,8 @@ class CPU:
         else:
             self.reg[register] = result
 
-        # CB-prefixed rotate ops update Z from result; unprefixed A rotates force Z=0 via opcode flags.
+        # CB-prefixed rotate ops update Z from result;
+        # unprefixed A rotates force Z=0 via opcode flags.
         if self.cb_prefixed:
             self.flags["Z"] = 1 if result == 0 else 0
         self.flags["C"] = new_carry

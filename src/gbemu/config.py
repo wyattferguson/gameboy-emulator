@@ -1,8 +1,9 @@
+import pygame as pg
+
 from gbemu.ctypes import Color
 
 DEFAULT_ROM = "./roms/tetris.gb"
 MEMORY_SIZE: int = 65536  # 64kb of totally memory (ROM + RAM + IO)
-PC_START: int = 0x100  # rom load location
 SP_START: int = 0xFFFE  # stack pointer start location
 DEBUG = False
 HEADLESS = False
@@ -39,7 +40,6 @@ DISPLAY_SCALER: int = 5
 SCREEN_WIDTH: int = 160
 SCREEN_HEIGHT: int = 144
 
-DELAY: int = 1
 BG_COLOR: Color = (202, 220, 159)
 ERROR_COLOR: Color = (219, 18, 18)
 PALLETE: list[Color] = [
@@ -119,7 +119,6 @@ M_VRAM_END: int = 0x9FFF
 M_OAM_START: int = 0xFE00
 M_OAM_END: int = 0xFE9F
 M_WIN_MAP_VRAM: list[list[int]] = [[0x9800, 0x9BFF], [0x9C00, 0x9FFF]]
-M_BG_TILE_DATA_VRAM: list[list[int]] = [[0x8800, 0x97FF], [0x8000, 0x8FFF]]
 M_BG_TILE_MAP_VRAM: list[list[int]] = [[0x9800, 0x9BFF], [0x9C00, 0x9FFF]]
 M_VRAM_DMA_SOURCE_HIGH: int = 0xFF51
 M_VRAM_DMA_SOURCE_LOW: int = 0xFF52
@@ -137,3 +136,345 @@ M_WRAM_BANK: int = 0xFF70
 
 # Interrupt registers
 M_INTERRUPT_ENABLE: int = 0xFFFF
+
+# MMU memory map ranges
+MMU_ROM_START = 0x0000
+MMU_ROM_END = 0x7FFF
+MMU_WRAM_START = 0xC000
+MMU_WRAM_END = 0xDDFF
+MMU_ECHO_START = 0xE000
+MMU_ECHO_END = 0xFDFF
+MMU_UNUSABLE_START = 0xFEA0
+MMU_UNUSABLE_END = 0xFEFF
+
+# PPU mode timing windows (in CPU cycles)
+PPU_MODE2_CYCLES = 80
+PPU_MODE3_CYCLES = 172
+PPU_MODE0_CYCLES = CYCLES_PER_SCANLINE - PPU_MODE2_CYCLES - PPU_MODE3_CYCLES
+
+# Timer periods by TAC clock-select bits
+TIMER_PERIODS: dict[int, int] = {
+    0x00: 1024,  # 4096 Hz
+    0x01: 16,  # 262144 Hz
+    0x02: 64,  # 65536 Hz
+    0x03: 256,  # 16384 Hz
+}
+
+# Opcodes documented as invalid on LR35902 (no defined instruction semantics)
+CPU_INVALID_UNPREFIXED_OPCODES = {
+    0xD3,
+    0xDB,
+    0xDD,
+    0xE3,
+    0xE4,
+    0xEB,
+    0xEC,
+    0xED,
+    0xF4,
+    0xFC,
+    0xFD,
+}
+
+# Keyboard mapping to joypad bit mask and line-select (dpad=True, buttons=False)
+KEYMAP: dict[int, tuple[int, bool]] = {
+    pg.K_UP: (0b0100, True),
+    pg.K_w: (0b0100, True),
+    pg.K_DOWN: (0b1000, True),
+    pg.K_s: (0b1000, True),
+    pg.K_LEFT: (0b0010, True),
+    pg.K_RIGHT: (0b0001, True),
+    pg.K_d: (0b0001, True),
+    pg.K_a: (0b0001, False),
+    pg.K_j: (0b0001, False),
+    pg.K_b: (0b0010, False),
+    pg.K_k: (0b0010, False),
+    pg.K_RETURN: (0b1000, False),
+    pg.K_LSHIFT: (0b0100, False),
+    pg.K_RSHIFT: (0b0100, False),
+}
+
+# Cartridge header offsets
+H_MANUFACTURER_START = 0x13F
+H_MANUFACTURER_END = 0x142
+H_TITLE_START = 0x134
+H_TITLE_END = 0x143
+H_CGB_FLAG = 0x143
+H_NEW_LICENSEE_START = 0x144
+H_NEW_LICENSEE_END = 0x146
+H_SGB_FLAG = 0x146
+H_CART_TYPE = 0x147
+H_ROM_SIZE = 0x148
+H_RAM_SIZE = 0x149
+H_DESTINATION = 0x14A
+H_OLD_LICENSEE = 0x14B
+H_VERSION = 0x14C
+H_HEADER_CHECKSUM = 0x14D
+
+# Cartridge metadata mappings
+CART_TYPE: dict[int, str] = {
+    0x00: "ROM ONLY",
+    0x01: "MBC1",
+    0x02: "MBC1+RAM",
+    0x03: "MBC1+RAM+BATTERY",
+    0x05: "MBC2",
+    0x06: "MBC2+BATTERY",
+    0x08: "ROM+RAM",
+    0x09: "ROM+RAM+BATTERY",
+    0x0B: "MMM01",
+    0x0C: "MMM01+RAM",
+    0x0D: "MMM01+RAM+BATTERY",
+    0x0F: "MBC3+TIMER+BATTERY",
+    0x10: "MBC3+TIMER+RAM+BATTERY",
+    0x11: "MBC3",
+    0x12: "MBC3+RAM",
+    0x13: "MBC3+RAM+BATTERY",
+    0x19: "MBC5",
+    0x1A: "MBC5+RAM",
+    0x1B: "MBC5+RAM+BATTERY",
+    0x1C: "MBC5+RUMBLE",
+    0x1D: "MBC5+RUMBLE+RAM",
+    0x1E: "MBC5+RUMBLE+RAM+BATTERY",
+    0x20: "MBC6",
+    0x22: "MBC7+SENSOR+RUMBLE+RAM+BATTERY",
+    0xFC: "POCKET CAMERA",
+    0xFD: "BANDAI TAMA5",
+    0xFE: "HuC3",
+    0xFF: "HuC1+RAM+BATTERY",
+}
+
+CGB_FLAG: dict[str, str] = {
+    "00": "GB",
+    "80": "CGB",
+    "C0": "CGB+DMG",
+}
+
+MMU_SIZE: dict[int, str] = {
+    0x00: "None",
+    0x01: "Unused",
+    0x02: "8 KB",
+    0x03: "32 KB",
+    0x04: "128 KB",
+    0x05: "64 KB",
+}
+
+DESTINATION_CODE: dict[int, str] = {
+    0x00: "Japan & Overseas",
+    0x01: "Non-Japan",
+}
+
+NEW_LICENSEE: dict[str, str] = {
+    "0": "None",
+    "1": "Nintendo Research & Development 1",
+    "8": "Capcom",
+    "13": "EA (Electronic Arts)",
+    "18": "Hudson Soft",
+    "19": "B-AI",
+    "20": "KSS",
+    "22": "Planning Office WADA",
+    "24": "PCM Complete",
+    "25": "San-X",
+    "28": "Kemco",
+    "29": "SETA Corporation",
+    "30": "Viacom",
+    "31": "Nintendo",
+    "32": "Bandai",
+    "33": "Ocean Software/Acclaim Entertainment",
+    "34": "Konami",
+    "35": "HectorSoft",
+    "37": "Taito",
+    "38": "Hudson Soft",
+    "39": "Banpresto",
+    "41": "Ubi Soft",
+    "42": "Atlus",
+    "44": "Malibu Interactive",
+    "46": "Angel",
+    "47": "Bullet-Proof Software",
+    "49": "Irem",
+    "50": "Absolute",
+    "51": "Acclaim Entertainment",
+    "52": "Activision",
+    "53": "Sammy USA Corporation",
+    "54": "Konami",
+    "55": "Hi Tech Expressions",
+    "56": "LJN",
+    "57": "Matchbox",
+    "58": "Mattel",
+    "59": "Milton Bradley Company",
+    "60": "Titus Interactive",
+    "61": "Virgin Games Ltd.",
+    "64": "Lucasfilm Games",
+    "67": "Ocean Software",
+    "69": "EA (Electronic Arts)",
+    "70": "Infogrames",
+    "71": "Interplay Entertainment",
+    "72": "Broderbund",
+    "73": "Sculptured Software",
+    "75": "The Sales Curve Limited",
+    "78": "THQ",
+    "79": "Accolade",
+    "80": "Misawa Entertainment",
+    "83": "lozc",
+    "86": "Tokuma Shoten",
+    "87": "Tsukuda Original",
+    "91": "Chunsoft Co.",
+    "92": "Video System",
+    "93": "Ocean Software/Acclaim Entertainment",
+    "95": "Varie",
+    "96": "Yonezawa",
+    "97": "Kaneko",
+    "99": "Pack-In-Video",
+    "9H": "Bottom Up",
+    "A4": "Konami (Yu-Gi-Oh!)",
+    "BL": "MTO",
+    "DK": "Kodansha",
+}
+
+OLD_LICENSEE: dict[str, str] = {
+    "0": "None",
+    "1": "Nintendo",
+    "8": "Capcom",
+    "9": "HOT-B",
+    "A": "Jaleco",
+    "B": "Coconuts Japan",
+    "C": "Elite Systems",
+    "13": "EA (Electronic Arts)",
+    "18": "Hudson Soft",
+    "19": "ITC Entertainment",
+    "1A": "Yanoman",
+    "1D": "Japan Clary",
+    "1F": "Virgin Games Ltd.",
+    "24": "PCM Complete",
+    "25": "San-X",
+    "28": "Kemco",
+    "29": "SETA Corporation",
+    "30": "Infogrames",
+    "31": "Nintendo",
+    "32": "Bandai",
+    "33": "NEW_LICENSEE",
+    "34": "Konami",
+    "35": "HectorSoft",
+    "38": "Capcom",
+    "39": "Banpresto",
+    "3C": "Entertainment Interactive (stub)",
+    "3E": "Gremlin",
+    "41": "Ubi Soft",
+    "42": "Atlus",
+    "44": "Malibu Interactive",
+    "46": "Angel",
+    "47": "Spectrum HoloByte",
+    "49": "Irem",
+    "4A": "Virgin Games Ltd.",
+    "4D": "Malibu Interactive",
+    "4F": "U.S. Gold",
+    "50": "Absolute",
+    "51": "Acclaim Entertainment",
+    "52": "Activision",
+    "53": "Sammy USA Corporation",
+    "54": "GameTek",
+    "55": "Park Place",
+    "56": "LJN",
+    "57": "Matchbox",
+    "59": "Milton Bradley Company",
+    "5A": "Mindscape",
+    "5B": "Romstar",
+    "5C": "Naxat Soft",
+    "5D": "Tradewest",
+    "60": "Titus Interactive",
+    "61": "Virgin Games Ltd.",
+    "67": "Ocean Software",
+    "69": "EA (Electronic Arts)",
+    "6E": "Elite Systems",
+    "6F": "Electro Brain",
+    "70": "Infogrames",
+    "71": "Interplay Entertainment",
+    "72": "Broderbund",
+    "73": "Sculptured Software",
+    "75": "The Sales Curve Limited",
+    "78": "THQ",
+    "79": "Accolade",
+    "7A": "Triffix Entertainment",
+    "7C": "MicroProse",
+    "7F": "Kemco",
+    "80": "Misawa Entertainment",
+    "83": "LOZC G.",
+    "86": "Tokuma Shoten",
+    "8B": "Bullet-Proof Software",
+    "8C": "Vic Tokai Corp.",
+    "8E": "Ape Inc.",
+    "8F": "I'Max",
+    "91": "Chunsoft Co.",
+    "92": "Video System",
+    "93": "Tsubaraya Productions",
+    "95": "Varie",
+    "96": "Yonezawa/S'Pal",
+    "97": "Kemco",
+    "99": "Arc",
+    "9A": "Nihon Bussan",
+    "9B": "Tecmo",
+    "9C": "Imagineer",
+    "9D": "Banpresto",
+    "9F": "Nova",
+    "A1": "Hori Electric",
+    "A2": "Bandai",
+    "A4": "Konami",
+    "A6": "Kawada",
+    "A7": "Takara",
+    "A9": "Technos Japan",
+    "AA": "Broderbund",
+    "AC": "Toei Animation",
+    "AD": "Toho",
+    "AF": "Namco",
+    "B0": "Acclaim Entertainment",
+    "B1": "ASCII Corporation or Nexsoft",
+    "B2": "Bandai",
+    "B4": "Square Enix",
+    "B6": "HAL Laboratory",
+    "B7": "SNK",
+    "B9": "Pony Canyon",
+    "BA": "Culture Brain",
+    "BB": "Sunsoft",
+    "BD": "Sony Imagesoft",
+    "BF": "Sammy Corporation",
+    "C0": "Taito",
+    "C2": "Kemco",
+    "C3": "Square",
+    "C4": "Tokuma Shoten",
+    "C5": "Data East",
+    "C6": "Tonkin House",
+    "C8": "Koei",
+    "C9": "UFL",
+    "CA": "Ultra Games",
+    "CB": "VAP, Inc.",
+    "CC": "Use Corporation",
+    "CD": "Meldac",
+    "CE": "Pony Canyon",
+    "CF": "Angel",
+    "D0": "Taito",
+    "D1": "SOFEL (Software Engineering Lab)",
+    "D2": "Quest",
+    "D3": "Sigma Enterprises",
+    "D4": "ASK Kodansha Co.",
+    "D6": "Naxat Soft",
+    "D7": "Copya System",
+    "D9": "Banpresto",
+    "DA": "Tomy",
+    "DB": "LJN",
+    "DD": "Nippon Computer Systems",
+    "DE": "Human Ent.",
+    "DF": "Altron",
+    "E0": "Jaleco",
+    "E1": "Towa Chiki",
+    "E2": "Yutaka",
+    "E3": "Varie",
+    "E5": "Epoch",
+    "E7": "Athena",
+    "E8": "Asmik Ace Entertainment",
+    "E9": "Natsume",
+    "EA": "King Records",
+    "EB": "Atlus",
+    "EC": "Epic/Sony Records",
+    "EE": "IGS",
+    "F0": "A Wave",
+    "F3": "Extreme Entertainment",
+    "FF": "LJN",
+}

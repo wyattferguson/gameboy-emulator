@@ -1,3 +1,36 @@
+"""Step-by-step guide for the DMG PPU flow in this module.
+
+1. CPU drives timing:
+    CPU calls ``PPU.update(cpu_cycles)`` after each executed instruction.
+
+2. LCDC is refreshed:
+    ``update`` checks LCD enable state and decodes LCDC fields when they change.
+    If LCD is disabled, PPU state is reset via ``_disable_lcd_state``.
+
+3. Cycles are accumulated:
+    ``mode_cycles`` grows by ``cpu_cycles`` and ``process_timing`` advances as
+    many full mode windows as available.
+
+4. Mode machine advances in ``_step_mode``:
+    - Mode 2 (OAM scan): collect up to 10 visible sprites for current scanline.
+    - Mode 3 (pixel transfer): render one scanline (BG/window + sprites).
+    - Mode 0 (HBlank): finish line timing, increment LY, transition to next mode.
+    - Mode 1 (VBlank): advance LY by full scanline windows until frame wraps.
+
+5. Rendering path:
+    ``render_scanline`` builds BG/window pixels first, then overlays objects.
+    Final palette IDs are pushed to ``Screen.draw_scanline``.
+
+6. Register side effects and interrupts:
+    ``_set_mode`` updates STAT mode bits and raises STAT interrupts when enabled.
+    ``enter_vblank`` requests VBlank interrupt. ``_sync_lyc_status`` keeps
+    STAT coincidence bit and LYC interrupt behavior in sync.
+
+7. Frame boundary:
+    ``advance_scanline`` wraps LY at 154 lines, increments frame counter, and
+    presents frame output via ``Screen.update`` when a frame completes.
+"""
+
 from enum import IntEnum
 
 from gbemu.config import (
@@ -18,6 +51,9 @@ from gbemu.config import (
     M_WIN_MAP_VRAM,
     M_WINDOW_X_PLUS_7,
     M_WINDOW_Y,
+    PPU_MODE0_CYCLES,
+    PPU_MODE2_CYCLES,
+    PPU_MODE3_CYCLES,
     SCAN_LINES,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
@@ -35,11 +71,6 @@ class PPUMode(IntEnum):
     VBLANK = 1
     OAM = 2
     PIXEL_TRANSFER = 3
-
-
-MODE2_CYCLES = 80
-MODE3_CYCLES = 172
-MODE0_CYCLES = CYCLES_PER_SCANLINE - MODE2_CYCLES - MODE3_CYCLES
 
 
 class PPU:
@@ -103,22 +134,22 @@ class PPU:
         advanced = False
 
         if self.mode == PPUMode.OAM:
-            if self.mode_cycles >= MODE2_CYCLES:
-                self.mode_cycles -= MODE2_CYCLES
+            if self.mode_cycles >= PPU_MODE2_CYCLES:
+                self.mode_cycles -= PPU_MODE2_CYCLES
                 self._window_line_latched_for_scanline = False
                 self.scan_oam_for_scanline()
                 self._set_mode(PPUMode.PIXEL_TRANSFER)
                 advanced = True
         elif self.mode == PPUMode.PIXEL_TRANSFER:
-            if self.mode_cycles >= MODE3_CYCLES:
-                self.mode_cycles -= MODE3_CYCLES
+            if self.mode_cycles >= PPU_MODE3_CYCLES:
+                self.mode_cycles -= PPU_MODE3_CYCLES
                 self.render_scanline()
                 self._set_mode(PPUMode.HBLANK)
                 self.enter_hblank()
                 advanced = True
         elif self.mode == PPUMode.HBLANK:
-            if self.mode_cycles >= MODE0_CYCLES:
-                self.mode_cycles -= MODE0_CYCLES
+            if self.mode_cycles >= PPU_MODE0_CYCLES:
+                self.mode_cycles -= PPU_MODE0_CYCLES
                 self.advance_scanline()
                 if self.scan_line >= SCREEN_HEIGHT:
                     self._set_mode(PPUMode.VBLANK)
@@ -207,16 +238,7 @@ class PPU:
         """HBlank transition hook reserved for future DMA/stat extensions."""
         return
 
-    def enter_vblank(self) -> None:
-        """Raise VBlank interrupt on entry to mode 1."""
-        self._request_interrupt(0)
-
-    def _request_interrupt(self, bit_index: int) -> None:
-        self.mmu.memory[M_INTERRUPT_FLAG] |= 1 << bit_index
-
-    def _set_mode(self, mode: PPUMode) -> None:
-        self.mode = mode
-
+    def _set_bus_access_for_mode(self, mode: PPUMode) -> None:
         # CPU bus access rules by mode:
         # mode 2: OAM blocked, VRAM open
         # mode 3: OAM+VRAM blocked
@@ -229,6 +251,17 @@ class PPU:
             self.mmu.set_ppu_bus_access(oam_locked=True, vram_locked=True)
         else:
             self.mmu.set_ppu_bus_access(oam_locked=False, vram_locked=False)
+
+    def enter_vblank(self) -> None:
+        """Raise VBlank interrupt on entry to mode 1."""
+        self._request_interrupt(0)
+
+    def _request_interrupt(self, bit_index: int) -> None:
+        self.mmu.memory[M_INTERRUPT_FLAG] |= 1 << bit_index
+
+    def _set_mode(self, mode: PPUMode) -> None:
+        self.mode = mode
+        self._set_bus_access_for_mode(mode)
 
         stat = self.mmu.memory[M_LCD_STATUS]
         stat = (stat & 0xFC) | int(mode)
