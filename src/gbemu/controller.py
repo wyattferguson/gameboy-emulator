@@ -24,12 +24,13 @@ class Controller:
         self.mmu[M_JOYPAD] ^= bits
 
     def update(self) -> None:
+        """Check for key presses and update JOYPAD state."""
         for event in pg.event.get():
             # Press ESCAPE to quit emulator
             if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
                 pg.quit()
                 sys.exit()
-            elif event.type == pg.KEYDOWN or event.type == pg.KEYUP:
+            elif event.type in (pg.KEYDOWN, pg.KEYUP):
                 match event.key:
                     case pg.K_UP:
                         self.flip(0b0100, True)
@@ -49,14 +50,3 @@ class Controller:
                         self.flip(0x0100)
                     case _:
                         pass
-
-    def __str__(self) -> str:
-        return (
-            f"Controller State:\n"
-            f"JOYPAD: {self.mmu[M_JOYPAD]}\n"
-            f"Up/Select : {(self.mmu[M_JOYPAD] & 0b0100) == 0}\n"
-            f"Down/Start: {(self.mmu[M_JOYPAD] & 0b1000) == 0}\n"
-            f"Right/A: {(self.mmu[M_JOYPAD] & 0b0001) == 0}\n"
-            f"Left/B: {(self.mmu[M_JOYPAD] & 0b0010) == 0}\n"
-            f"{'D-Pad' if self.dpad_pressed else 'Button'} Pressed\n"
-        )
