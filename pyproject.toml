@@ -52,7 +52,7 @@ lint = {cmd = "ruff check --fix ./src/gbemu/", help = "Lint and auto-fix code us
 type = {cmd = "ty check", help = "Typecheck code using ty" }
 tests = {cmd = "pytest --verbose -s --color=yes tests", help = "Run tests using pytest"}
 run = {cmd = "gbemu", help = "Run the emulator"}
-#run = {cmd = "uv run ./src/gbemu/test.py", help = "Run the emulator"}
+run-pypy = {cmd = "pypy -m ensurepip --upgrade && pypy -m pip install --upgrade pip setuptools wheel && pypy -m pip install click loguru pygame-ce && pypy -c \"import sys; sys.path.insert(0, 'src'); from gbemu.__main__ import run; run()\"", help = "Bootstrap pip, install deps, and run the emulator with PyPy"}
 
 [tool.ruff]
 line-length = 100

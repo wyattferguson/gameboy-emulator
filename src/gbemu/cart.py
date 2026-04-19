@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from loguru import logger
-
 from gbemu.config import (
     CART_TYPE,
     CGB_FLAG,
@@ -26,6 +24,7 @@ from gbemu.config import (
     NEW_LICENSEE,
     OLD_LICENSEE,
 )
+from gbemu.logger import logger
 
 
 class Cart:

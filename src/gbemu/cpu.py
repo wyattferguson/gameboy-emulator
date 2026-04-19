@@ -1,5 +1,3 @@
-from loguru import logger
-
 from gbemu.config import (
     CPU_INVALID_UNPREFIXED_OPCODES,
     DEBUG,
@@ -8,6 +6,7 @@ from gbemu.config import (
     SP_START,
 )
 from gbemu.ctypes import Bitwise, CallableDict
+from gbemu.logger import logger
 from gbemu.mmu import MMU
 from gbemu.opcodes import CB_PREFIXED, OPCODES, OpCode
 from gbemu.timer import Timer

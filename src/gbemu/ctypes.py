@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum
 
-type Color = tuple[int, int, int]
+Color = tuple[int, int, int]
 
 
 class CallableDict(dict):
