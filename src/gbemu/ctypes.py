@@ -1,3 +1,15 @@
+"""
+
+This module defines shared emulator data types used by CPU, PPU, and opcode metadata.
+
+Step-by-step:
+1. Declare typed aliases and enums for core domains.
+2. Provide callable register dictionary behavior for 8/16-bit register access.
+3. Define frozen opcode metadata structure for decode tables.
+4. Define tile and tile-size structures for rendering paths.
+5. Keep cross-module type contracts explicit and reusable.
+"""
+
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum
 
@@ -23,6 +35,7 @@ class CallableDict(dict):
             super().__setitem__(key, value & 0xFF)
 
     def _set_register_pair(self, pair: str, value: int) -> None:
+        """Split a 16-bit value into high/low 8-bit register entries."""
         super().__setitem__(pair[0], (value >> 8) & 0xFF)
         super().__setitem__(pair[1], value & 0xFF)
 

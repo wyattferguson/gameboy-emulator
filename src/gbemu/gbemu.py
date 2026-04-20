@@ -1,3 +1,14 @@
+"""
+This module orchestrates the emulator runtime loop across CPU, PPU, APU, MMU, and input.
+
+Step-by-step:
+1. Construct all hardware subsystems and shared dependencies.
+2. Enter the perpetual frame loop.
+3. Execute CPU instructions and advance PPU/APU by consumed cycles.
+4. Pace frame execution to target real-time FPS.
+5. Publish measured FPS to the renderer overlay when available.
+"""
+
 from time import perf_counter, sleep
 
 from gbemu.apu import APU
@@ -24,6 +35,7 @@ class Gbemu:
         debug: bool = DEBUG,
         headless: bool = HEADLESS,
     ) -> None:
+        """Wire cartridge and hardware subsystems for one emulator instance."""
         self.debug = debug
         self.rom = rom
         self.cart = Cart(self.rom)
@@ -57,6 +69,7 @@ class Gbemu:
                     self.ppu.screen.set_fps(smoothed_fps)
 
     def _run_frame(self) -> None:
+        """Execute CPU/PPU/APU work until one frame worth of cycles elapses."""
         # Poll input once per frame; per-instruction event pumping is too expensive.
         self.controller.update()
 
@@ -71,6 +84,7 @@ class Gbemu:
 
     @staticmethod
     def _pace_frame(frame_start: float, frame_duration: float) -> None:
+        """Sleep for remaining frame budget to maintain target FPS."""
         # Pace to real-time: sleep the remainder of the frame budget if we ran fast.
         spare = frame_duration - (perf_counter() - frame_start)
         if spare > 0:

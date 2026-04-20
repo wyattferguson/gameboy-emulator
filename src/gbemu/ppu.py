@@ -132,42 +132,64 @@ class PPU:
             pass
 
     def _step_mode(self) -> bool:
-        advanced = False
-
+        """Advance one timing window for the active PPU mode, if possible."""
         if self.mode == PPUMode.OAM:
-            if self.mode_cycles >= PPU_MODE2_CYCLES:
-                self.mode_cycles -= PPU_MODE2_CYCLES
-                self._window_line_latched_for_scanline = False
-                self.scan_oam_for_scanline()
-                self._set_mode(PPUMode.PIXEL_TRANSFER)
-                advanced = True
-        elif self.mode == PPUMode.PIXEL_TRANSFER:
-            if self.mode_cycles >= PPU_MODE3_CYCLES:
-                self.mode_cycles -= PPU_MODE3_CYCLES
-                self.render_scanline()
-                self._set_mode(PPUMode.HBLANK)
-                self.enter_hblank()
-                advanced = True
-        elif self.mode == PPUMode.HBLANK:
-            if self.mode_cycles >= PPU_MODE0_CYCLES:
-                self.mode_cycles -= PPU_MODE0_CYCLES
-                self.advance_scanline()
-                if self.scan_line >= SCREEN_HEIGHT:
-                    self._set_mode(PPUMode.VBLANK)
-                    self.enter_vblank()
-                else:
-                    self._set_mode(PPUMode.OAM)
-                advanced = True
-        elif self.mode_cycles >= CYCLES_PER_SCANLINE:
-            self.mode_cycles -= CYCLES_PER_SCANLINE
-            self.advance_scanline()
-            if self.scan_line == 0:
-                self._set_mode(PPUMode.OAM)
-            advanced = True
+            return self._step_oam_mode()
+        if self.mode == PPUMode.PIXEL_TRANSFER:
+            return self._step_pixel_transfer_mode()
+        if self.mode == PPUMode.HBLANK:
+            return self._step_hblank_mode()
+        return self._step_vblank_mode()
 
-        return advanced
+    def _step_oam_mode(self) -> bool:
+        """Handle mode 2 timing and transition to pixel transfer."""
+        if self.mode_cycles < PPU_MODE2_CYCLES:
+            return False
+
+        self.mode_cycles -= PPU_MODE2_CYCLES
+        self._window_line_latched_for_scanline = False
+        self.scan_oam_for_scanline()
+        self._set_mode(PPUMode.PIXEL_TRANSFER)
+        return True
+
+    def _step_pixel_transfer_mode(self) -> bool:
+        """Handle mode 3 timing, render line, and enter HBlank."""
+        if self.mode_cycles < PPU_MODE3_CYCLES:
+            return False
+
+        self.mode_cycles -= PPU_MODE3_CYCLES
+        self.render_scanline()
+        self._set_mode(PPUMode.HBLANK)
+        self.enter_hblank()
+        return True
+
+    def _step_hblank_mode(self) -> bool:
+        """Handle mode 0 timing and select next scanline mode."""
+        if self.mode_cycles < PPU_MODE0_CYCLES:
+            return False
+
+        self.mode_cycles -= PPU_MODE0_CYCLES
+        self.advance_scanline()
+        if self.scan_line >= SCREEN_HEIGHT:
+            self._set_mode(PPUMode.VBLANK)
+            self.enter_vblank()
+        else:
+            self._set_mode(PPUMode.OAM)
+        return True
+
+    def _step_vblank_mode(self) -> bool:
+        """Handle mode 1 timing until LY wraps and mode 2 resumes."""
+        if self.mode_cycles < CYCLES_PER_SCANLINE:
+            return False
+
+        self.mode_cycles -= CYCLES_PER_SCANLINE
+        self.advance_scanline()
+        if self.scan_line == 0:
+            self._set_mode(PPUMode.OAM)
+        return True
 
     def _disable_lcd_state(self) -> None:
+        """Reset PPU scan state and bus visibility when LCD is turned off."""
         self.mode_cycles = 0
         self.scan_line = 0
         self.window_line = 0
@@ -253,6 +275,7 @@ class PPU:
         return
 
     def _set_bus_access_for_mode(self, mode: PPUMode) -> None:
+        """Apply DMG bus-lock rules for CPU-visible VRAM/OAM access by mode."""
         # CPU bus access rules by mode:
         # mode 2: OAM blocked, VRAM open
         # mode 3: OAM+VRAM blocked
@@ -271,9 +294,11 @@ class PPU:
         self._request_interrupt(0)
 
     def _request_interrupt(self, bit_index: int) -> None:
+        """Request an interrupt by setting a bit in IF."""
         self.mmu.memory[M_INTERRUPT_FLAG] |= 1 << bit_index
 
     def _set_mode(self, mode: PPUMode) -> None:
+        """Update STAT mode bits, bus access, and optional STAT interrupt request."""
         self.mode = mode
         self._set_bus_access_for_mode(mode)
 
@@ -289,6 +314,7 @@ class PPU:
             self._request_interrupt(1)
 
     def _sync_lyc_status(self) -> None:
+        """Synchronize STAT coincidence bit and trigger LYC interrupt if enabled."""
         ly = self.mmu.memory[M_LCD_Y_COORDINATE]
         lyc = self.mmu.memory[M_LY_COMPARE]
         stat = self.mmu.memory[M_LCD_STATUS]
@@ -412,6 +438,7 @@ class PPU:
         return out
 
     def _read_tile_color(self, tile_id: int, row: int, col: int) -> int:
+        """Read a single 2bpp color index from tile data coordinates."""
         row_addr = self.resolve_tile_data_addr(tile_id) + row * 2
         low = self.mmu.memory[row_addr]
         high = self.mmu.memory[row_addr + 1]

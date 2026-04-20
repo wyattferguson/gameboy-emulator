@@ -1,3 +1,15 @@
+"""
+
+This module centralizes emulator constants for memory maps, timing, palettes, and defaults.
+
+Step-by-step:
+1. Declare hardware register addresses and memory ranges.
+2. Define timing constants for CPU, PPU, and frame pacing.
+3. Provide cartridge/license lookup tables and metadata maps.
+4. Store display, input, and runtime default configuration values.
+5. Export immutable constants consumed by all subsystems.
+"""
+
 import pygame as pg
 
 from gbemu.ctypes import Color

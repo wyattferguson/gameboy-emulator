@@ -1,3 +1,15 @@
+"""
+
+This module implements the LR35902 CPU core, including instruction flow and interrupt handling.
+
+Step-by-step:
+1. Fetch opcode bytes from memory at the program counter.
+2. Decode instruction metadata and immediate operands.
+3. Execute opcode handlers that mutate registers, flags, and memory.
+4. Service interrupts and HALT behavior according to IME/IF/IE state.
+5. Commit elapsed cycles to timer-driven hardware progression.
+"""
+
 from typing import Any
 
 from gbemu.config import (
@@ -433,6 +445,7 @@ class CPU:
         self._adjust_mem(register, -1)
 
     def _adjust_mem(self, register: str, delta: int) -> None:
+        """Apply +/-1 to byte at address in register and update INC/DEC flags."""
         addr = self.reg[register]
         previous = self.mmu[addr]
         updated = (previous + delta) & 0xFF
@@ -511,12 +524,10 @@ class CPU:
 
     def jpc(self, flag: str, condition: int, addr: int) -> None:
         """Jump to address if condition is met."""
-        if self.flags[flag] == condition:
+        if self._condition_met(flag, condition):
             self.jp(addr)
         else:
-            self.pc = (self.pc + 3) & 0xFFFF
-            # JP cc base timing is 16 cycles; not-taken timing is 12.
-            self._cycle_adjust = -4
+            self._mark_not_taken(pc_increment=3, cycle_penalty=4)
 
     def jp(self, addr: int | str) -> None:
         """Jump to Address."""
@@ -577,12 +588,10 @@ class CPU:
 
     def jrc(self, flag: str, condition: int, offset: int) -> None:
         """Relative Jump to address if condition is met."""
-        if self.flags[flag] == condition:
+        if self._condition_met(flag, condition):
             self.jr(offset)
         else:
-            self.pc = (self.pc + 2) & 0xFFFF
-            # JR cc base timing is 12 cycles; not-taken timing is 8.
-            self._cycle_adjust = -4
+            self._mark_not_taken(pc_increment=2, cycle_penalty=4)
 
     def jr(self, offset: int = 0) -> None:
         """Relative Jump to address."""
@@ -591,12 +600,10 @@ class CPU:
 
     def callc(self, flag: str, condition: int, addr: int) -> None:
         """Call subroutine at address if condition is met."""
-        if self.flags[flag] == condition:
+        if self._condition_met(flag, condition):
             self.call(addr)
         else:
-            self.pc = (self.pc + 3) & 0xFFFF
-            # CALL cc base timing is 24 cycles; not-taken timing is 12.
-            self._cycle_adjust = -12
+            self._mark_not_taken(pc_increment=3, cycle_penalty=12)
 
     def call(self, addr: int) -> None:
         """Call subroutine at address."""
@@ -605,12 +612,22 @@ class CPU:
 
     def ret(self, condition_flag: str | None = None, condition_value: int | None = None) -> None:
         """Return from subroutine, optionally if condition is met."""
-        if condition_flag is None or self.flags[condition_flag] == condition_value:
+        condition_met = condition_flag is None or (
+            condition_value is not None and self._condition_met(condition_flag, condition_value)
+        )
+        if condition_met:
             self.pc = self._pop_u16()
         else:
-            self.pc = (self.pc + 1) & 0xFFFF
-            # RET cc base timing is 20 cycles; not-taken timing is 8.
-            self._cycle_adjust = -12
+            self._mark_not_taken(pc_increment=1, cycle_penalty=12)
+
+    def _condition_met(self, flag: str, expected: int) -> bool:
+        """Return True when a CPU flag equals the expected condition bit."""
+        return self.flags[flag] == expected
+
+    def _mark_not_taken(self, pc_increment: int, cycle_penalty: int) -> None:
+        """Apply PC advance and cycle adjustment for untaken conditional ops."""
+        self.pc = (self.pc + pc_increment) & 0xFFFF
+        self._cycle_adjust = -cycle_penalty
 
     def reti(self) -> None:
         """Return from interrupt and enable interrupts."""

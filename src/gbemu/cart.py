@@ -1,3 +1,15 @@
+"""
+
+This module loads cartridge ROM data and decodes metadata from the Game Boy header.
+
+Step-by-step:
+1. Open and read ROM bytes from disk.
+2. Validate checksum and log integrity issues.
+3. Decode title, manufacturer, licensee, and hardware flags.
+4. Expose guarded byte-level read/write helpers.
+5. Provide formatted cartridge info for debug and diagnostics.
+"""
+
 from pathlib import Path
 
 from gbemu.config import (
@@ -50,22 +62,14 @@ class Cart:
         self._decode_header(self.rom)
 
     def _decode_header(self, rom: bytearray) -> None:
+        """Decode cartridge metadata fields from ROM header bytes."""
         try:
-            self.manufacturer_code = (
-                rom[H_MANUFACTURER_START:H_MANUFACTURER_END]
-                .strip(
-                    b"\x00",
-                )
-                .decode(errors="replace")
+            self.manufacturer_code = self._decode_text(
+                rom,
+                H_MANUFACTURER_START,
+                H_MANUFACTURER_END,
             )
-            self.title = (
-                rom[H_TITLE_START:H_TITLE_END]
-                .strip(b"\x00")
-                .decode(
-                    "ASCII",
-                    errors="replace",
-                )
-            )
+            self.title = self._decode_text(rom, H_TITLE_START, H_TITLE_END, encoding="ASCII")
             self.cgb_flag = CGB_FLAG.get(f"{rom[H_CGB_FLAG] & 0xF0:02X}", "Unknown")
             self.sgb_flag = rom[H_SGB_FLAG]
             self.cart_type = CART_TYPE.get(rom[H_CART_TYPE], "Unknown")
@@ -83,6 +87,11 @@ class Cart:
             )
         except Exception as e:
             logger.exception(f"Error decoding cartridge header: {self.filename} - {e}")
+
+    @staticmethod
+    def _decode_text(rom: bytearray, start: int, end: int, encoding: str = "utf-8") -> str:
+        """Decode a null-padded text span from header bytes."""
+        return rom[start:end].strip(b"\x00").decode(encoding, errors="replace")
 
     def load(self) -> bytearray | None:
         """Load ROM file into memory and verify checksum."""
@@ -131,6 +140,7 @@ class Cart:
         self.rom[address] = value & 0xFF
 
     def __str__(self) -> str:
+        """Render formatted cartridge metadata for logs/debug output."""
         return (
             "Cartridge Info:\n"
             f"Filename: {self.filename}\n"

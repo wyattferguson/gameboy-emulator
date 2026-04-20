@@ -1,3 +1,15 @@
+"""
+
+This module manages framebuffer composition and pygame presentation for DMG palette output.
+
+Step-by-step:
+1. Initialize software buffers and pygame display surfaces.
+2. Accept scanline or pixel writes as DMG color IDs/RGB values.
+3. Translate palette slots into RGB bytes in the frame buffer.
+4. Scale and blit the frame surface to the output window.
+5. Optionally render FPS overlay diagnostics each presented frame.
+"""
+
 import pygame as pg
 
 from gbemu.config import (
@@ -15,13 +27,14 @@ from gbemu.ctypes import Color
 
 
 class Screen:
-    """Hardware-like front buffer for DMG color IDs."""
+    """GB Display Screen."""
 
     def __init__(
         self,
         scaler: int = DISPLAY_SCALER,
         show_fps_overlay: bool = SHOW_FPS_OVERLAY,
     ) -> None:
+        """Initialize pygame surfaces and software frame buffers."""
         self.pg = pg
         self.pg.init()
         self.pg.display.set_caption("Gameboy Emulator")
@@ -67,6 +80,7 @@ class Screen:
             self._fps_value = fps
 
     def _draw_fps_overlay(self) -> None:
+        """Render the optional FPS counter text in the top-right corner."""
         if not self.show_fps_overlay or self._fps_font is None:
             return
 
@@ -105,10 +119,13 @@ class Screen:
             else:
                 red, green, blue = ERROR_COLOR
 
-            pixel_offset = y_offset_rgb + x * 3
-            self._pixel_rgb[pixel_offset] = red
-            self._pixel_rgb[pixel_offset + 1] = green
-            self._pixel_rgb[pixel_offset + 2] = blue
+            self._write_pixel_rgb_at_offset(y_offset_rgb + x * 3, (red, green, blue))
+
+    def _write_pixel_rgb_at_offset(self, pixel_offset: int, color: Color) -> None:
+        """Write one RGB triple into the software back buffer by byte offset."""
+        self._pixel_rgb[pixel_offset] = color[0]
+        self._pixel_rgb[pixel_offset + 1] = color[1]
+        self._pixel_rgb[pixel_offset + 2] = color[2]
 
     def color_from_id(self, color_id: int) -> Color:
         """Translate a DMG palette slot to an RGB tuple."""
@@ -122,9 +139,7 @@ class Screen:
             return
 
         pixel_offset = (y * SCREEN_WIDTH + x) * 3
-        self._pixel_rgb[pixel_offset] = color[0]
-        self._pixel_rgb[pixel_offset + 1] = color[1]
-        self._pixel_rgb[pixel_offset + 2] = color[2]
+        self._write_pixel_rgb_at_offset(pixel_offset, color)
 
         rect = self.pg.Rect(x * self.scaler, y * self.scaler, self.scaler, self.scaler)
         self.pg.draw.rect(self.screen, color, rect)
