@@ -14,7 +14,8 @@ import sys
 
 import pygame as pg
 
-from gbemu.config import KEYMAP, M_JOYPAD
+from gbemu.config import KEYMAP
+from gbemu.constants import M_JOYPAD
 from gbemu.mmu import MMU
 
 

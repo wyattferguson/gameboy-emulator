@@ -1,15 +1,3 @@
-"""
-
-This module is the command-line entry point used to launch the emulator process.
-
-Step-by-step:
-1. Define CLI flags for ROM path and debug behavior.
-2. Parse arguments through Click decorators.
-3. Construct a configured emulator instance.
-4. Enter the main emulation loop.
-5. Let process termination propagate through normal runtime exits.
-"""
-
 import click
 
 from gbemu.config import DEFAULT_ROM

@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import pygame as pg
 import pytest
 
-from gbemu.config import M_JOYPAD
+from gbemu.constants import M_JOYPAD
 from gbemu.controller import Controller
 from gbemu.mmu import MMU
 

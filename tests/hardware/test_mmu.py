@@ -1,5 +1,6 @@
 from gbemu.cart import Cart
-from gbemu.config import BIOS, M_BOOT_ROM_MAPPING_CONTROL, MEMORY_SIZE
+from gbemu.config import MEMORY_SIZE
+from gbemu.constants import BIOS, M_BOOT_ROM_MAPPING_CONTROL
 from gbemu.mmu import MMU
 
 

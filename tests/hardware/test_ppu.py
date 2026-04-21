@@ -1,5 +1,6 @@
 from gbemu.cart import Cart
-from gbemu.config import (
+from gbemu.config import SCREEN_WIDTH
+from gbemu.constants import (
     M_BG_PALETTE_DATA,
     M_LCD_CONTROL,
     M_LCD_Y_COORDINATE,
@@ -7,7 +8,6 @@ from gbemu.config import (
     M_VIEWPORT_Y,
     M_WINDOW_X_PLUS_7,
     M_WINDOW_Y,
-    SCREEN_WIDTH,
 )
 from gbemu.cpu import CPU
 from gbemu.ctypes import TileSize

@@ -1,5 +1,5 @@
 from gbemu.cart import Cart
-from gbemu.config import BIOS
+from gbemu.constants import BIOS
 
 
 def test_cart_loads_known_rom() -> None:

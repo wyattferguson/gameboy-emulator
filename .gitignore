@@ -1,9 +1,6 @@
 # Mac files
 .DS_Store
 
-# ROMS
-tetris.gb
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -33,6 +30,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+AGENTS.md
 .pdm.toml
 *.lock
 
@@ -150,5 +148,9 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# agents
-AGENTS.md
+# Roms
+roms/sml.gb
+roms/shooter.gb
+roms/tetris.gb
+roms/sml2.gb
+roms/loz.gb

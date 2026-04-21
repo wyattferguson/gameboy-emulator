@@ -17,6 +17,11 @@ from gbemu.config import (
     CGB_FLAG,
     DEFAULT_ROM,
     DESTINATION_CODE,
+    MMU_SIZE,
+    NEW_LICENSEE,
+    OLD_LICENSEE,
+)
+from gbemu.constants import (
     H_CART_TYPE,
     H_CGB_FLAG,
     H_DESTINATION,
@@ -32,9 +37,6 @@ from gbemu.config import (
     H_TITLE_END,
     H_TITLE_START,
     H_VERSION,
-    MMU_SIZE,
-    NEW_LICENSEE,
-    OLD_LICENSEE,
 )
 from gbemu.logger import logger
 

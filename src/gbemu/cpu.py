@@ -1,6 +1,5 @@
 """
-
-This module implements the LR35902 CPU core, including instruction flow and interrupt handling.
+CPU core, including instruction flow and interrupt handling.
 
 Step-by-step:
 1. Fetch opcode bytes from memory at the program counter.
@@ -13,11 +12,12 @@ Step-by-step:
 from typing import Any
 
 from gbemu.config import (
-    CPU_INVALID_UNPREFIXED_OPCODES,
     DEBUG,
+    SP_START,
+)
+from gbemu.constants import (
     M_INTERRUPT_ENABLE,
     M_INTERRUPT_FLAG,
-    SP_START,
 )
 from gbemu.ctypes import Bitwise, CallableDict
 from gbemu.logger import logger
@@ -25,9 +25,6 @@ from gbemu.mmu import MMU
 from gbemu.opcodes import CB_PREFIXED, OPCODES, OpCode
 from gbemu.timer import Timer
 from gbemu.utils import hex_to_signed, to_u16
-
-OPCODES_BY_BYTE = {int(key, 16): value for key, value in OPCODES.items()}
-CB_PREFIXED_BY_BYTE = {int(key, 16): value for key, value in CB_PREFIXED.items()}
 
 
 class CPU:
@@ -77,45 +74,21 @@ class CPU:
     def fetch(self) -> None:
         """Fetch instruction from memory at PC."""
         op_value = self.mmu[self.pc]
-
         if op_value == 0xCB:
-            cb_opcode = self.fetch_cb_prefixed()
-            instruction = CB_PREFIXED_BY_BYTE.get(cb_opcode)
-            self.instruction = (
-                instruction
-                if instruction is not None
-                else self._illegal_opcode(cb_opcode, cb_prefixed=True)
-            )
+            op_key = hex(self.mmu[(self.pc + 1)])
+            instruction = CB_PREFIXED.get(op_key, None)
             self.cb_prefixed = True
         else:
-            instruction = OPCODES_BY_BYTE.get(op_value)
-            self.instruction = (
-                instruction
-                if instruction is not None
-                else self._illegal_opcode(op_value, cb_prefixed=False)
-            )
+            op_key = hex(op_value)
+            instruction = OPCODES.get(op_key, None)
+            self.cb_prefixed = False
+
+        self.instruction = (
+            instruction if instruction is not None else OpCode(f"ILLEGAL {op_key}", 1, 4, "nop")
+        )
 
         if self.debug:
             logger.debug(f"Fetch: {hex(self.pc)} - {self.instruction}")
-
-    def _illegal_opcode(self, op_code: int, cb_prefixed: bool = False) -> OpCode:
-        """Provide a deterministic fallback for opcodes missing from decode tables."""
-        prefix = "CB " if cb_prefixed else ""
-        op_hex = f"0x{op_code:02x}"
-        instruction = OpCode(f"ILLEGAL {prefix}{op_hex}", 1, 4, "nop")
-
-        key = (self.pc, op_code)
-        if key not in self._illegal_opcode_log_once:
-            self._illegal_opcode_log_once.add(key)
-            level = "warning" if op_code in CPU_INVALID_UNPREFIXED_OPCODES else "error"
-            log = logger.warning if level == "warning" else logger.error
-            log(f"Illegal opcode {prefix}{op_hex} at PC {hex(self.pc)}; falling back to NOP")
-
-        return instruction
-
-    def fetch_cb_prefixed(self) -> int:
-        """Fetch CB-prefixed instruction."""
-        return self.mmu[(self.pc + 1) & 0xFFFF]
 
     def decode(self) -> None:
         """Decode instruction and its arguments."""
@@ -124,15 +97,13 @@ class CPU:
             self.args = list(base_args or [])  # ty:ignore[invalid-assignment]
             if self.instruction.length > 1 and not self.cb_prefixed:
                 if self.instruction.length == 2:
-                    immediate = self.mmu[(self.pc + 1) & 0xFFFF]
+                    immediate = self.mmu[(self.pc + 1)]
                 elif self.instruction.length == 3:
-                    low = self.mmu[(self.pc + 1) & 0xFFFF]
-                    high = self.mmu[(self.pc + 2) & 0xFFFF]
+                    low = self.mmu[(self.pc + 1)]
+                    high = self.mmu[(self.pc + 2)]
                     immediate = (high << 8) | low
                 else:
-                    b = bytes(
-                        self.mmu[(self.pc + i) & 0xFFFF] for i in range(1, self.instruction.length)
-                    )
+                    b = bytes(self.mmu[(self.pc + i)] for i in range(1, self.instruction.length))
                     immediate = int.from_bytes(b, byteorder="little")
                 self.args.append(immediate)
 

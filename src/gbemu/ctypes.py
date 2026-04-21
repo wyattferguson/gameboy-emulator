@@ -10,7 +10,7 @@ Step-by-step:
 5. Keep cross-module type contracts explicit and reusable.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum, StrEnum
 
 Color = tuple[int, int, int]
@@ -57,7 +57,9 @@ class OpCode:
     length: int  # length of instruction in bytes
     cycles: int  # number of cpu cyles
     call: str | None = None  # CPU method name to call
-    args: list[str | bool | int | Bitwise] | None = None  # give arguments to send to CPU method
+    args: list[str | bool | int | Bitwise] = field(
+        default_factory=list,
+    )  # give arguments to send to CPU method
     flags: dict[str, int] | None = None  # set CPU flags after execution
     pc_inc: bool = True  # whether to increment PC after execution
 

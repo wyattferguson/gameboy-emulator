@@ -10,7 +10,7 @@ Step-by-step:
 5. Request timer interrupt when overflow reload occurs.
 """
 
-from gbemu.config import (
+from gbemu.constants import (
     M_DIVIDER,
     M_INTERRUPT_FLAG,
     M_TIMER_CONTROL,

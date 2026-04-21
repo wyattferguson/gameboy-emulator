@@ -86,11 +86,8 @@ class Screen:
 
         fps_text = f"{self._fps_value:5.1f} FPS" if self._fps_value is not None else " --.- FPS"
         overlay = self._fps_font.render(fps_text, True, FPS_OVERLAY_COLOR)
-        shadow = self._fps_font.render(fps_text, True, (0, 0, 0))
         x = self.screen_size[0] - overlay.get_width() - FPS_OVERLAY_MARGIN
-        y = FPS_OVERLAY_MARGIN
-        self.screen.blit(shadow, (x + 1, y + 1))
-        self.screen.blit(overlay, (x, y))
+        self.screen.blit(overlay, (x, FPS_OVERLAY_MARGIN))
 
     def draw_buffer(self, buffer: list[list[int]]) -> None:
         """Draw a full frame represented as scanlines of palette IDs."""

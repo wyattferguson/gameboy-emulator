@@ -14,12 +14,11 @@ from time import perf_counter, sleep
 from gbemu.apu import APU
 from gbemu.cart import Cart
 from gbemu.config import (
-    CYCLES_PER_FRAME,
     DEBUG,
     DEFAULT_ROM,
     HEADLESS,
-    TARGET_FPS,
 )
+from gbemu.constants import CYCLES_PER_FRAME, TARGET_FPS
 from gbemu.controller import Controller
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU

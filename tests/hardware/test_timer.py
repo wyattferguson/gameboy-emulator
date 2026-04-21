@@ -1,12 +1,12 @@
 import pytest
 
-from gbemu.config import (
+from gbemu.config import MEMORY_SIZE
+from gbemu.constants import (
     M_DIVIDER,
     M_INTERRUPT_FLAG,
     M_TIMER_CONTROL,
     M_TIMER_COUNTER,
     M_TIMER_MODULO,
-    MEMORY_SIZE,
 )
 from gbemu.timer import Timer
 

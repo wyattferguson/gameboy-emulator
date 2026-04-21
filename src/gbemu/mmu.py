@@ -13,7 +13,8 @@ Step-by-step:
 from typing import overload
 
 from gbemu.cart import Cart
-from gbemu.config import (
+from gbemu.config import MEMORY_SIZE
+from gbemu.constants import (
     BIOS,
     M_BOOT_ROM_MAPPING_CONTROL,
     M_DIVIDER,
@@ -25,7 +26,6 @@ from gbemu.config import (
     M_OAM_START,
     M_VRAM_END,
     M_VRAM_START,
-    MEMORY_SIZE,
     MMU_ECHO_END,
     MMU_ECHO_START,
     MMU_ROM_END,

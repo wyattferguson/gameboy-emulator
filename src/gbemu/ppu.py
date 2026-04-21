@@ -1,4 +1,5 @@
-"""Step-by-step guide for the DMG PPU flow in this module.
+"""
+Step-by-step guide for the DMG PPU flow.
 
 1. CPU drives timing:
     CPU calls ``PPU.update(cpu_cycles)`` after each executed instruction.
@@ -33,7 +34,8 @@
 
 from enum import IntEnum
 
-from gbemu.config import (
+from gbemu.config import SCREEN_HEIGHT, SCREEN_WIDTH
+from gbemu.constants import (
     CYCLES_PER_SCANLINE,
     M_BG_PALETTE_DATA,
     M_BG_TILE_MAP_VRAM,
@@ -55,8 +57,6 @@ from gbemu.config import (
     PPU_MODE2_CYCLES,
     PPU_MODE3_CYCLES,
     SCAN_LINES,
-    SCREEN_HEIGHT,
-    SCREEN_WIDTH,
 )
 from gbemu.ctypes import Tile, TileSize
 from gbemu.mmu import MMU

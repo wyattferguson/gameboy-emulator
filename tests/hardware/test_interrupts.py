@@ -1,6 +1,6 @@
 import pytest
 
-from gbemu.config import M_INTERRUPT_ENABLE, M_INTERRUPT_FLAG
+from gbemu.constants import M_INTERRUPT_ENABLE, M_INTERRUPT_FLAG
 from tests.utils import make_cpu
 
 PENDING_INTERRUPTS_ATTR = "_pending" + "_interrupts"

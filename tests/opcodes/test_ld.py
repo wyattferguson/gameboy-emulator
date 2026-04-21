@@ -1,6 +1,6 @@
 import pytest
 
-from gbemu.config import M_JOYPAD
+from gbemu.constants import M_JOYPAD
 from tests.utils import make_cpu, verify_flags
 
 
