@@ -50,7 +50,8 @@ gbemu = "gbemu.__main__:run"
 format = {cmd = "ruff format ./src/gbemu/", help = "Format code using ruff"}
 lint = {cmd = "ruff check --fix ./src/gbemu/", help = "Lint and auto-fix code using ruff"}
 type = {cmd = "ty check", help = "Typecheck code using ty" }
-tests = {cmd = "pytest --verbose -s --color=yes tests", help = "Run tests using pytest"}
+tests = {cmd = "pytest --verbose -s --color=yes -m \"not performance\" tests", help = "Run tests using pytest"}
+perf = {cmd = "pytest --verbose -s --color=yes -m performance tests", help = "Run performance tests."}
 run = {cmd = "gbemu", help = "Run the emulator"}
 run-pypy = {cmd = "pypy -m ensurepip --upgrade && pypy -m pip install --upgrade pip setuptools wheel && pypy -m pip install click loguru pygame-ce && pypy -c \"import sys; sys.path.insert(0, 'src'); from gbemu.__main__ import run; run()\"", help = "Bootstrap pip, install deps, and run the emulator with PyPy"}
 

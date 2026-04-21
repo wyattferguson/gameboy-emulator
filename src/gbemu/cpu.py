@@ -75,16 +75,15 @@ class CPU:
         """Fetch instruction from memory at PC."""
         op_value = self.mmu[self.pc]
         if op_value == 0xCB:
-            op_key = hex(self.mmu[(self.pc + 1)])
-            instruction = CB_PREFIXED.get(op_key, None)
+            cb_opcode = self.mmu[(self.pc + 1)]
+            instruction = CB_PREFIXED.get(cb_opcode)
             self.cb_prefixed = True
         else:
-            op_key = hex(op_value)
-            instruction = OPCODES.get(op_key, None)
+            instruction = OPCODES.get(op_value)
             self.cb_prefixed = False
 
         self.instruction = (
-            instruction if instruction is not None else OpCode(f"ILLEGAL {op_key}", 1, 4, "nop")
+            instruction if instruction is not None else OpCode(f"ILLEGAL {op_value}", 1, 4, "nop")
         )
 
         if self.debug:
