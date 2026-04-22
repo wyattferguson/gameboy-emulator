@@ -1,6 +1,6 @@
 import pytest
 
-from tests.utils import SAFE_HL_ADDRESS, make_cpu, set_hl_value, verify_flags
+from tests.utils import SAFE_HL_ADDRESS, cycle_instruction, make_cpu, set_hl_value, verify_flags
 
 
 @pytest.mark.parametrize(
@@ -15,8 +15,7 @@ from tests.utils import SAFE_HL_ADDRESS, make_cpu, set_hl_value, verify_flags
 def test_rot_circular(dest: str, value: int, c_flag: int, result: int, opcode: int) -> None:
     cpu = make_cpu()
     cpu.reg[dest] = value
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.reg[dest] == result
     verify_flags(cpu, c_flag=c_flag)
@@ -46,8 +45,7 @@ def test_rot_carry(
     cpu = make_cpu()
     cpu.reg[dest] = value
     cpu.flags["C"] = start_c_flag
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.reg[dest] == result
     verify_flags(cpu, c_flag=c_flag)
@@ -78,8 +76,7 @@ def test_cb_rot(
     cpu = make_cpu()
     cpu.reg[dest] = value
     cpu.flags["C"] = start_c_flag
-    cpu.insert_instruction(bytearray([0xCB, opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, opcode)
 
     assert cpu.reg[dest] == result
     verify_flags(cpu, c_flag=c_flag)
@@ -98,8 +95,7 @@ def test_cb_rot_hl(value: int, start_c_flag: int, c_flag: int, result: int) -> N
     cpu = make_cpu()
     set_hl_value(cpu, value)
     cpu.flags["C"] = start_c_flag
-    cpu.insert_instruction(bytearray([0xCB, 0x6]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, 0x6)
 
     assert cpu.mmu[SAFE_HL_ADDRESS] == result
     verify_flags(cpu, c_flag=c_flag)
@@ -143,8 +139,7 @@ def test_cb_rot_remaining_registers(
     cpu = make_cpu()
     cpu.reg[dest] = value
     cpu.flags["C"] = start_c_flag
-    cpu.insert_instruction(bytearray([0xCB, opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, opcode)
 
     assert cpu.reg[dest] == result
     verify_flags(cpu, c_flag=c_flag)
@@ -168,8 +163,7 @@ def test_cb_rot_remaining_hl(
     cpu = make_cpu()
     set_hl_value(cpu, value)
     cpu.flags["C"] = start_c_flag
-    cpu.insert_instruction(bytearray([0xCB, opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, opcode)
 
     assert cpu.mmu[SAFE_HL_ADDRESS] == result
     verify_flags(cpu, c_flag=c_flag)
@@ -203,8 +197,7 @@ def test_cb_shift_selected_registers(
 ) -> None:
     cpu = make_cpu()
     cpu.reg[dest] = value
-    cpu.insert_instruction(bytearray([0xCB, opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, opcode)
 
     assert cpu.reg[dest] == result
     verify_flags(cpu, c_flag=c_flag)
@@ -220,8 +213,7 @@ def test_cb_shift_selected_registers(
 def test_cb_shift_selected_hl(opcode: int, value: int, c_flag: int, result: int) -> None:
     cpu = make_cpu()
     set_hl_value(cpu, value)
-    cpu.insert_instruction(bytearray([0xCB, opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, opcode)
 
     assert cpu.mmu[SAFE_HL_ADDRESS] == result
     verify_flags(cpu, c_flag=c_flag)
@@ -230,9 +222,7 @@ def test_cb_shift_selected_hl(opcode: int, value: int, c_flag: int, result: int)
 def test_cb_prefixed_instruction_advances_pc_by_two() -> None:
     cpu = make_cpu()
     initial_pc = cpu.pc
-    cpu.insert_instruction(bytearray([0xCB, 0x11]))  # RL C
-
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, 0x11)
 
     assert cpu.pc == (initial_pc + 2) & 0xFFFF
 
@@ -252,8 +242,7 @@ def test_cb_prefixed_instruction_advances_pc_by_two() -> None:
 def test_cb_swap_registers(dest: str, value: int, z_flag: int, result: int, opcode: int) -> None:
     cpu = make_cpu()
     cpu.reg[dest] = value
-    cpu.insert_instruction(bytearray([0xCB, opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, opcode)
 
     assert cpu.reg[dest] == result
     verify_flags(cpu, z_flag=z_flag, n_flag=0, h_flag=0, c_flag=0)
@@ -270,8 +259,7 @@ def test_cb_swap_registers(dest: str, value: int, z_flag: int, result: int, opco
 def test_cb_swap_hl(value: int, z_flag: int, result: int) -> None:
     cpu = make_cpu()
     set_hl_value(cpu, value)
-    cpu.insert_instruction(bytearray([0xCB, 0x36]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, 0x36)
 
     assert cpu.mmu[SAFE_HL_ADDRESS] == result
     verify_flags(cpu, z_flag=z_flag, n_flag=0, h_flag=0, c_flag=0)

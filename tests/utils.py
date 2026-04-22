@@ -10,6 +10,12 @@ def make_cpu() -> CPU:
     return CPU(MMU())
 
 
+def cycle_instruction(cpu: CPU, *instruction: int) -> int:
+    """Load instruction bytes at the current PC and execute one CPU cycle."""
+    cpu.insert_instruction(bytearray(instruction))
+    return cpu.cycle()
+
+
 def set_hl_value(cpu: CPU, value: int, address: int = SAFE_HL_ADDRESS) -> None:
     """Set HL to a safe RAM address and write a byte at [HL]."""
     cpu.reg["HL"] = address

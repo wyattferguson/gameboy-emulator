@@ -1,14 +1,3 @@
-"""
-This module orchestrates the emulator runtime loop across CPU, PPU, APU, MMU, and input.
-
-Step-by-step:
-1. Construct all hardware subsystems and shared dependencies.
-2. Enter the perpetual frame loop.
-3. Execute CPU instructions and advance PPU/APU by consumed cycles.
-4. Pace frame execution to target real-time FPS.
-5. Publish measured FPS to the renderer overlay when available.
-"""
-
 from time import perf_counter, sleep
 
 from gbemu.apu import APU

@@ -17,7 +17,6 @@ import pygame as pg
 from gbemu.config import (
     BG_COLOR,
     DISPLAY_SCALER,
-    ERROR_COLOR,
     FPS_BG_COLOR,
     FPS_COLOR,
     PALLETE,

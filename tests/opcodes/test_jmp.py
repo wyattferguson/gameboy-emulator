@@ -1,7 +1,7 @@
 import pytest
 
 from gbemu.utils import hex_to_signed
-from tests.utils import make_cpu
+from tests.utils import cycle_instruction, make_cpu
 
 
 @pytest.mark.parametrize(
@@ -23,8 +23,7 @@ def test_jr(
     """Test JR instruction. Jump to address relative to current PC."""
     cpu = make_cpu()
     result_pc = (cpu.pc + 2 + hex_to_signed(offset, 8)) & 0xFFFF
-    cpu.insert_instruction(bytearray([opcode, offset]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode, offset)
 
     assert cpu.pc == result_pc
 
@@ -69,9 +68,7 @@ def test_jrc(
         (cpu.pc + 2 + hex_to_signed(offset, 8)) & 0xFFFF if should_jump else (cpu.pc + 2) & 0xFFFF
     )
     cpu.flags[flag] = flag_value
-    cpu.insert_instruction(bytearray([opcode, offset]))
-
-    cycles = cpu.cycle()
+    cycles = cycle_instruction(cpu, opcode, offset)
 
     assert cpu.pc == result_pc
     assert cycles == (12 if should_jump else 8)
@@ -94,8 +91,7 @@ def test_jp(
     # Instruction: opcode (1 byte) + address (2 bytes, little-endian)
     addr_low = addr & 0xFF
     addr_high = (addr >> 8) & 0xFF
-    cpu.insert_instruction(bytearray([0xC3, addr_low, addr_high]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xC3, addr_low, addr_high)
 
     assert cpu.pc == addr
 
@@ -133,9 +129,7 @@ def test_jpc(
     cpu.flags[flag] = flag_value
     addr_low = addr & 0xFF
     addr_high = (addr >> 8) & 0xFF
-    cpu.insert_instruction(bytearray([opcode, addr_low, addr_high]))
-
-    cycles = cpu.cycle()
+    cycles = cycle_instruction(cpu, opcode, addr_low, addr_high)
 
     assert cpu.pc == result_pc
     assert cycles == (16 if should_jump else 12)
@@ -147,7 +141,6 @@ def test_jp_hl() -> None:
     target_addr = 0x4321
     cpu.reg["H"] = (target_addr >> 8) & 0xFF
     cpu.reg["L"] = target_addr & 0xFF
-    cpu.insert_instruction(bytearray([0xE9]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xE9)
 
     assert cpu.pc == target_addr

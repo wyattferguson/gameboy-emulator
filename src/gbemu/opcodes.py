@@ -1,15 +1,3 @@
-"""
-
-This module defines unprefixed and CB-prefixed opcode tables for CPU decode and dispatch.
-
-Step-by-step:
-1. Declare OpCode entries with label, length, cycles, and call target.
-2. Encode argument templates and flag postconditions per instruction.
-3. Group instructions into primary and CB-prefixed maps.
-4. Keep table data aligned with CPU handler method names.
-5. Serve as decode truth for fetch/decode/execute flow.
-"""
-
 from gbemu.ctypes import Bitwise, OpCode
 
 OPCODES: dict[int, OpCode] = {

@@ -1,14 +1,13 @@
 import pytest
 
-from tests.utils import make_cpu
+from tests.utils import cycle_instruction, make_cpu
 
 
 def test_nop() -> None:
     """Test NOP instruction. Should do nothing except advance PC."""
     cpu = make_cpu()
     initial_pc = cpu.pc
-    cpu.insert_instruction(bytearray([0x00]))  # NOP
-    cpu.cycle()
+    cycle_instruction(cpu, 0x00)
 
     # PC should be incremented by 1 (instruction length)
     assert cpu.pc == (initial_pc + 1) & 0xFFFF
@@ -18,8 +17,7 @@ def test_halt() -> None:
     """Test HALT instruction. Enter low-power mode until interrupt."""
     cpu = make_cpu()
     initial_pc = cpu.pc
-    cpu.insert_instruction(bytearray([0x76]))  # HALT
-    cpu.cycle()
+    cycle_instruction(cpu, 0x76)
 
     # PC should be incremented by 1 (instruction length)
     assert cpu.pc == (initial_pc + 1) & 0xFFFF
@@ -31,8 +29,7 @@ def test_di() -> None:
     # Start with interrupts enabled
     cpu.interrupts = True
     initial_pc = cpu.pc
-    cpu.insert_instruction(bytearray([0xF3]))  # DI
-    cpu.cycle()
+    cycle_instruction(cpu, 0xF3)
 
     # Interrupts should be disabled
     assert cpu.interrupts is False
@@ -46,8 +43,7 @@ def test_ei() -> None:
     # Start with interrupts disabled
     cpu.interrupts = False
     initial_pc = cpu.pc
-    cpu.insert_instruction(bytearray([0xFB, 0x00]))  # EI ; NOP
-    cpu.cycle()
+    cycle_instruction(cpu, 0xFB, 0x00)
 
     # EI delays IME by one instruction.
     assert cpu.interrupts is False
@@ -71,13 +67,11 @@ def test_di_multiple(
     cpu = make_cpu()
     cpu.interrupts = initial_state
 
-    cpu.insert_instruction(bytearray([0xF3]))  # DI
-    cpu.cycle()
+    cycle_instruction(cpu, 0xF3)
     assert cpu.interrupts is False
 
     # Call DI again while already disabled
-    cpu.insert_instruction(bytearray([0xF3]))  # DI
-    cpu.cycle()
+    cycle_instruction(cpu, 0xF3)
     assert cpu.interrupts is False
 
 
@@ -117,13 +111,11 @@ def test_di_ei_sequence() -> None:
     cpu.interrupts = True
 
     # Disable interrupts
-    cpu.insert_instruction(bytearray([0xF3]))  # DI
-    cpu.cycle()
+    cycle_instruction(cpu, 0xF3)
     assert cpu.interrupts is False
 
     # Enable interrupts
-    cpu.insert_instruction(bytearray([0xFB, 0x00]))  # EI ; NOP
-    cpu.cycle()
+    cycle_instruction(cpu, 0xFB, 0x00)
     assert cpu.interrupts is False
     cpu.cycle()
     assert cpu.interrupts is True
@@ -132,8 +124,7 @@ def test_di_ei_sequence() -> None:
 def test_halt_waits_until_interrupt_pending() -> None:
     """HALT should stop instruction fetch until an interrupt is pending."""
     cpu = make_cpu()
-    cpu.insert_instruction(bytearray([0x76, 0x00]))  # HALT ; NOP
-    cpu.cycle()
+    cycle_instruction(cpu, 0x76, 0x00)
     assert cpu.halted is True
     pc_after_halt = cpu.pc
 

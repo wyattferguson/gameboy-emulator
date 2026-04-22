@@ -2,7 +2,7 @@ import pytest
 
 from gbemu.constants import M_JOYPAD
 from gbemu.controller import Controller
-from tests.utils import make_cpu, verify_flags
+from tests.utils import cycle_instruction, make_cpu, verify_flags
 
 
 @pytest.mark.parametrize(
@@ -41,8 +41,7 @@ from tests.utils import make_cpu, verify_flags
 def test_ld(dest: str, src: str, value: int, opcode: int) -> None:
     cpu = make_cpu()
     cpu.reg[src] = value
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.reg[dest] == value
 
@@ -66,9 +65,8 @@ def test_ld(dest: str, src: str, value: int, opcode: int) -> None:
 def test_ld_hl(reg: str, pair_reg: str, address: int, value: int, opcode: int) -> None:
     cpu = make_cpu()
     cpu.mmu[address] = value
-    cpu.insert_instruction(bytearray([opcode]))
     cpu.reg[pair_reg] = address
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.reg[reg] == value
 
@@ -88,9 +86,8 @@ def test_ld_hl(reg: str, pair_reg: str, address: int, value: int, opcode: int) -
 def test_ld_hl_r(dest: str, hl: int, value: int, opcode: int) -> None:
     cpu = make_cpu()
     cpu.reg["HL"] = hl
-    cpu.insert_instruction(bytearray([opcode]))
     cpu.reg[dest] = value
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.mmu[cpu.reg["HL"]] == value
 
@@ -108,8 +105,7 @@ def test_ld_16(dest: str, value: int, opcode: int) -> None:
     cpu = make_cpu()
     top = (value >> 8) & 0xFF
     bottom = value & 0xFF
-    cpu.insert_instruction(bytearray([opcode, bottom, top]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode, bottom, top)
 
     if dest != "SP":
         assert cpu.reg[dest[0]] == top
@@ -127,8 +123,7 @@ def test_ld_16(dest: str, value: int, opcode: int) -> None:
 def test_ld_16_reg(dest: str, src: str, value: int, opcode: int) -> None:
     cpu = make_cpu()
     cpu.reg[src] = value
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.mmu[cpu.reg[dest]] == value
 
@@ -148,8 +143,7 @@ def test_ld_16_reg(dest: str, src: str, value: int, opcode: int) -> None:
 def test_ld_8(dest: str, value: int, opcode: int) -> None:
     """Test LD r, d8 instruction. Load 8-bit value into register."""
     cpu = make_cpu()
-    cpu.insert_instruction(bytearray([opcode, value]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode, value)
     assert cpu.reg[dest] == value
 
 
@@ -165,8 +159,7 @@ def test_ld_mem_8(dest: str, address: int, value: int, opcode: int) -> None:
     """Test LD [HL], d8 instruction. Load 8-bit value into memory at address in HL."""
     cpu = make_cpu()
     cpu.reg[dest] = address
-    cpu.insert_instruction(bytearray([opcode, value]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode, value)
     assert cpu.mmu[cpu.reg[dest]] == value
 
 
@@ -180,8 +173,7 @@ def test_ld_mem_imm(opcode: int, msb: int, lsb: int, sp_value: int) -> None:
     """Test LD [16a], SP instruction. Load SP into memory at 16-bit address."""
     cpu = make_cpu()
     cpu.reg["SP"] = sp_value
-    cpu.insert_instruction(bytearray([opcode, lsb, msb]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode, lsb, msb)
     address = (msb << 8) | lsb
     assert cpu.mmu[address] == (sp_value & 0xFF)
     assert cpu.mmu[address + 1] == ((sp_value >> 8) & 0xFF)
@@ -200,8 +192,7 @@ def test_ld_a_hl_mod_register(address: int, value: int, hl_mod: int, opcode: int
     cpu = make_cpu()
     cpu.reg["HL"] = address
     cpu.mmu[address] = value
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.reg["A"] == value
     assert cpu.reg["HL"] == address + hl_mod
@@ -220,8 +211,7 @@ def test_ld_a_hl_mod_memory(address: int, value: int, hl_mod: int, opcode: int) 
     cpu = make_cpu()
     cpu.reg["A"] = value
     cpu.reg["HL"] = address
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.mmu[address] == value
     assert cpu.reg["HL"] == address + hl_mod
@@ -241,8 +231,7 @@ def test_ld_a16_from_a_opcode_ea(address: int, value: int) -> None:
     cpu.reg["A"] = value
     low = address & 0xFF
     high = (address >> 8) & 0xFF
-    cpu.insert_instruction(bytearray([0xEA, low, high]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xEA, low, high)
 
     assert cpu.mmu[address] == value
 
@@ -261,8 +250,7 @@ def test_ld_a_from_a16_opcode_fa(address: int, value: int) -> None:
     cpu.mmu[address] = value
     low = address & 0xFF
     high = (address >> 8) & 0xFF
-    cpu.insert_instruction(bytearray([0xFA, low, high]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xFA, low, high)
 
     assert cpu.reg["A"] == value
 
@@ -279,8 +267,7 @@ def test_ldh_mem_a_opcode_e0(offset: int, value: int) -> None:
     """Test LDH [a8], A (0xE0)."""
     cpu = make_cpu()
     cpu.reg["A"] = value
-    cpu.insert_instruction(bytearray([0xE0, offset]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xE0, offset)
 
     assert cpu.mmu[0xFF00 + offset] == value
 
@@ -297,8 +284,7 @@ def test_ldh_a_mem_opcode_f0(offset: int, value: int) -> None:
     """Test LDH A, [a8] (0xF0)."""
     cpu = make_cpu()
     cpu.mmu[0xFF00 + offset] = value
-    cpu.insert_instruction(bytearray([0xF0, offset]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xF0, offset)
 
     assert cpu.reg["A"] == value
 
@@ -316,8 +302,7 @@ def test_ldh_mem_c_a_opcode_e2(c_value: int, a_value: int) -> None:
     cpu = make_cpu()
     cpu.reg["C"] = c_value
     cpu.reg["A"] = a_value
-    cpu.insert_instruction(bytearray([0xE2]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xE2)
 
     assert cpu.mmu[0xFF00 + c_value] == a_value
 
@@ -335,8 +320,7 @@ def test_ldh_a_mem_c_opcode_f2(c_value: int, mem_value: int) -> None:
     cpu = make_cpu()
     cpu.reg["C"] = c_value
     cpu.mmu[0xFF00 + c_value] = mem_value
-    cpu.insert_instruction(bytearray([0xF2]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xF2)
 
     assert cpu.reg["A"] == mem_value
 
@@ -345,8 +329,7 @@ def test_ldh_mem_a_opcode_e0_updates_joypad_selection() -> None:
     """Test LDH [0x00], A against JOYP's select-line semantics."""
     cpu = make_cpu()
     cpu.reg["A"] = 0x10
-    cpu.insert_instruction(bytearray([0xE0, 0x00]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xE0, 0x00)
 
     assert cpu.mmu[M_JOYPAD] == 0xDF
 
@@ -357,8 +340,7 @@ def test_ldh_a_mem_opcode_f0_reads_joypad_state() -> None:
     controller = Controller(cpu.mmu)
     cpu.mmu[M_JOYPAD] = 0x20
     controller.set_key_state(0b0100, dpad=True, pressed=True)
-    cpu.insert_instruction(bytearray([0xF0, 0x00]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xF0, 0x00)
 
     assert cpu.reg["A"] == 0xEB
 
@@ -378,8 +360,7 @@ def test_add_sp_e8_opcode_e8(sp: int, offset: int, result: int, h_flag: int, c_f
     cpu.reg["SP"] = sp
     cpu.flags["Z"] = 1
     cpu.flags["N"] = 1
-    cpu.insert_instruction(bytearray([0xE8, offset]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xE8, offset)
 
     assert cpu.reg["SP"] == result
     verify_flags(cpu, z_flag=0, n_flag=0, h_flag=h_flag, c_flag=c_flag)
@@ -405,8 +386,7 @@ def test_ld_hl_sp_plus_e8_opcode_f8(
     cpu.reg["SP"] = sp
     cpu.flags["Z"] = 1
     cpu.flags["N"] = 1
-    cpu.insert_instruction(bytearray([0xF8, offset]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xF8, offset)
 
     assert cpu.reg["HL"] == result
     assert cpu.reg["SP"] == sp
@@ -419,7 +399,6 @@ def test_ld_sp_hl_opcode_f9(hl: int) -> None:
     cpu = make_cpu()
     cpu.reg["HL"] = hl
     cpu.reg["SP"] = 0
-    cpu.insert_instruction(bytearray([0xF9]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xF9)
 
     assert cpu.reg["SP"] == hl

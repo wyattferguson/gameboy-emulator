@@ -1,15 +1,3 @@
-"""
-
-This module translates host keyboard events into DMG joypad register state changes.
-
-Step-by-step:
-1. Bind controller logic to the MMU joypad interface.
-2. Poll pygame events each frame.
-3. Detect quit/escape events for clean emulator shutdown.
-4. Map key transitions to dpad/button bit masks.
-5. Update JOYP and request joypad interrupts through MMU logic.
-"""
-
 import sys
 
 import pygame as pg

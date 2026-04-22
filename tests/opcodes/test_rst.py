@@ -1,6 +1,6 @@
 import pytest
 
-from tests.utils import make_cpu
+from tests.utils import cycle_instruction, make_cpu
 
 
 @pytest.mark.parametrize(
@@ -22,8 +22,7 @@ def test_rst_vectors(opcode: int, target_addr: int) -> None:
     initial_pc = cpu.pc
     initial_sp = cpu.reg["SP"]
 
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     # pc_inc=False on all RST opcodes, so PC is exactly the target vector.
     assert cpu.pc == target_addr
@@ -42,8 +41,7 @@ def test_rst_uses_current_pc_value() -> None:
     cpu.pc = 0x1234
     initial_sp = cpu.reg["SP"]
 
-    cpu.insert_instruction(bytearray([0xFF]))  # RST $38
-    cpu.cycle()
+    cycle_instruction(cpu, 0xFF)
 
     assert cpu.pc == 0x38
     assert cpu.reg["SP"] == (initial_sp - 2) & 0xFFFF
@@ -56,8 +54,7 @@ def test_rst_from_default_pc_pushes_next_instruction() -> None:
     cpu = make_cpu()
     assert cpu.pc == 0x0000
 
-    cpu.insert_instruction(bytearray([0xC7]))  # RST $00
-    cpu.cycle()
+    cycle_instruction(cpu, 0xC7)
 
     assert cpu.pc == 0x00
     assert cpu.mmu[cpu.reg["SP"]] == 0x01

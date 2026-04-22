@@ -6,8 +6,6 @@ from gbemu.constants import (
     M_LCD_Y_COORDINATE,
     M_VIEWPORT_X,
     M_VIEWPORT_Y,
-    M_WINDOW_X_PLUS_7,
-    M_WINDOW_Y,
 )
 from gbemu.cpu import CPU
 from gbemu.ctypes import TileSize

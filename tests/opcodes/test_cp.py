@@ -1,7 +1,6 @@
 import pytest
 
-from gbemu.opcodes import OPCODES
-from tests.utils import make_cpu, set_hl_value, verify_flags
+from tests.utils import cycle_instruction, make_cpu, set_hl_value, verify_flags
 
 
 @pytest.mark.parametrize(
@@ -42,8 +41,7 @@ def test_cp(
         set_hl_value(cpu, value)
     else:
         cpu.reg[register] = value
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.flags["Z"] == z_flag
     assert cpu.flags["N"] == 1
@@ -77,6 +75,5 @@ def test_cp_immediate(
     """Test CP A, d8 (0xFE)."""
     cpu = make_cpu()
     cpu.reg["A"] = a_value
-    cpu.insert_instruction(bytearray([0xFE, immediate]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xFE, immediate)
     verify_flags(cpu, z_flag=z_flag, h_flag=h_flag, c_flag=c_flag)

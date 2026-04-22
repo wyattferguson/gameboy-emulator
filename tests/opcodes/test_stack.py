@@ -1,7 +1,7 @@
 import pytest
 
 from gbemu.constants import SP_START
-from tests.utils import make_cpu
+from tests.utils import cycle_instruction, make_cpu
 
 
 @pytest.mark.parametrize(
@@ -29,8 +29,7 @@ def test_push(opcode: int, reg_high: str, reg_low: str, high: int, low: int) -> 
     else:
         cpu.reg[reg_low] = low
 
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.reg["SP"] == (initial_sp - 2) & 0xFFFF
     assert cpu.mmu[cpu.reg["SP"]] == expected_low
@@ -51,8 +50,7 @@ def test_pop(opcode: int, reg_pair: str, initial_sp: int, low: int, high: int) -
     cpu.reg["SP"] = initial_sp
     cpu.mmu[initial_sp] = low
     cpu.mmu[(initial_sp + 1) & 0xFFFF] = high
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.reg[reg_pair] == ((high << 8) | low)
     assert cpu.reg["SP"] == (initial_sp + 2) & 0xFFFF
@@ -65,8 +63,7 @@ def test_push_bc_then_pop_bc_round_trip() -> None:
     cpu.reg["B"] = 0xBE
     cpu.reg["C"] = 0xEF
 
-    cpu.insert_instruction(bytearray([0xC5, 0xC1]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xC5, 0xC1)
     cpu.cycle()
 
     assert cpu.reg["BC"] == 0xBEEF
@@ -80,8 +77,7 @@ def test_pop_af_sets_flags_and_masks_low_nibble() -> None:
     cpu.mmu[0x8000] = 0xF7  # F low byte; low nibble should be masked away
     cpu.mmu[0x8001] = 0x12  # A high byte
 
-    cpu.insert_instruction(bytearray([0xF1]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xF1)
 
     assert cpu.reg["AF"] == 0x12F0
     assert cpu.flags["Z"] == 1
@@ -94,8 +90,7 @@ def test_push_pop_increment_pc_by_one() -> None:
     """PUSH and POP should both advance PC by 1."""
     cpu = make_cpu()
     cpu.reg["BC"] = 0x1234
-    cpu.insert_instruction(bytearray([0xC5, 0xC1]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xC5, 0xC1)
     assert cpu.pc == 1
     cpu.cycle()
     assert cpu.pc == 2
@@ -108,8 +103,7 @@ def test_push_boundary_sp_wraps_downward() -> None:
     cpu.reg["B"] = 0x42
     cpu.reg["C"] = 0x24
 
-    cpu.insert_instruction(bytearray([0xC5]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xC5)
 
     assert cpu.reg["SP"] == 0xFFFF
     assert cpu.mmu[0xFFFF] == 0x24

@@ -1,16 +1,3 @@
-"""
-
-This module provides small bit/number helpers reused across CPU and rendering logic.
-
-Step-by-step:
-1. Convert unsigned immediates to signed two's-complement values.
-2. Compose 16-bit words from high/low byte inputs.
-3. Extract individual bit values from packed bytes.
-4. Keep helper behavior pure and side-effect free.
-5. Support concise arithmetic and decoding in core modules.
-"""
-
-
 def hex_to_signed(value: int, bits: int = 8) -> int:
     """Convert an unsigned hex value to its signed representation."""
     mask = (1 << bits) - 1

@@ -1,19 +1,7 @@
-"""
-
-This module defines shared emulator data types used by CPU, PPU, and opcode metadata.
-
-Step-by-step:
-1. Declare typed aliases and enums for core domains.
-2. Provide callable register dictionary behavior for 8/16-bit register access.
-3. Define frozen opcode metadata structure for decode tables.
-4. Define tile and tile-size structures for rendering paths.
-5. Keep cross-module type contracts explicit and reusable.
-"""
-
 from dataclasses import dataclass, field
 from enum import IntEnum, StrEnum
 
-type Color = tuple[int, int, int]
+Color = tuple[int, int, int]
 
 
 class CallableDict(dict):

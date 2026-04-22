@@ -1,6 +1,13 @@
 import pytest
 
-from tests.utils import REGISTER_ORDER, get_target_value, make_cpu, set_target_value, verify_flags
+from tests.utils import (
+    REGISTER_ORDER,
+    cycle_instruction,
+    get_target_value,
+    make_cpu,
+    set_target_value,
+    verify_flags,
+)
 
 
 @pytest.mark.parametrize(
@@ -22,8 +29,7 @@ def test_cb_res_all_targets(bit_num: int, target_index: int) -> None:
 
     address = set_target_value(cpu, target, initial_value)
 
-    cpu.insert_instruction(bytearray([0xCB, opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, opcode)
 
     assert get_target_value(cpu, target, address) == expected_value
 
@@ -50,8 +56,7 @@ def test_cb_res_preserves_unrelated_bits(
     target = REGISTER_ORDER[opcode % 8]
     address = set_target_value(cpu, target, value, address=0xC100)
 
-    cpu.insert_instruction(bytearray([0xCB, opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, opcode)
 
     assert get_target_value(cpu, target, address) == expected_value
 

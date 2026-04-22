@@ -1,6 +1,6 @@
 import pytest
 
-from tests.utils import SAFE_HL_ADDRESS, make_cpu, set_hl_value, verify_flags
+from tests.utils import SAFE_HL_ADDRESS, cycle_instruction, make_cpu, set_hl_value, verify_flags
 
 
 @pytest.mark.parametrize(
@@ -33,8 +33,7 @@ def test_cb_bit_b(bit_num: int, value: int, z_flag: int, opcode: int) -> None:
     cpu = make_cpu()
     assert opcode == (0x40 + (bit_num * 8))
     cpu.reg["B"] = value
-    cpu.insert_instruction(bytearray([0xCB, opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, opcode)
 
     # BIT doesn't modify the register
     assert cpu.reg["B"] == value
@@ -78,8 +77,7 @@ def test_cb_bit_registers(
     register_index = {"B": 0, "C": 1, "D": 2, "E": 3, "H": 4, "L": 5, "A": 7}[dest]
     assert opcode == (0x40 + (bit_num * 8) + register_index)
     cpu.reg[dest] = value
-    cpu.insert_instruction(bytearray([0xCB, opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, opcode)
 
     # BIT doesn't modify the register
     assert cpu.reg[dest] == value
@@ -112,8 +110,7 @@ def test_cb_bit_hl(value: int, z_flag: int, opcode: int) -> None:
     """Test BIT on memory location [HL]."""
     cpu = make_cpu()
     set_hl_value(cpu, value)
-    cpu.insert_instruction(bytearray([0xCB, opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCB, opcode)
 
     # BIT doesn't modify memory
     assert cpu.mmu[SAFE_HL_ADDRESS] == value
@@ -130,8 +127,7 @@ def test_cb_bit_all_bits_register() -> None:
         expected_z = 0 if (value >> bit_num) & 0x1 else 1
         # Calculate opcode: 0x40 + (bit_num * 8)
         opcode = 0x40 + (bit_num * 8)
-        cpu.insert_instruction(bytearray([0xCB, opcode]))
-        cpu.cycle()
+        cycle_instruction(cpu, 0xCB, opcode)
 
         assert cpu.reg["B"] == value
         verify_flags(cpu, z_flag=expected_z, n_flag=0, h_flag=1)

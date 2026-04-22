@@ -14,7 +14,6 @@ SCREEN_HEIGHT: int = 144
 SCREEN_AREA: int = SCREEN_WIDTH * SCREEN_HEIGHT
 
 BG_COLOR: Color = (202, 220, 159)
-ERROR_COLOR: Color = (219, 18, 18)
 PALLETE: list[Color] = [
     (155, 188, 15),
     (139, 172, 15),

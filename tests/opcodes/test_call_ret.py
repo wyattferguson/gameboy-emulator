@@ -1,6 +1,6 @@
 import pytest
 
-from tests.utils import make_cpu
+from tests.utils import cycle_instruction, make_cpu
 
 
 @pytest.mark.parametrize(
@@ -22,9 +22,7 @@ def test_call(
     # Instruction: opcode (1 byte) + address (2 bytes, little-endian)
     addr_low = target_addr & 0xFF
     addr_high = (target_addr >> 8) & 0xFF
-    cpu.insert_instruction(bytearray([0xCD, addr_low, addr_high]))
-
-    cpu.cycle()
+    cycle_instruction(cpu, 0xCD, addr_low, addr_high)
     assert cpu.pc == target_addr
     assert cpu.reg["SP"] == (initial_sp - 2) & 0xFFFF
 
@@ -63,9 +61,7 @@ def test_callc(
     cpu.flags[flag] = flag_value
     addr_low = target_addr & 0xFF
     addr_high = (target_addr >> 8) & 0xFF
-    cpu.insert_instruction(bytearray([opcode, addr_low, addr_high]))
-
-    cycles = cpu.cycle()
+    cycles = cycle_instruction(cpu, opcode, addr_low, addr_high)
 
     if should_call:
         assert cpu.pc == target_addr
@@ -101,9 +97,7 @@ def test_ret_nz(
     cpu.mmu[cpu.reg["SP"] + 1] = (return_addr >> 8) & 0xFF  # high byte at SP+1
 
     cpu.flags[flag] = flag_value
-    cpu.insert_instruction(bytearray([0xC0]))
-
-    cycles = cpu.cycle()
+    cycles = cycle_instruction(cpu, 0xC0)
 
     if flag_value == 0:
         assert cpu.pc == return_addr

@@ -1,7 +1,6 @@
 import pytest
 
-from gbemu.opcodes import OPCODES
-from tests.utils import make_cpu, set_hl_value, verify_flags
+from tests.utils import cycle_instruction, make_cpu, set_hl_value, verify_flags
 
 
 @pytest.mark.parametrize(
@@ -48,8 +47,7 @@ def test_reg_to_reg(
     cpu.reg[dest] = dest_val
     cpu.reg[src] = src_val
     cpu.flags["C"] = carry
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.reg[dest] == result
     verify_flags(cpu, z_flag=z_flag, n_flag=n_flag, h_flag=h_flag, c_flag=c_flag)
@@ -99,8 +97,7 @@ def test_hl_to_reg(
     cpu.reg["HL"] = hl
     cpu.flags["C"] = carry
     cpu.mmu[hl] = value
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.reg[dest] == result
     verify_flags(cpu, z_flag=z_flag, n_flag=n_flag, h_flag=h_flag, c_flag=c_flag)
@@ -128,8 +125,7 @@ def test_inc_16(
 ) -> None:
     cpu = make_cpu()
     cpu.reg[dest] = value
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.reg[dest] == result
 
@@ -179,8 +175,7 @@ def test_dec_inc_mixed(
 ) -> None:
     cpu = make_cpu()
     cpu.reg[dest] = value
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.reg[dest] == result
     verify_flags(cpu, z_flag=z_flag, n_flag=n_flag, h_flag=h_flag)
@@ -216,8 +211,7 @@ def test_dec_inc_mem(
 ) -> None:
     cpu = make_cpu()
     set_hl_value(cpu, value)
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.mmu[cpu.reg[dest]] == result
     verify_flags(cpu, z_flag=z_flag, n_flag=n_flag, h_flag=h_flag)
@@ -253,8 +247,7 @@ def test_add16(
     cpu = make_cpu()
     cpu.reg[dest] = dest_val
     cpu.reg[src] = src_val
-    cpu.insert_instruction(bytearray([opcode]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode)
 
     assert cpu.reg[dest] == result
     verify_flags(cpu, c_flag=carry, n_flag=0)
@@ -291,9 +284,7 @@ def test_daa(
     cpu.reg["A"] = a_start
     cpu.flags["N"] = n_start
     cpu.flags["C"] = c_start
-    cpu.insert_instruction(bytearray([0x27]))
-
-    cpu.cycle()
+    cycle_instruction(cpu, 0x27)
 
     assert cpu.reg["A"] == result
     verify_flags(cpu, z_flag=z_flag, n_flag=n_flag, h_flag=0, c_flag=c_flag)
@@ -345,9 +336,7 @@ def test_immediate_arithmetic(
     cpu = make_cpu()
     cpu.reg["A"] = a_val
     cpu.flags["C"] = carry
-    # Instruction: opcode (1 byte) + immediate (1 byte)
-    cpu.insert_instruction(bytearray([opcode, immediate]))
-    cpu.cycle()
+    cycle_instruction(cpu, opcode, immediate)
 
     assert cpu.reg["A"] == result
     verify_flags(cpu, z_flag=z_flag, n_flag=n_flag, h_flag=h_flag, c_flag=c_flag)

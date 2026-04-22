@@ -1,8 +1,5 @@
 import pytest
 
-from gbemu.cpu import CPU
-from gbemu.mmu import MMU
-from gbemu.opcodes import OPCODES
 from gbemu.utils import hex_to_signed
 
 
