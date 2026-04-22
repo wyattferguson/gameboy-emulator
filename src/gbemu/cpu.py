@@ -11,16 +11,12 @@ Step-by-step:
 
 from typing import Any
 
-from gbemu.config import (
-    DEBUG,
-)
 from gbemu.constants import (
     M_INTERRUPT_ENABLE,
     M_INTERRUPT_FLAG,
     SP_START,
 )
 from gbemu.ctypes import Bitwise, CallableDict
-from gbemu.logger import logger
 from gbemu.mmu import MMU
 from gbemu.opcodes import CB_PREFIXED, OPCODES, OpCode
 from gbemu.timer import Timer
@@ -31,7 +27,6 @@ class CPU:
     """GB CPU."""
 
     def __init__(self, mmu: MMU) -> None:
-        self.debug: bool = DEBUG
         self.pc = 0
         self.mmu: MMU = mmu
         self.interrupts: bool = False
@@ -85,59 +80,37 @@ class CPU:
             instruction if instruction is not None else OpCode(f"ILLEGAL {op_value}", 1, 4, "nop")
         )
 
-        if self.debug:
-            logger.debug(f"Fetch: {hex(self.pc)} - {self.instruction}")
-
     def decode(self) -> None:
         """Decode instruction and its arguments."""
-        try:
-            base_args = self.instruction.args
-            self.args = list(base_args or [])  # ty:ignore[invalid-assignment]
-            if self.instruction.length > 1 and not self.cb_prefixed:
-                if self.instruction.length == 2:
-                    immediate = self.mmu[(self.pc + 1)]
-                elif self.instruction.length == 3:
-                    low = self.mmu[(self.pc + 1)]
-                    high = self.mmu[(self.pc + 2)]
-                    immediate = (high << 8) | low
-                else:
-                    b = bytes(self.mmu[(self.pc + i)] for i in range(1, self.instruction.length))
-                    immediate = int.from_bytes(b, byteorder="little")
-                self.args.append(immediate)
-
-            if self.debug:
-                logger.debug(f"Decoded: {self.instruction}, {self.args}")
-        except Exception as e:
-            logger.exception(
-                f"Decode - PC: {self.pc}({hex(self.pc)}) OP: {hex(self.mmu[self.pc])}",
-                f"INSTR: {self.instruction} - {e}",
-            )
+        base_args = self.instruction.args
+        self.args = list(base_args or [])  # ty:ignore[invalid-assignment]
+        if self.instruction.length > 1 and not self.cb_prefixed:
+            if self.instruction.length == 2:
+                immediate = self.mmu[(self.pc + 1)]
+            elif self.instruction.length == 3:
+                low = self.mmu[(self.pc + 1)]
+                high = self.mmu[(self.pc + 2)]
+                immediate = (high << 8) | low
+            else:
+                b = bytes(self.mmu[(self.pc + i)] for i in range(1, self.instruction.length))
+                immediate = int.from_bytes(b, byteorder="little")
+            self.args.append(immediate)
 
     def execute(self) -> None:
         """Run instruction and update PC, SP, registers, and flags."""
-        try:
-            if self.debug:
-                logger.debug(f"Execute: {self.instruction.call}, {self.args}")
+        # Set flags with static values from instruction definition
+        if self.instruction.flags:
+            for flag, value in self.instruction.flags.items():
+                self.flags[flag] = value
 
-            # Set flags with static values from instruction definition
-            if self.instruction.flags:
-                for flag, value in self.instruction.flags.items():
-                    self.flags[flag] = value
-
-            # Execute instruction logic
-            if self.instruction.call:
-                call_name = self.instruction.call
-                method_obj: Any = self._call_cache.get(call_name)
-                if method_obj is None:
-                    method_obj = getattr(self, call_name)
-                    self._call_cache[call_name] = method_obj
-                method_obj(*self.args)
-
-        except Exception as e:
-            logger.exception(
-                f"Execute - PC: {self.pc}({hex(self.pc)}) MEM: {hex(self.mmu[self.pc])}",
-                f"INSTR: {self.instruction} - {e}",
-            )
+        # Execute instruction logic
+        if self.instruction.call:
+            call_name = self.instruction.call
+            method_obj: Any = self._call_cache.get(call_name)
+            if method_obj is None:
+                method_obj = getattr(self, call_name)
+                self._call_cache[call_name] = method_obj
+            method_obj(*self.args)
 
     def insert_instruction(self, instruction: bytearray) -> None:
         """Insert instruction into MMU at current PC. Used for Testing."""

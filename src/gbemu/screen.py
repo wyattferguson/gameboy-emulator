@@ -10,6 +10,8 @@ Step-by-step:
 5. Optionally render FPS overlay diagnostics each presented frame.
 """
 
+import itertools
+
 import pygame as pg
 
 from gbemu.config import (
@@ -103,9 +105,14 @@ class Screen:
 
     def draw_buffer(self, buffer: list[list[int]]) -> None:
         """Draw a full frame represented as scanlines of palette IDs."""
-        rows = buffer[:SCREEN_HEIGHT]
-        # Flatten all color slots in one pass, then build RGB in one join.
-        slots = bytearray(cid & 0x03 for row in rows for cid in row[:SCREEN_WIDTH])
+        # chain.from_iterable + islice avoids per-row slice copies.
+        slots = bytearray(
+            cid & 0x03
+            for cid in itertools.chain.from_iterable(
+                itertools.islice(row, SCREEN_WIDTH)
+                for row in itertools.islice(buffer, SCREEN_HEIGHT)
+            )
+        )
         self._color_ids[: len(slots)] = slots
         self._screen_buffer[: len(slots) * 3] = b"".join(self._palette_bytes[s] for s in slots)
 
@@ -115,8 +122,8 @@ class Screen:
         y_offset_ids = y * SCREEN_WIDTH
         y_offset_rgb = y * SCREEN_WIDTH * 3
 
-        # Build slot and RGB rows with single-pass join instead of per-pixel calls.
-        slots = bytearray(color_ids[x] & 0x03 for x in range(n))
+        # islice avoids a list copy; iterate values directly instead of by index.
+        slots = bytearray(c & 0x03 for c in itertools.islice(color_ids, n))
         self._color_ids[y_offset_ids : y_offset_ids + n] = slots
         self._screen_buffer[y_offset_rgb : y_offset_rgb + n * 3] = b"".join(
             self._palette_bytes[s] for s in slots

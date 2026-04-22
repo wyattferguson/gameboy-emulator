@@ -258,14 +258,14 @@ class PPU:
 
     def render_scanline(self) -> None:
         """Compose a full scanline from BG/window and OBJ layers."""
-        base_line = [self.apply_bg_palette(0)] * SCREEN_WIDTH
-        bg_ids = [0] * SCREEN_WIDTH
-
         if self.bg_window_enabled:
             base_line, bg_ids = self.render_bg_window_line_with_ids()
+        else:
+            base_line = [self.apply_bg_palette(0)] * SCREEN_WIDTH
+            bg_ids = [0] * SCREEN_WIDTH
 
         if self.obj_enabled:
-            base_line = self.render_object_line(base_line, bg_ids)
+            self.render_object_line(base_line, bg_ids)
 
         if self.screen:
             self.screen.draw_scanline(base_line, self.scan_line)
@@ -456,9 +456,8 @@ class PPU:
         line, _ = self.render_bg_window_line_with_ids()
         return line
 
-    def render_object_line(self, bg_line: list[int], bg_color_ids: list[int]) -> list[int]:
-        """Overlay sprite pixels onto an existing BG/window scanline."""
-        out = list(bg_line)
+    def render_object_line(self, bg_line: list[int], bg_color_ids: list[int]) -> None:
+        """Overlay sprite pixels onto bg_line in-place (no copy)."""
         memory = self.mmu.memory
 
         # Draw in precomputed low->high priority order from OAM scan.
@@ -499,9 +498,7 @@ class PPU:
                 if priority and bg_color_ids[x] != 0:
                     continue
 
-                out[x] = pal[color_id]
-
-        return out
+                bg_line[x] = pal[color_id]
 
     def _read_tile_color(self, tile_id: int, row: int, col: int) -> int:
         """Read a single 2bpp color index from tile data coordinates."""
