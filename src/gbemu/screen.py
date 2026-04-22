@@ -19,6 +19,7 @@ from gbemu.config import (
     FPS_BG_COLOR,
     FPS_COLOR,
     PALLETE,
+    SCREEN_AREA,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
     SHOW_FPS_OVERLAY,
@@ -47,11 +48,11 @@ class Screen:
         self.screen = self.pg.display.set_mode(self.screen_size)
 
         # One byte per pixel stores DMG palette slot (0..3).
-        self._color_ids = bytearray(SCREEN_WIDTH * SCREEN_HEIGHT)
+        self._color_ids = bytearray(SCREEN_AREA)
         # RGB front buffer used for display upload.
-        self._pixel_rgb = bytearray(SCREEN_WIDTH * SCREEN_HEIGHT * 3)
+        self._screen_buffer = bytearray(SCREEN_AREA * 3)
         self._frame_surface = self.pg.image.frombuffer(
-            self._pixel_rgb,
+            self._screen_buffer,
             (SCREEN_WIDTH, SCREEN_HEIGHT),
             "RGB",
         )
@@ -63,7 +64,7 @@ class Screen:
             masks=frame_masks,
         )
         self._fps_font = self.pg.font.Font(None, 24)
-        self._clear_rgb = bytes(BG_COLOR) * (SCREEN_WIDTH * SCREEN_HEIGHT)
+        self._clear_rgb = bytes(BG_COLOR) * SCREEN_AREA
 
         self.clear_screen()
 
@@ -75,11 +76,15 @@ class Screen:
         self.pg.display.update()
 
     def set_fps(self, fps: float) -> None:
-        """Update the FPS value used by the optional overlay."""
+        """Update the FPS value used by the overlay."""
         self._fps_value = fps
 
+    def toggle_fps_overlay(self) -> None:
+        """Toggle the FPS overlay on or off."""
+        self.show_fps_overlay = not self.show_fps_overlay
+
     def _draw_fps_overlay(self) -> None:
-        """Render the optional FPS counter text in the top-right corner."""
+        """Render the FPS counter text in the top-right corner."""
         if not self.show_fps_overlay:
             return
 
@@ -107,24 +112,22 @@ class Screen:
         for x in range(min(len(color_ids), SCREEN_WIDTH)):
             palette_slot = color_ids[x] & 0x03
             self._color_ids[y_offset_ids + x] = palette_slot
-            self._write_pixel_rgb_at_offset(y_offset_rgb + x * 3, self.palette[palette_slot])
+            self._set_pixel_at_offset(y_offset_rgb + x * 3, self.palette[palette_slot])
 
-    def _write_pixel_rgb_at_offset(self, pixel_offset: int, color: Color) -> None:
-        """Write one RGB triple into the software back buffer by byte offset."""
-        self._pixel_rgb[pixel_offset] = color[0]
-        self._pixel_rgb[pixel_offset + 1] = color[1]
-        self._pixel_rgb[pixel_offset + 2] = color[2]
+    def _set_pixel_at_offset(self, pixel_offset: int, color: Color) -> None:
+        """Write one RGB triple into the screen buffer."""
+        self._screen_buffer[pixel_offset : pixel_offset + 3] = color
 
     def draw_pixel(self, x: int, y: int, color: Color) -> None:
         """Draw pixel to both software and pygame."""
         pixel_offset = (y * SCREEN_WIDTH + x) * 3
-        self._write_pixel_rgb_at_offset(pixel_offset, color)
+        self._set_pixel_at_offset(pixel_offset, color)
 
         rect = self.pg.Rect(x * self.scaler, y * self.scaler, self.scaler, self.scaler)
         self.pg.draw.rect(self.screen, color, rect)
 
     def clear_screen(self) -> None:
         """Reset frame buffers and fill the output surface with BG color."""
-        self._color_ids[:] = bytes(SCREEN_WIDTH * SCREEN_HEIGHT)
-        self._pixel_rgb[:] = self._clear_rgb
+        self._color_ids[:] = bytes(SCREEN_AREA)
+        self._screen_buffer[:] = self._clear_rgb
         self.screen.fill(BG_COLOR)

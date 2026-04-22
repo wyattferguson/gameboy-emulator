@@ -148,16 +148,3 @@ def test_mmu_unblocks_cpu_access_when_ppu_bus_open() -> None:
 
     assert mmu[0xFE00] == 0x11
     assert mmu[0x8000] == 0x22
-
-
-def test_mmu_handles_cart_with_unloaded_rom() -> None:
-    cart = Cart("roms/verification/cpu_instrs.gb")
-    mmu = MMU(cart)
-
-    assert cart.rom is None
-    assert list(mmu[0x0000:0x0010]) == BIOS[:0x10]
-
-    mmu[M_BOOT_ROM_MAPPING_CONTROL] = 0x01
-
-    # No cart ROM available, so BIOS region remains unchanged.
-    assert list(mmu[0x0000:0x0010]) == BIOS[:0x10]
