@@ -30,7 +30,6 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
-AGENTS.md
 .pdm.toml
 *.lock
 
