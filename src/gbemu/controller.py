@@ -15,7 +15,7 @@ import sys
 import pygame as pg
 
 from gbemu.config import KEYMAP
-from gbemu.constants import M_JOYPAD
+from gbemu.constants import M_INTERRUPT_FLAG, M_JOYPAD
 from gbemu.mmu import MMU
 
 
@@ -25,7 +25,20 @@ class Controller:
     def __init__(self, mmu: MMU) -> None:
         """Bind MMU input lines and initialize JOYP select state."""
         self.mmu = mmu
+        self._buttons = 0x0F
+        self._dpad = 0x0F
+        self.mmu.register_joypad_refresh_hook(self._sync_joypad_register)
         self.mmu[M_JOYPAD] = 0x30
+
+    def _sync_joypad_register(self) -> None:
+        """Compose FF00 from select bits and controller latched key states."""
+        select = self.mmu.memory[M_JOYPAD] & 0x30
+        joypad = 0xCF | select
+        if (select & 0x10) == 0:
+            joypad &= 0xF0 | self._dpad
+        if (select & 0x20) == 0:
+            joypad &= 0xF0 | self._buttons
+        self.mmu.memory[M_JOYPAD] = joypad & 0xFF
 
     @staticmethod
     def _is_exit_event(event: pg.event.Event) -> bool:
@@ -34,7 +47,22 @@ class Controller:
 
     def set_key_state(self, bits: int, *, dpad: bool, pressed: bool) -> None:
         """Update pressed state for one joypad line."""
-        self.mmu.set_joypad_pressed(bits, dpad=dpad, pressed=pressed)
+        target = self._dpad if dpad else self._buttons
+        previous = target
+        if pressed:
+            target &= (~bits) & 0x0F
+        else:
+            target |= bits & 0x0F
+
+        if dpad:
+            self._dpad = target
+        else:
+            self._buttons = target
+
+        if previous != target and pressed:
+            self.mmu.memory[M_INTERRUPT_FLAG] |= 0x10
+
+        self._sync_joypad_register()
 
     def _handle_input_event(self, event: pg.event.Event) -> None:
         """Map keyboard key transitions into JOYP line updates."""

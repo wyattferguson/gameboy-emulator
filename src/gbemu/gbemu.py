@@ -34,7 +34,6 @@ class Gbemu:
         debug: bool = DEBUG,
         headless: bool = HEADLESS,
     ) -> None:
-        """Wire cartridge and hardware subsystems for one emulator instance."""
         self.debug = debug
         self.rom = rom
         self.cart = Cart(self.rom)
@@ -46,7 +45,6 @@ class Gbemu:
 
     def run(self) -> None:
         """Run the GB emulator."""
-        # Target wall-clock seconds per frame (1 / ~59.73).
         frame_duration = 1.0 / TARGET_FPS
         smoothed_fps: float | None = None
 
@@ -68,7 +66,7 @@ class Gbemu:
                     self.ppu.screen.set_fps(smoothed_fps)
 
     def _run_frame(self) -> None:
-        """Execute CPU/PPU/APU work until one frame worth of cycles elapses."""
+        """Execute one frame of CPU/PPU/APU work."""
         # Poll input once per frame; per-instruction event pumping is too expensive.
         self.controller.update()
 

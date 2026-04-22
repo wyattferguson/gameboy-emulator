@@ -328,6 +328,75 @@ class PPU:
 
         self.mmu.memory[M_LCD_STATUS] = stat
 
+    def _decode_dmg_palette(self, palette_reg: int) -> tuple[int, int, int, int]:
+        """Expand a DMG palette register into a 4-entry color lookup tuple."""
+        return (
+            palette_reg & 0x03,
+            (palette_reg >> 2) & 0x03,
+            (palette_reg >> 4) & 0x03,
+            (palette_reg >> 6) & 0x03,
+        )
+
+    def _tile_row_addr(self, tile_number: int, tile_row: int) -> int:
+        """Resolve the tile-row address using LCDC tile-data addressing mode."""
+        if self.bg_tile_idx:
+            return 0x8000 + tile_number * 16 + tile_row * 2
+
+        signed_id = tile_number if tile_number < 128 else tile_number - 256
+        return 0x9000 + signed_id * 16 + tile_row * 2
+
+    def _render_tilemap_segment(
+        self,
+        *,
+        map_base: int,
+        tile_y: int,
+        tile_row: int,
+        x_start: int,
+        x_stop: int,
+        map_x_offset: int,
+        wrap_map_x: bool,
+        palette_lut: tuple[int, int, int, int],
+        palette_ids: list[int],
+        raw_color_ids: list[int],
+    ) -> None:
+        """Render a horizontal tilemap segment into palette/raw scanline buffers."""
+        memory = self.mmu.memory
+        row_index_base = map_base + tile_y * 32
+        last_tile_number = -1
+        last_low = 0
+        last_high = 0
+
+        # Keep separate loops to avoid a per-pixel branch on X wrapping.
+        if wrap_map_x:
+            for x in range(x_start, x_stop):
+                map_x = (x + map_x_offset) & 0xFF
+                tile_number = memory[row_index_base + (map_x >> 3)]
+                if tile_number != last_tile_number:
+                    row_addr = self._tile_row_addr(tile_number, tile_row)
+                    last_low = memory[row_addr]
+                    last_high = memory[row_addr + 1]
+                    last_tile_number = tile_number
+
+                bit_index = 7 - (map_x & 0x07)
+                color_id = ((last_high >> bit_index) & 1) << 1 | (last_low >> bit_index) & 1
+                raw_color_ids[x] = color_id
+                palette_ids[x] = palette_lut[color_id]
+            return
+
+        for x in range(x_start, x_stop):
+            map_x = x - map_x_offset
+            tile_number = memory[row_index_base + (map_x >> 3)]
+            if tile_number != last_tile_number:
+                row_addr = self._tile_row_addr(tile_number, tile_row)
+                last_low = memory[row_addr]
+                last_high = memory[row_addr + 1]
+                last_tile_number = tile_number
+
+            bit_index = 7 - (map_x & 0x07)
+            color_id = ((last_high >> bit_index) & 1) << 1 | (last_low >> bit_index) & 1
+            raw_color_ids[x] = color_id
+            palette_ids[x] = palette_lut[color_id]
+
     def render_bg_window_line_with_ids(self) -> tuple[list[int], list[int]]:
         """Render BG/window pixels and return (palette_ids, raw_2bpp_ids)."""
         memory = self.mmu.memory
@@ -335,7 +404,7 @@ class PPU:
         scy = memory[M_VIEWPORT_Y]
         wy = memory[M_WINDOW_Y]
         wx = memory[M_WINDOW_X_PLUS_7] - 7
-        bg_palette = memory[M_BG_PALETTE_DATA]
+        bg_pal = self._decode_dmg_palette(memory[M_BG_PALETTE_DATA])
 
         palette_ids = [0] * SCREEN_WIDTH
         raw_color_ids = [0] * SCREEN_WIDTH
@@ -347,48 +416,38 @@ class PPU:
             self._window_line_latched_for_scanline = True
 
         # WX values below 7 are hardware-quirky; clamp start to x=0 for stable DMG behavior.
-        window_start_x = max(wx, 0)
+        window_start_x = max(wx, 0) if window_active else SCREEN_WIDTH
 
-        last_tile_key: tuple[int, int, int] | None = None
-        last_low = 0
-        last_high = 0
+        # Render BG first, then window, so each segment can use a branch-free inner loop.
+        bg_limit = min(window_start_x, SCREEN_WIDTH)
+        if bg_limit > 0:
+            bg_map_y = (self.scan_line + scy) & 0xFF
+            self._render_tilemap_segment(
+                map_base=M_BG_TILE_MAP_VRAM[self.bg_tile_map][0],
+                tile_y=bg_map_y >> 3,
+                tile_row=bg_map_y & 0x07,
+                x_start=0,
+                x_stop=bg_limit,
+                map_x_offset=scx,
+                wrap_map_x=True,
+                palette_lut=bg_pal,
+                palette_ids=palette_ids,
+                raw_color_ids=raw_color_ids,
+            )
 
-        for x in range(SCREEN_WIDTH):
-            use_window = bool(window_active and x >= window_start_x)
-            if use_window:
-                map_x = x - window_start_x
-                map_y = window_row
-                tile_map_base = M_WIN_MAP_VRAM[self.window_tile_map][0]
-            else:
-                map_x = (x + scx) & 0xFF
-                map_y = (self.scan_line + scy) & 0xFF
-                tile_map_base = M_BG_TILE_MAP_VRAM[self.bg_tile_map][0]
-
-            tile_x = map_x >> 3
-            tile_y = map_y >> 3
-            tile_number = memory[tile_map_base + tile_y * 32 + tile_x]
-            tile_row = map_y & 0x07
-
-            tile_key = (tile_map_base, tile_number, tile_row)
-            if tile_key != last_tile_key:
-                if self.bg_tile_idx:
-                    tile_addr = 0x8000 + tile_number * 16
-                else:
-                    signed_id = tile_number if tile_number < 128 else tile_number - 256
-                    tile_addr = 0x9000 + signed_id * 16
-
-                row_addr = tile_addr + tile_row * 2
-                last_low = memory[row_addr]
-                last_high = memory[row_addr + 1]
-                last_tile_key = tile_key
-
-            bit_index = 7 - (map_x & 0x07)
-            lo = (last_low >> bit_index) & 0x01
-            hi = (last_high >> bit_index) & 0x01
-            color_id = (hi << 1) | lo
-
-            raw_color_ids[x] = color_id
-            palette_ids[x] = (bg_palette >> (color_id * 2)) & 0x03
+        if window_active and window_start_x < SCREEN_WIDTH:
+            self._render_tilemap_segment(
+                map_base=M_WIN_MAP_VRAM[self.window_tile_map][0],
+                tile_y=window_row >> 3,
+                tile_row=window_row & 0x07,
+                x_start=window_start_x,
+                x_stop=SCREEN_WIDTH,
+                map_x_offset=window_start_x,
+                wrap_map_x=False,
+                palette_lut=bg_pal,
+                palette_ids=palette_ids,
+                raw_color_ids=raw_color_ids,
+            )
 
         return palette_ids, raw_color_ids
 
@@ -418,22 +477,29 @@ class PPU:
             tile_addr = 0x8000 + tile_index * 16 + row * 2
             low = memory[tile_addr]
             high = memory[tile_addr + 1]
-            palette = memory[M_OBJ_PALETTE_1_DATA if sprite.dmg_palette else M_OBJ_PALETTE_0_DATA]
+            palette_reg = memory[
+                M_OBJ_PALETTE_1_DATA if sprite.dmg_palette else M_OBJ_PALETTE_0_DATA
+            ]
+            pal = self._decode_dmg_palette(palette_reg)
+            # Hoist sprite fields to locals to reduce attribute lookups in inner loop.
+            sx = sprite.x
+            x_flipped = sprite.x_flipped
+            priority = sprite.priority
 
             for col in range(8):
-                x = sprite.x + col
+                x = sx + col
                 if x < 0 or x >= SCREEN_WIDTH:
                     continue
 
-                bit_idx = col if sprite.x_flipped else 7 - col
-                color_id = ((high >> bit_idx) & 0x01) << 1 | ((low >> bit_idx) & 0x01)
+                bit_idx = col if x_flipped else 7 - col
+                color_id = ((high >> bit_idx) & 1) << 1 | (low >> bit_idx) & 1
                 if color_id == 0:
                     continue
 
-                if sprite.priority and bg_color_ids[x] != 0:
+                if priority and bg_color_ids[x] != 0:
                     continue
 
-                out[x] = (palette >> (color_id * 2)) & 0x03
+                out[x] = pal[color_id]
 
         return out
 

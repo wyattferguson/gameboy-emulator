@@ -126,7 +126,7 @@ CYCLES_PER_SCANLINE: int = 456
 # Total t-cycles for one full frame: 154 scanlines x 456 dots each.
 CYCLES_PER_FRAME: int = SCAN_LINES * CYCLES_PER_SCANLINE  # 70224
 CPU_CLOCK_HZ: int = 4194304
-TARGET_FPS: float = CPU_CLOCK_HZ / CYCLES_PER_FRAME  # ~59.73 fps
+TARGET_FPS: float = 60.0
 
 # PPU mode timing windows (in CPU cycles)
 PPU_MODE2_CYCLES = 80

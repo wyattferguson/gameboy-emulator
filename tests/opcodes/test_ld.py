@@ -1,6 +1,7 @@
 import pytest
 
 from gbemu.constants import M_JOYPAD
+from gbemu.controller import Controller
 from tests.utils import make_cpu, verify_flags
 
 
@@ -353,8 +354,9 @@ def test_ldh_mem_a_opcode_e0_updates_joypad_selection() -> None:
 def test_ldh_a_mem_opcode_f0_reads_joypad_state() -> None:
     """Test LDH A, [0x00] against JOYP's selected active-low lines."""
     cpu = make_cpu()
+    controller = Controller(cpu.mmu)
     cpu.mmu[M_JOYPAD] = 0x20
-    cpu.mmu.set_joypad_pressed(0b0100, dpad=True, pressed=True)
+    controller.set_key_state(0b0100, dpad=True, pressed=True)
     cpu.insert_instruction(bytearray([0xF0, 0x00]))
     cpu.cycle()
 

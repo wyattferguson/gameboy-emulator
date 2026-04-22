@@ -166,7 +166,7 @@ class CPU:
         if self.halted and pending_interrupts != 0:
             self.halted = False
 
-        if self._service_interrupt():
+        if self._service_interrupt(pending_interrupts):
             return self._commit_cycles(20)
 
         self.fetch()
@@ -196,9 +196,10 @@ class CPU:
         """Return bitmask of currently pending and enabled interrupts (bits 0..4)."""
         return self.mmu[M_INTERRUPT_FLAG] & self.mmu[M_INTERRUPT_ENABLE] & 0x1F
 
-    def _service_interrupt(self) -> bool:
+    def _service_interrupt(self, pending: int | None = None) -> bool:
         """Service highest-priority interrupt when IME is set."""
-        pending = self._pending_interrupts()
+        if pending is None:
+            pending = self._pending_interrupts()
         if pending == 0 or not self.interrupts:
             return False
 
