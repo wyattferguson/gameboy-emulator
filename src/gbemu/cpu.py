@@ -13,11 +13,11 @@ from typing import Any
 
 from gbemu.config import (
     DEBUG,
-    SP_START,
 )
 from gbemu.constants import (
     M_INTERRUPT_ENABLE,
     M_INTERRUPT_FLAG,
+    SP_START,
 )
 from gbemu.ctypes import Bitwise, CallableDict
 from gbemu.logger import logger
@@ -32,7 +32,7 @@ class CPU:
 
     def __init__(self, mmu: MMU) -> None:
         self.debug: bool = DEBUG
-        self.pc = 0x0000
+        self.pc = 0
         self.mmu: MMU = mmu
         self.interrupts: bool = False
         self._ime_delay: int = 0
@@ -67,7 +67,6 @@ class CPU:
         self.cycles: int = 0
         self._cycle_adjust: int = 0
         self.args: list[int]
-        self._illegal_opcode_log_once: set[tuple[int, int]] = set()
         self._call_cache: dict[str, Any] = {}
         self._timer = Timer()
 
@@ -176,7 +175,7 @@ class CPU:
         self.execute()
         self.cb_prefixed = False
         if self.instruction.pc_inc:
-            self.pc = (self.pc + self.instruction.length) & 0xFFFF
+            self.pc += self.instruction.length
 
         if self._ime_delay > 0:
             self._ime_delay -= 1
@@ -284,9 +283,8 @@ class CPU:
         """Enter CPU low-power consumption mode until an interrupt occurs."""
         self.halted = True
 
-    def stop(self, d8: int = 0) -> None:
+    def stop(self, d8: int = 0) -> None:  # noqa: ARG002
         """Halt CPU and LCD until button pressed. Used for power saving."""
-        _ = d8
         self.stopped = True
 
     def add(
@@ -323,8 +321,6 @@ class CPU:
         sp = self.reg["SP"]
         signed_offset = hex_to_signed(offset, 8)
         result = (sp + signed_offset) & 0xFFFF
-        self.flags["Z"] = 0
-        self.flags["N"] = 0
         self.flags["H"] = 1 if ((sp ^ offset ^ result) & 0x10) != 0 else 0
         self.flags["C"] = 1 if ((sp ^ offset ^ result) & 0x100) != 0 else 0
         self.reg[target] = result

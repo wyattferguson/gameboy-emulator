@@ -16,8 +16,8 @@ from gbemu.config import (
     BG_COLOR,
     DISPLAY_SCALER,
     ERROR_COLOR,
-    FPS_OVERLAY_COLOR,
-    FPS_OVERLAY_MARGIN,
+    FPS_BG_COLOR,
+    FPS_COLOR,
     PALLETE,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
@@ -62,7 +62,7 @@ class Screen:
             depth=frame_bitsize,
             masks=frame_masks,
         )
-        self._fps_font = self.pg.font.Font(None, 18) if self.show_fps_overlay else None
+        self._fps_font = self.pg.font.Font(None, 24) if self.show_fps_overlay else None
         self._clear_rgb = bytes(BG_COLOR) * (SCREEN_WIDTH * SCREEN_HEIGHT)
 
         self.clear_screen()
@@ -76,18 +76,21 @@ class Screen:
 
     def set_fps(self, fps: float) -> None:
         """Update the FPS value used by the optional overlay."""
-        if fps > 0:
-            self._fps_value = fps
+        self._fps_value = fps
 
     def _draw_fps_overlay(self) -> None:
         """Render the optional FPS counter text in the top-right corner."""
         if not self.show_fps_overlay or self._fps_font is None:
             return
 
-        fps_text = f"{self._fps_value:5.1f} FPS" if self._fps_value is not None else " --.- FPS"
-        overlay = self._fps_font.render(fps_text, True, FPS_OVERLAY_COLOR)
-        x = self.screen_size[0] - overlay.get_width() - FPS_OVERLAY_MARGIN
-        self.screen.blit(overlay, (x, FPS_OVERLAY_MARGIN))
+        overlay = self._fps_font.render(
+            f"{self._fps_value:5.0f} FPS",
+            True,
+            FPS_COLOR,
+            FPS_BG_COLOR,
+        )
+        x = self.screen_size[0] - overlay.get_width()
+        self.screen.blit(overlay, (x, 0))
 
     def draw_buffer(self, buffer: list[list[int]]) -> None:
         """Draw a full frame represented as scanlines of palette IDs."""
@@ -98,9 +101,6 @@ class Screen:
 
     def draw_scanline(self, color_ids: list[int], y: int) -> None:
         """Draw one scanline of DMG palette slots into the RGB back buffer."""
-        if y < 0 or y >= SCREEN_HEIGHT:
-            return
-
         palette = self.palette
         palette_len = len(palette)
         y_offset_ids = y * SCREEN_WIDTH
@@ -131,10 +131,7 @@ class Screen:
         return ERROR_COLOR
 
     def draw_pixel(self, x: int, y: int, color: Color) -> None:
-        """Plot one pixel directly to both software and pygame frame targets."""
-        if x < 0 or x >= SCREEN_WIDTH or y < 0 or y >= SCREEN_HEIGHT:
-            return
-
+        """Draw pixel to both software and pygame."""
         pixel_offset = (y * SCREEN_WIDTH + x) * 3
         self._write_pixel_rgb_at_offset(pixel_offset, color)
 

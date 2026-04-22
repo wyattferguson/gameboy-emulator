@@ -1,6 +1,6 @@
 import pytest
 
-from gbemu.config import SP_START
+from gbemu.constants import SP_START
 from tests.utils import make_cpu
 
 

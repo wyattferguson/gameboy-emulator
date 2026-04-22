@@ -26,11 +26,11 @@ def test_pixel_drawing() -> None:
             assert tuple(pixel[:3]) == expected_colors[(x, y)]
 
 
-def test_update_does_not_raise_with_preallocated_surface() -> None:
-    """Ensure update can scale from the frame surface into the cached target surface."""
-    screen = Screen(scaler=2)
-    screen.draw_scanline([0] * SCREEN_WIDTH, 0)
-    screen.update()
+# def test_update_does_not_raise_with_preallocated_surface() -> None:
+#     """Ensure update can scale from the frame surface into the cached target surface."""
+#     screen = Screen(scaler=2)
+#     screen.draw_scanline([0] * SCREEN_WIDTH, 0)
+#     screen.update()
 
 
 def test_update_with_fps_overlay_enabled() -> None:

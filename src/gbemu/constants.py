@@ -26,6 +26,9 @@ BIOS: list[int] = [
 # fmt: on
 
 
+MEMORY_SIZE: int = 65536  # 64kb of totally memory (ROM + RAM + IO)
+SP_START: int = 0xFFFE  # stack pointer start location
+
 # Hardware Registers
 M_JOYPAD: int = 0xFF00
 M_SERIAL_DATA: int = 0xFF01
@@ -107,7 +110,6 @@ M_WRAM_BANK: int = 0xFF70
 M_INTERRUPT_ENABLE: int = 0xFFFF
 
 # MMU memory map ranges
-MMU_ROM_START = 0x0000
 MMU_ROM_END = 0x7FFF
 MMU_WRAM_START = 0xC000
 MMU_WRAM_END = 0xDDFF
@@ -115,13 +117,15 @@ MMU_ECHO_START = 0xE000
 MMU_ECHO_END = 0xFDFF
 MMU_UNUSABLE_START = 0xFEA0
 MMU_UNUSABLE_END = 0xFEFF
+MMU_ROM_SIZE = 32768  # 32KB
+MMU_ROM_BANK_SIZE = 16384  # 16KB
 
 # CPU timings
 SCAN_LINES: int = 154
 CYCLES_PER_SCANLINE: int = 456
 # Total t-cycles for one full frame: 154 scanlines x 456 dots each.
 CYCLES_PER_FRAME: int = SCAN_LINES * CYCLES_PER_SCANLINE  # 70224
-CPU_CLOCK_HZ: int = 4_194_304
+CPU_CLOCK_HZ: int = 4194304
 TARGET_FPS: float = CPU_CLOCK_HZ / CYCLES_PER_FRAME  # ~59.73 fps
 
 # PPU mode timing windows (in CPU cycles)

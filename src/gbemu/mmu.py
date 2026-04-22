@@ -13,7 +13,6 @@ Step-by-step:
 from typing import overload
 
 from gbemu.cart import Cart
-from gbemu.config import MEMORY_SIZE
 from gbemu.constants import (
     BIOS,
     M_BOOT_ROM_MAPPING_CONTROL,
@@ -26,10 +25,11 @@ from gbemu.constants import (
     M_OAM_START,
     M_VRAM_END,
     M_VRAM_START,
+    MEMORY_SIZE,
     MMU_ECHO_END,
     MMU_ECHO_START,
+    MMU_ROM_BANK_SIZE,
     MMU_ROM_END,
-    MMU_ROM_START,
     MMU_UNUSABLE_END,
     MMU_UNUSABLE_START,
     MMU_WRAM_END,
@@ -45,11 +45,8 @@ class MMU:
         self._memory = [0] * self.size
         self._boot_rom_mapped = True
         self._cart = cart if (cart is not None and cart.rom is not None) else None
-        if self._cart is not None:
-            # FIX: Load max 32kb of ROM and bank switching for larger ROMs
-            rom = self._cart.rom
-            if rom is not None:
-                self._memory[0 : len(rom)] = rom
+        if self._cart and self._cart.rom is not None:
+            self._memory[0:MMU_ROM_END] = self._cart.rom[0:MMU_ROM_END]
         self._memory[0 : len(BIOS)] = BIOS  # load system bios
         self._oam_locked = False
         self._vram_locked = False
@@ -86,7 +83,7 @@ class MMU:
 
     def _is_cart_rom(self, address: int) -> bool:
         """Check if address is in cartridge ROM address space."""
-        return self._cart is not None and self._in_range(address, MMU_ROM_START, MMU_ROM_END)
+        return self._cart is not None and self._in_range(address, 0x0000, MMU_ROM_END)
 
     def _is_wram(self, address: int) -> bool:
         """Check if address belongs to internal work RAM."""

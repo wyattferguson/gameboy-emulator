@@ -2,9 +2,8 @@ import pygame as pg
 
 from gbemu.ctypes import Color
 
-DEFAULT_ROM = "./roms/sml.gb"
-MEMORY_SIZE: int = 65536  # 64kb of totally memory (ROM + RAM + IO)
-SP_START: int = 0xFFFE  # stack pointer start location
+DEFAULT_ROM = "./roms/tetris.gb"
+
 DEBUG = False
 HEADLESS = False
 
@@ -25,8 +24,8 @@ TILE_WIDTH: int = 8
 TILE_BITS: int = 16
 
 SHOW_FPS_OVERLAY: bool = True
-FPS_OVERLAY_MARGIN: int = 6
-FPS_OVERLAY_COLOR: Color = (15, 56, 15)
+FPS_BG_COLOR: Color = (0, 0, 0)
+FPS_COLOR: Color = (255, 255, 255)
 
 
 # Keyboard mapping to joypad bit mask and line-select (dpad=True, buttons=False)
