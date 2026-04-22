@@ -8,7 +8,7 @@ DEBUG = False
 HEADLESS = False
 
 # screen/ppu config
-DISPLAY_SCALER: int = 5
+DISPLAY_SCALER: int = 3
 SCREEN_WIDTH: int = 160
 SCREEN_HEIGHT: int = 144
 SCREEN_AREA: int = SCREEN_WIDTH * SCREEN_HEIGHT
