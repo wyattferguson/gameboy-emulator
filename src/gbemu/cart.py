@@ -38,7 +38,6 @@ from gbemu.constants import (
     H_TITLE_START,
     H_VERSION,
 )
-from gbemu.logger import logger
 
 
 class Cart:
@@ -87,8 +86,8 @@ class Cart:
                 if rom[H_OLD_LICENSEE] == 33
                 else OLD_LICENSEE.get(f"{rom[H_OLD_LICENSEE]:X}", "Unknown")
             )
-        except Exception as e:
-            logger.exception(f"Error decoding cartridge header: {self.filename} - {e}")
+        except Exception:
+            raise ValueError("Failed to decode cartridge header metadata.")
 
     @staticmethod
     def _decode_text(rom: bytearray, start: int, end: int, encoding: str = "utf-8") -> str:
@@ -99,12 +98,8 @@ class Cart:
         """Load ROM file into memory and verify checksum."""
         try:
             with Path(self.filename).open("rb") as f:
-                rom = bytearray(f.read())
-                if not self._verify_checksum(rom):
-                    logger.error(f"ROM checksum failed for {self.filename}")
-                return rom
-        except Exception as e:
-            logger.exception(f"Error loading ROM: {self.filename} - {e}")
+                return bytearray(f.read())
+        except Exception:
             return None
 
     def _verify_checksum(self, rom: bytearray) -> bool:
@@ -122,10 +117,8 @@ class Cart:
     def read(self, address: int = 0x0) -> int:
         """Read a byte from the cartridge at the specified address."""
         if self.rom is None:
-            logger.error(f"Attempted to read from unloaded cart: {self.filename}")
             return 0xFF
         if not (0 <= address < len(self.rom)):
-            logger.error(f"Attempted to read out of bounds. Address: {address}")
             return 0xFF
 
         return self.rom[address]
@@ -133,10 +126,8 @@ class Cart:
     def write(self, address: int = 0x0, value: int = 0) -> None:
         """Write a byte to the cartridge at the specified address."""
         if self.rom is None:
-            logger.error(f"Attempted to write to unloaded cart: {self.filename}")
             return
         if not (0 <= address < len(self.rom)):
-            logger.error(f"Attempted to write out of bounds. Address: {address}, Value: {value}")
             return
 
         self.rom[address] = value & 0xFF

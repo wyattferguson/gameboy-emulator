@@ -265,11 +265,13 @@ class CPU:
         with_carry: bool | int = False,
     ) -> None:
         """Add value from source to dest, optionally with carry."""
+        regs = self.reg
         with_carry_flag, value = self._resolve_operand(register, with_carry)
         carry: int = self.flags["C"] if with_carry_flag else 0
-        total: int = self.reg[dest_register] + value + carry
-        self._set_add_flags(total, self.reg[dest_register], value, carry)
-        self.reg[dest_register] = total & 0xFF
+        left = regs[dest_register]
+        total: int = left + value + carry
+        self._set_add_flags(total, left, value, carry)
+        regs[dest_register] = total & 0xFF
 
     def add16(self, dest_register: str, src_register: str) -> None:
         """Add 16-bit pair registers."""
@@ -303,32 +305,39 @@ class CPU:
         with_carry: bool | int = False,
     ) -> None:
         """Subtract value from source to dest, optionally with carry."""
+        regs = self.reg
         with_carry_flag, value = self._resolve_operand(register, with_carry)
         carry: int = self.flags["C"] if with_carry_flag else 0
-        result: int = self.reg[dest_register] - value - carry
-        self._set_sub_flags(result, self.reg[dest_register], value, carry)
-        self.reg[dest_register] = result & 0xFF
+        left = regs[dest_register]
+        result: int = left - value - carry
+        self._set_sub_flags(result, left, value, carry)
+        regs[dest_register] = result & 0xFF
 
     def bitwise(self, operation: Bitwise, dest_register: str, source: str | int) -> None:
         """Perform bitwise operation (AND, XOR, OR)."""
+        regs = self.reg
         value: int = self.get_stored_value(source) if isinstance(source, str) else source
+        dest_value = regs[dest_register]
 
         if operation == Bitwise.AND:
-            self.reg[dest_register] &= value
+            dest_value &= value
         elif operation == Bitwise.XOR:
-            self.reg[dest_register] ^= value
+            dest_value ^= value
         elif operation == Bitwise.OR:
-            self.reg[dest_register] |= value
+            dest_value |= value
 
-        self.flags["Z"] = 1 if self.reg[dest_register] == 0 else 0
+        regs[dest_register] = dest_value
+
+        self.flags["Z"] = 1 if dest_value == 0 else 0
 
     def cp(self, dest_register: str, src_register: str | int) -> None:
         """Compare registers."""
         value: int = (
             self.get_stored_value(src_register) if isinstance(src_register, str) else src_register
         )
-        result: int = self.reg[dest_register] - value
-        self._set_sub_flags(result, self.reg[dest_register], value)
+        left = self.reg[dest_register]
+        result: int = left - value
+        self._set_sub_flags(result, left, value)
 
     def get_stored_value(self, register: str) -> int:
         """Get value stored in register or memory."""
