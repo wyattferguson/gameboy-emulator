@@ -4,7 +4,7 @@ This module manages framebuffer composition and pygame presentation for DMG pale
 
 Step-by-step:
 1. Initialize software buffers and pygame display surfaces.
-2. Accept scanline or pixel writes as DMG color IDs/RGB values.
+2. Accept scanline writes as DMG color IDs.
 3. Translate palette slots into RGB bytes in the frame buffer.
 4. Scale and blit the frame surface to the output window.
 5. Optionally render FPS overlay diagnostics each presented frame.
@@ -25,7 +25,6 @@ from gbemu.config import (
     SCREEN_WIDTH,
     SHOW_FPS_OVERLAY,
 )
-from gbemu.ctypes import Color
 
 
 class Screen:
@@ -84,10 +83,6 @@ class Screen:
         """Update the FPS value used by the overlay."""
         self._fps_value = fps
 
-    def toggle_fps_overlay(self) -> None:
-        """Toggle the FPS overlay on or off."""
-        self.show_fps_overlay = not self.show_fps_overlay
-
     def _draw_fps_overlay(self) -> None:
         """Render the FPS counter text in the top-right corner."""
         if not self.show_fps_overlay:
@@ -127,18 +122,6 @@ class Screen:
         self._screen_buffer[y_offset_rgb : y_offset_rgb + n * 3] = b"".join(
             self._palette_bytes[s] for s in slots
         )
-
-    def _set_pixel_at_offset(self, pixel_offset: int, color: Color) -> None:
-        """Write one RGB triple into the screen buffer."""
-        self._screen_buffer[pixel_offset : pixel_offset + 3] = color
-
-    def draw_pixel(self, x: int, y: int, color: Color) -> None:
-        """Draw pixel to both software and pygame."""
-        pixel_offset = (y * SCREEN_WIDTH + x) * 3
-        self._set_pixel_at_offset(pixel_offset, color)
-
-        rect = self.pg.Rect(x * self.scaler, y * self.scaler, self.scaler, self.scaler)
-        self.pg.draw.rect(self.screen, color, rect)
 
     def clear_screen(self) -> None:
         """Reset frame buffers and fill the output surface with BG color."""

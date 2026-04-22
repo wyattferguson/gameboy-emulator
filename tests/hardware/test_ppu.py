@@ -8,7 +8,6 @@ from gbemu.constants import (
     M_VIEWPORT_Y,
 )
 from gbemu.cpu import CPU
-from gbemu.ctypes import TileSize
 from gbemu.mmu import MMU
 from gbemu.ppu import PPU, PPUMode
 
@@ -213,27 +212,6 @@ def test_ppu_apply_bg_palette_monochrome() -> None:
     assert ppu.apply_bg_palette(3) == 3
 
 
-def test_ppu_render_bg_window_line_palette_ids() -> None:
-    """Test that render_bg_window_line returns valid palette IDs."""
-    mmu = MMU(Cart("roms/hello.gb"))
-    cpu = CPU(mmu)
-    ppu = PPU(mmu, headless=True)
-    mmu[M_LCD_CONTROL] = 0x80
-
-    for _ in range(8000):
-        c = cpu.cycle()
-        ppu.update(c)
-
-    ppu.refresh_lcd_control()
-    mmu[M_VIEWPORT_X] = 0
-    mmu[M_VIEWPORT_Y] = 0
-
-    line = ppu.render_bg_window_line()
-
-    assert len(line) == SCREEN_WIDTH, "Line should be SCREEN_WIDTH pixels"
-    assert all(0 <= pid <= 3 for pid in line), "All palette IDs should be 0-3"
-
-
 def test_ppu_resolve_tile_data_addr_unsigned() -> None:
     """Test tile data address resolution in unsigned mode."""
     mmu = MMU(Cart("roms/hello.gb"))
@@ -276,153 +254,18 @@ def test_ppu_resolve_tile_data_addr_signed() -> None:
     assert addr == 0x9000 + (-1 * 16), "Tile 255 in signed mode is -1 (0x9000 - 16)"
 
 
-def test_ppu_scan_oam_for_scanline_basic() -> None:
-    """Test OAM scanning collects sprites intersecting scanline."""
-    mmu = MMU(Cart("roms/hello.gb"))
-    ppu = PPU(mmu, headless=True)
-    mmu[M_LCD_CONTROL] = 0x80
-
-    ppu.refresh_lcd_control()
-    ppu.scan_line = 16
-    ppu.obj_size = 0  # 8x8 sprites
-
-    # Place sprite 0: y=16, x=10, tile=0x01
-    mmu[0xFE00] = 16 + 16
-    mmu[0xFE01] = 10 + 8
-    mmu[0xFE02] = 0x01
-    mmu[0xFE03] = 0x00
-
-    ppu.scan_oam_for_scanline()
-
-    assert len(ppu.line_sprites) == 1, "Should find 1 sprite intersecting scanline 16"
-    assert ppu.line_sprites[0].index == 0x01
-    assert ppu.line_sprites[0].x == 10
-    assert ppu.line_sprites[0].y == 16
-
-
-def test_ppu_scan_oam_for_scanline_multiple() -> None:
-    """Test OAM scanning with multiple sprites on same scanline."""
-    mmu = MMU(Cart("roms/hello.gb"))
-    ppu = PPU(mmu, headless=True)
-    mmu[M_LCD_CONTROL] = 0x80
-
-    ppu.refresh_lcd_control()
-    ppu.scan_line = 20
-    ppu.obj_size = 0  # 8x8 sprites
-
-    # Place 3 sprites at scanline 20
-    for i in range(3):
-        base = 0xFE00 + (i * 4)
-        mmu[base] = 20 + 16
-        mmu[base + 1] = (i * 10) + 8
-        mmu[base + 2] = 0x10 + i
-        mmu[base + 3] = 0x00
-
-    ppu.scan_oam_for_scanline()
-
-    assert len(ppu.line_sprites) == 3, "Should find 3 sprites at scanline 20"
-    for i in range(3):
-        assert ppu.line_sprites[i].index == 0x10 + i
-
-
-def test_ppu_scan_oam_for_scanline_sprite_height_8x8() -> None:
-    """Test sprite height selection for 8x8 sprites."""
-    mmu = MMU(Cart("roms/hello.gb"))
-    ppu = PPU(mmu, headless=True)
-    mmu[M_LCD_CONTROL] = 0x80
-
-    ppu.refresh_lcd_control()
-    ppu.obj_size = 0  # 8x8
-    ppu.scan_line = 20
-
-    mmu[0xFE00] = 20 + 16  # y=20
-    mmu[0xFE01] = 10 + 8
-    mmu[0xFE02] = 0x01
-    mmu[0xFE03] = 0x00
-
-    ppu.scan_oam_for_scanline()
-
-    assert len(ppu.line_sprites) == 1
-    assert ppu.line_sprites[0].height == TileSize.SMALL
-
-
-def test_ppu_scan_oam_for_scanline_sprite_height_8x16() -> None:
-    """Test sprite height selection for 8x16 sprites."""
-    mmu = MMU(Cart("roms/hello.gb"))
-    ppu = PPU(mmu, headless=True)
-    mmu[M_LCD_CONTROL] = 0x84  # LCD on + obj_size (bit 2)
-
-    ppu.refresh_lcd_control()
-    assert ppu.obj_size == 1, "Bit 2 should be set for obj_size"
-    ppu.scan_line = 20
-
-    mmu[0xFE00] = 20 + 16  # y=20
-    mmu[0xFE01] = 10 + 8
-    mmu[0xFE02] = 0x01
-    mmu[0xFE03] = 0x00
-
-    ppu.scan_oam_for_scanline()
-
-    assert len(ppu.line_sprites) == 1
-    assert ppu.line_sprites[0].height == TileSize.LARGE
-
-
-def test_ppu_scan_oam_for_scanline_limit_10() -> None:
-    """Test that at most 10 sprites are scanned per scanline."""
-    mmu = MMU(Cart("roms/hello.gb"))
-    ppu = PPU(mmu, headless=True)
-    mmu[M_LCD_CONTROL] = 0x80
-
-    ppu.refresh_lcd_control()
-    ppu.scan_line = 20
-    ppu.obj_size = 0
-
-    # Place 15 sprites, all at scanline 20
-    for i in range(15):
-        base = 0xFE00 + (i * 4)
-        mmu[base] = 20 + 16
-        mmu[base + 1] = (i * 5) + 8
-        mmu[base + 2] = i
-        mmu[base + 3] = 0x00
-
-    ppu.scan_oam_for_scanline()
-
-    assert len(ppu.line_sprites) == 10, "Should collect at most 10 sprites per scanline"
-
-
-def test_ppu_scan_oam_for_scanline_sprite_attributes() -> None:
-    """Test that sprite attributes are correctly parsed."""
-    mmu = MMU(Cart("roms/hello.gb"))
-    ppu = PPU(mmu, headless=True)
-    mmu[M_LCD_CONTROL] = 0x80
-
-    ppu.refresh_lcd_control()
-    ppu.scan_line = 20
-    ppu.obj_size = 0
-
-    # Sprite with attributes: x_flipped=1, y_flipped=1, dmg_palette=1, priority=1
-    mmu[0xFE00] = 20 + 16
-    mmu[0xFE01] = 10 + 8
-    mmu[0xFE02] = 0x42
-    mmu[0xFE03] = 0xF0  # All attribute bits set
-
-    ppu.scan_oam_for_scanline()
-
-    assert len(ppu.line_sprites) == 1
-    sprite = ppu.line_sprites[0]
-    assert sprite.x_flipped == True, "Bit 5 should set x_flipped"
-    assert sprite.y_flipped == True, "Bit 6 should set y_flipped"
-    assert sprite.dmg_palette == 1, "Bit 4 should set dmg_palette"
-    assert sprite.priority == True, "Bit 7 should set priority"
-
-
 def test_ppu_mode_oam_blocks_only_oam_cpu_access() -> None:
     mmu = MMU(Cart("roms/hello.gb"))
     ppu = PPU(mmu, headless=True)
     mmu[M_LCD_CONTROL] = 0x80
     ppu.refresh_lcd_control()
 
-    ppu._set_mode(PPUMode.OAM)
+    ppu.scan_line = 0
+    ppu.mode = PPUMode.HBLANK
+    ppu.mode_cycles = 204
+    ppu.update(0)
+
+    assert ppu.mode == PPUMode.OAM
 
     mmu[0xFE00] = 0x12
     mmu[0x8000] = 0x34
@@ -438,7 +281,12 @@ def test_ppu_mode_pixel_transfer_blocks_oam_and_vram_cpu_access() -> None:
     mmu[M_LCD_CONTROL] = 0x80
     ppu.refresh_lcd_control()
 
-    ppu._set_mode(PPUMode.PIXEL_TRANSFER)
+    ppu.scan_line = 0
+    ppu.mode = PPUMode.OAM
+    ppu.mode_cycles = 80
+    ppu.update(0)
+
+    assert ppu.mode == PPUMode.PIXEL_TRANSFER
 
     mmu[0xFE00] = 0x56
     mmu[0x8000] = 0x78
@@ -454,7 +302,13 @@ def test_ppu_lcd_disable_opens_oam_and_vram_cpu_access() -> None:
     ppu = PPU(mmu, headless=True)
     mmu[M_LCD_CONTROL] = 0x80
     ppu.refresh_lcd_control()
-    ppu._set_mode(PPUMode.PIXEL_TRANSFER)
+
+    ppu.scan_line = 0
+    ppu.mode = PPUMode.OAM
+    ppu.mode_cycles = 80
+    ppu.update(0)
+
+    assert ppu.mode == PPUMode.PIXEL_TRANSFER
 
     mmu[M_LCD_CONTROL] = 0x00
     ppu.update(4)

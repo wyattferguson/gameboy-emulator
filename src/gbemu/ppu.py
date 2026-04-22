@@ -58,7 +58,7 @@ from gbemu.constants import (
     PPU_MODE3_CYCLES,
     SCAN_LINES,
 )
-from gbemu.ctypes import Tile, TileSize
+from gbemu.ctypes import ColorExt, Tile, TileSize
 from gbemu.mmu import MMU
 from gbemu.screen import Screen
 from gbemu.utils import bit
@@ -78,13 +78,9 @@ class PPU:
 
     def __init__(self, mmu: MMU, headless: bool = False) -> None:
         self.mmu = mmu
-        self.headless = headless
         self.screen: Screen | None = None if headless else Screen()
 
-        # Legacy/public state used by tests and other modules.
-        self.tiles: list[Tile] = []
-        self.line_sprites: list[Tile] = []
-        self._line_sprites_draw_order: list[tuple[int, Tile]] = []
+        self._line_sprites: list[Tile] = []
         self.scan_line = 0
         self.frame = 0
         self.mode = PPUMode.OAM
@@ -148,7 +144,7 @@ class PPU:
 
         self.mode_cycles -= PPU_MODE2_CYCLES
         self._window_line_latched_for_scanline = False
-        self.scan_oam_for_scanline()
+        self._line_sprites = self._scan_oam_for_scanline()
         self._set_mode(PPUMode.PIXEL_TRANSFER)
         return True
 
@@ -214,10 +210,10 @@ class PPU:
         self.mmu.memory[M_LCD_Y_COORDINATE] = self.scan_line
         self._sync_lyc_status()
 
-    def scan_oam_for_scanline(self) -> None:
-        """Build the list of up to 10 sprites visible on the current scanline."""
-        self.line_sprites = []
-        self._line_sprites_draw_order = []
+    def _scan_oam_for_scanline(self) -> list[Tile]:
+        """Collect up to 10 visible sprites in DMG draw order for the current scanline."""
+        ordered_sprites: list[tuple[int, Tile]] = []
+        sprite_count = 0
         sprite_height = TileSize.LARGE if self.obj_size else TileSize.SMALL
         memory = self.mmu.memory
 
@@ -227,34 +223,34 @@ class PPU:
                 continue
 
             attributes = memory[addr + 3]
-            self.line_sprites.append(
-                Tile(
-                    index=memory[addr + 2],
-                    data=[],
-                    height=sprite_height,
-                    x=memory[addr + 1] - 8,
-                    y=y,
-                    x_flipped=bool((attributes >> 5) & 0x01),
-                    y_flipped=bool((attributes >> 6) & 0x01),
-                    dmg_palette=(attributes >> 4) & 0x01,
-                    priority=bool((attributes >> 7) & 0x01),
-                ),
+            sprite = Tile(
+                index=memory[addr + 2],
+                data=[],
+                height=sprite_height,
+                x=memory[addr + 1] - 8,
+                y=y,
+                x_flipped=bool((attributes >> 5) & 0x01),
+                y_flipped=bool((attributes >> 6) & 0x01),
+                dmg_palette=(attributes >> 4) & 0x01,
+                priority=bool((attributes >> 7) & 0x01),
             )
 
             # Maintain draw order incrementally to avoid per-scanline sorting later.
             # We draw low-priority sprites first: larger X first; for equal X, later OAM first.
-            sprite = self.line_sprites[-1]
-            sprite_idx = len(self.line_sprites) - 1
-            insert_at = len(self._line_sprites_draw_order)
+            sprite_idx = sprite_count
+            sprite_count += 1
+            insert_at = len(ordered_sprites)
             while insert_at > 0:
-                prev_idx, prev = self._line_sprites_draw_order[insert_at - 1]
+                prev_idx, prev = ordered_sprites[insert_at - 1]
                 if (prev.x, prev_idx) >= (sprite.x, sprite_idx):
                     break
                 insert_at -= 1
-            self._line_sprites_draw_order.insert(insert_at, (sprite_idx, sprite))
+            ordered_sprites.insert(insert_at, (sprite_idx, sprite))
 
-            if len(self.line_sprites) == 10:
+            if sprite_count == 10:
                 break
+
+        return [sprite for _, sprite in ordered_sprites]
 
     def render_scanline(self) -> None:
         """Compose a full scanline from BG/window and OBJ layers."""
@@ -328,7 +324,7 @@ class PPU:
 
         self.mmu.memory[M_LCD_STATUS] = stat
 
-    def _decode_dmg_palette(self, palette_reg: int) -> tuple[int, int, int, int]:
+    def _decode_dmg_palette(self, palette_reg: int) -> ColorExt:
         """Expand a DMG palette register into a 4-entry color lookup tuple."""
         return (
             palette_reg & 0x03,
@@ -347,7 +343,6 @@ class PPU:
 
     def _render_tilemap_segment(
         self,
-        *,
         map_base: int,
         tile_y: int,
         tile_row: int,
@@ -355,7 +350,7 @@ class PPU:
         x_stop: int,
         map_x_offset: int,
         wrap_map_x: bool,
-        palette_lut: tuple[int, int, int, int],
+        palette_lut: ColorExt,
         palette_ids: list[int],
         raw_color_ids: list[int],
     ) -> None:
@@ -366,25 +361,8 @@ class PPU:
         last_low = 0
         last_high = 0
 
-        # Keep separate loops to avoid a per-pixel branch on X wrapping.
-        if wrap_map_x:
-            for x in range(x_start, x_stop):
-                map_x = (x + map_x_offset) & 0xFF
-                tile_number = memory[row_index_base + (map_x >> 3)]
-                if tile_number != last_tile_number:
-                    row_addr = self._tile_row_addr(tile_number, tile_row)
-                    last_low = memory[row_addr]
-                    last_high = memory[row_addr + 1]
-                    last_tile_number = tile_number
-
-                bit_index = 7 - (map_x & 0x07)
-                color_id = ((last_high >> bit_index) & 1) << 1 | (last_low >> bit_index) & 1
-                raw_color_ids[x] = color_id
-                palette_ids[x] = palette_lut[color_id]
-            return
-
         for x in range(x_start, x_stop):
-            map_x = x - map_x_offset
+            map_x = ((x + map_x_offset) & 0xFF) if wrap_map_x else (x - map_x_offset)
             tile_number = memory[row_index_base + (map_x >> 3)]
             if tile_number != last_tile_number:
                 row_addr = self._tile_row_addr(tile_number, tile_row)
@@ -399,12 +377,11 @@ class PPU:
 
     def render_bg_window_line_with_ids(self) -> tuple[list[int], list[int]]:
         """Render BG/window pixels and return (palette_ids, raw_2bpp_ids)."""
-        memory = self.mmu.memory
-        scx = memory[M_VIEWPORT_X]
-        scy = memory[M_VIEWPORT_Y]
-        wy = memory[M_WINDOW_Y]
-        wx = memory[M_WINDOW_X_PLUS_7] - 7
-        bg_pal = self._decode_dmg_palette(memory[M_BG_PALETTE_DATA])
+        scx: int = self.mmu.memory[M_VIEWPORT_X]
+        scy: int = self.mmu.memory[M_VIEWPORT_Y]
+        wy: int = self.mmu.memory[M_WINDOW_Y]
+        wx: int = self.mmu.memory[M_WINDOW_X_PLUS_7] - 7
+        bg_pal = self._decode_dmg_palette(self.mmu.memory[M_BG_PALETTE_DATA])
 
         palette_ids = [0] * SCREEN_WIDTH
         raw_color_ids = [0] * SCREEN_WIDTH
@@ -416,7 +393,7 @@ class PPU:
             self._window_line_latched_for_scanline = True
 
         # WX values below 7 are hardware-quirky; clamp start to x=0 for stable DMG behavior.
-        window_start_x = max(wx, 0) if window_active else SCREEN_WIDTH
+        window_start_x: int = max(wx, 0) if window_active else SCREEN_WIDTH
 
         # Render BG first, then window, so each segment can use a branch-free inner loop.
         bg_limit = min(window_start_x, SCREEN_WIDTH)
@@ -451,17 +428,12 @@ class PPU:
 
         return palette_ids, raw_color_ids
 
-    def render_bg_window_line(self) -> list[int]:
-        """Render only palette IDs for a line, used by software logo tests."""
-        line, _ = self.render_bg_window_line_with_ids()
-        return line
-
     def render_object_line(self, bg_line: list[int], bg_color_ids: list[int]) -> None:
         """Overlay sprite pixels onto bg_line in-place (no copy)."""
         memory = self.mmu.memory
 
         # Draw in precomputed low->high priority order from OAM scan.
-        for _, sprite in self._line_sprites_draw_order:
+        for sprite in self._line_sprites:
             row = self.scan_line - sprite.y
             if sprite.y_flipped:
                 row = int(sprite.height) - 1 - row
@@ -500,16 +472,6 @@ class PPU:
 
                 bg_line[x] = pal[color_id]
 
-    def _read_tile_color(self, tile_id: int, row: int, col: int) -> int:
-        """Read a single 2bpp color index from tile data coordinates."""
-        row_addr = self.resolve_tile_data_addr(tile_id) + row * 2
-        low = self.mmu.memory[row_addr]
-        high = self.mmu.memory[row_addr + 1]
-        bit_index = 7 - col
-        lo = (low >> bit_index) & 0x01
-        hi = (high >> bit_index) & 0x01
-        return (hi << 1) | lo
-
     def resolve_tile_data_addr(self, tile_id: int) -> int:
         """Resolve a tile index to its base address using LCDC bit 4 mode."""
         if self.bg_tile_idx:
@@ -524,7 +486,7 @@ class PPU:
         return (palette >> (color_id * 2)) & 0x03
 
     def refresh_lcd_control(self, lcd_control: int | None = None) -> None:
-        """Decode LCDC into cached boolean fields used by renderer and timing."""
+        """Decode LCDC into cached boolean fields."""
         if lcd_control is None:
             lcd_control = self.mmu.memory[M_LCD_CONTROL]
 
