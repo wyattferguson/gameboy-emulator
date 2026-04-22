@@ -47,9 +47,10 @@ class Screen:
         self.screen_size = (SCREEN_WIDTH * scaler, SCREEN_HEIGHT * scaler)
         self.screen = self.pg.display.set_mode(self.screen_size)
 
-        # One byte per pixel stores DMG palette slot (0..3).
+        # Each pixel's color ID (0-3) is stored as one byte in this buffer.
         self._color_ids = bytearray(SCREEN_AREA)
-        # RGB front buffer used for display upload.
+
+        # Each pixel is 3 bytes (RGB) in the frame buffer.
         self._screen_buffer = bytearray(SCREEN_AREA * 3)
         self._frame_surface = self.pg.image.frombuffer(
             self._screen_buffer,
@@ -66,14 +67,17 @@ class Screen:
         self._fps_font = self.pg.font.Font(None, 24)
         self._clear_rgb = bytes(BG_COLOR) * SCREEN_AREA
 
+        # Pre-compute 3-byte RGB entries for each of the 4 palette slots.
+        self._palette_bytes: list[bytes] = [bytes(color) for color in self.palette]
+
         self.clear_screen()
 
     def update(self) -> None:
-        """Present the current frame buffer to the pygame window."""
+        """Draw frame buffer and FPS overlay."""
         self.pg.transform.scale(self._frame_surface, self.screen_size, self._scaled_surface)
         self.screen.blit(self._scaled_surface, (0, 0))
         self._draw_fps_overlay()
-        self.pg.display.update()
+        self.pg.display.flip()
 
     def set_fps(self, fps: float) -> None:
         """Update the FPS value used by the overlay."""
@@ -99,20 +103,24 @@ class Screen:
 
     def draw_buffer(self, buffer: list[list[int]]) -> None:
         """Draw a full frame represented as scanlines of palette IDs."""
-        for y, row in enumerate(buffer):
-            if y >= SCREEN_HEIGHT:
-                break
-            self.draw_scanline(row, y)
+        rows = buffer[:SCREEN_HEIGHT]
+        # Flatten all color slots in one pass, then build RGB in one join.
+        slots = bytearray(cid & 0x03 for row in rows for cid in row[:SCREEN_WIDTH])
+        self._color_ids[: len(slots)] = slots
+        self._screen_buffer[: len(slots) * 3] = b"".join(self._palette_bytes[s] for s in slots)
 
     def draw_scanline(self, color_ids: list[int], y: int) -> None:
         """Draw one scanline of DMG palette slots into the RGB back buffer."""
+        n = min(len(color_ids), SCREEN_WIDTH)
         y_offset_ids = y * SCREEN_WIDTH
         y_offset_rgb = y * SCREEN_WIDTH * 3
 
-        for x in range(min(len(color_ids), SCREEN_WIDTH)):
-            palette_slot = color_ids[x] & 0x03
-            self._color_ids[y_offset_ids + x] = palette_slot
-            self._set_pixel_at_offset(y_offset_rgb + x * 3, self.palette[palette_slot])
+        # Build slot and RGB rows with single-pass join instead of per-pixel calls.
+        slots = bytearray(color_ids[x] & 0x03 for x in range(n))
+        self._color_ids[y_offset_ids : y_offset_ids + n] = slots
+        self._screen_buffer[y_offset_rgb : y_offset_rgb + n * 3] = b"".join(
+            self._palette_bytes[s] for s in slots
+        )
 
     def _set_pixel_at_offset(self, pixel_offset: int, color: Color) -> None:
         """Write one RGB triple into the screen buffer."""
