@@ -101,7 +101,6 @@ class PPU:
         self._cached_lcdc: int | None = None
         self._window_line_latched_for_scanline = False
 
-        self.mmu.memory[M_LCD_Y_COORDINATE] = 0
         self.refresh_lcd_control(self.mmu.memory[M_LCD_CONTROL])
         self._set_mode(PPUMode.OAM)
         self._sync_lyc_status()
@@ -311,9 +310,9 @@ class PPU:
 
     def _sync_lyc_status(self) -> None:
         """Synchronize STAT coincidence bit and trigger LYC interrupt if enabled."""
-        ly = self.mmu.memory[M_LCD_Y_COORDINATE]
-        lyc = self.mmu.memory[M_LY_COMPARE]
-        stat = self.mmu.memory[M_LCD_STATUS]
+        ly: int = self.mmu.memory[M_LCD_Y_COORDINATE]
+        lyc: int = self.mmu.memory[M_LY_COMPARE]
+        stat: int = self.mmu.memory[M_LCD_STATUS]
 
         if ly == lyc:
             stat |= 0x04
@@ -430,13 +429,13 @@ class PPU:
 
     def render_object_line(self, bg_line: list[int], bg_color_ids: list[int]) -> None:
         """Overlay sprite pixels onto bg_line in-place (no copy)."""
-        memory = self.mmu.memory
+        memory: list[int] = self.mmu.memory
 
         # Draw in precomputed low->high priority order from OAM scan.
         for sprite in self._line_sprites:
-            row = self.scan_line - sprite.y
+            row: int = self.scan_line - sprite.y
             if sprite.y_flipped:
-                row = int(sprite.height) - 1 - row
+                row: int = int(sprite.height) - 1 - row
 
             tile_index = sprite.index
             if sprite.height == TileSize.LARGE:
@@ -445,17 +444,17 @@ class PPU:
                     tile_index += 1
                     row -= 8
 
-            tile_addr = 0x8000 + tile_index * 16 + row * 2
-            low = memory[tile_addr]
-            high = memory[tile_addr + 1]
-            palette_reg = memory[
+            tile_addr: int = 0x8000 + tile_index * 16 + row * 2
+            low: int = memory[tile_addr]
+            high: int = memory[tile_addr + 1]
+            palette_reg: int = memory[
                 M_OBJ_PALETTE_1_DATA if sprite.dmg_palette else M_OBJ_PALETTE_0_DATA
             ]
-            pal = self._decode_dmg_palette(palette_reg)
+            pal: ColorExt = self._decode_dmg_palette(palette_reg)
             # Hoist sprite fields to locals to reduce attribute lookups in inner loop.
-            sx = sprite.x
-            x_flipped = sprite.x_flipped
-            priority = sprite.priority
+            sx: int = sprite.x
+            x_flipped: bool = sprite.x_flipped
+            priority: bool = sprite.priority
 
             for col in range(8):
                 x = sx + col
@@ -463,7 +462,7 @@ class PPU:
                     continue
 
                 bit_idx = col if x_flipped else 7 - col
-                color_id = ((high >> bit_idx) & 1) << 1 | (low >> bit_idx) & 1
+                color_id: int = ((high >> bit_idx) & 1) << 1 | (low >> bit_idx) & 1
                 if color_id == 0:
                     continue
 
@@ -488,7 +487,7 @@ class PPU:
     def refresh_lcd_control(self, lcd_control: int | None = None) -> None:
         """Decode LCDC into cached boolean fields."""
         if lcd_control is None:
-            lcd_control = self.mmu.memory[M_LCD_CONTROL]
+            lcd_control: int = self.mmu.memory[M_LCD_CONTROL]
 
         self._cached_lcdc = lcd_control
         self.lcd_enabled = bit(lcd_control, 7)
