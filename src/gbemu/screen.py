@@ -42,7 +42,7 @@ class Screen:
         self.scaler = scaler
         self.palette = PALLETE
         self.show_fps_overlay = show_fps_overlay
-        self._fps_value: float | None = None
+        self._fps_value: float = 0.0
         self.screen_size = (SCREEN_WIDTH * scaler, SCREEN_HEIGHT * scaler)
         self.screen = self.pg.display.set_mode(self.screen_size)
 
@@ -62,7 +62,7 @@ class Screen:
             depth=frame_bitsize,
             masks=frame_masks,
         )
-        self._fps_font = self.pg.font.Font(None, 24) if self.show_fps_overlay else None
+        self._fps_font = self.pg.font.Font(None, 24)
         self._clear_rgb = bytes(BG_COLOR) * (SCREEN_WIDTH * SCREEN_HEIGHT)
 
         self.clear_screen()
@@ -80,7 +80,7 @@ class Screen:
 
     def _draw_fps_overlay(self) -> None:
         """Render the optional FPS counter text in the top-right corner."""
-        if not self.show_fps_overlay or self._fps_font is None:
+        if not self.show_fps_overlay:
             return
 
         overlay = self._fps_font.render(
@@ -101,34 +101,19 @@ class Screen:
 
     def draw_scanline(self, color_ids: list[int], y: int) -> None:
         """Draw one scanline of DMG palette slots into the RGB back buffer."""
-        palette = self.palette
-        palette_len = len(palette)
         y_offset_ids = y * SCREEN_WIDTH
         y_offset_rgb = y * SCREEN_WIDTH * 3
 
         for x in range(min(len(color_ids), SCREEN_WIDTH)):
-            color_id = color_ids[x]
-            palette_slot = color_id & 0x03
+            palette_slot = color_ids[x] & 0x03
             self._color_ids[y_offset_ids + x] = palette_slot
-
-            if 0 <= palette_slot < palette_len:
-                red, green, blue = palette[palette_slot]
-            else:
-                red, green, blue = ERROR_COLOR
-
-            self._write_pixel_rgb_at_offset(y_offset_rgb + x * 3, (red, green, blue))
+            self._write_pixel_rgb_at_offset(y_offset_rgb + x * 3, self.palette[palette_slot])
 
     def _write_pixel_rgb_at_offset(self, pixel_offset: int, color: Color) -> None:
         """Write one RGB triple into the software back buffer by byte offset."""
         self._pixel_rgb[pixel_offset] = color[0]
         self._pixel_rgb[pixel_offset + 1] = color[1]
         self._pixel_rgb[pixel_offset + 2] = color[2]
-
-    def color_from_id(self, color_id: int) -> Color:
-        """Translate a DMG palette slot to an RGB tuple."""
-        if 0 <= color_id < len(self.palette):
-            return self.palette[color_id]
-        return ERROR_COLOR
 
     def draw_pixel(self, x: int, y: int, color: Color) -> None:
         """Draw pixel to both software and pygame."""
