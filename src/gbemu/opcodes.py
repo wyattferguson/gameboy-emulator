@@ -854,3 +854,11 @@ CB_PREFIXED: dict[int, OpCode] = {
     0xFE: OpCode("SET 7, [HL]", 2, 16, "set", args=[7, "HL"]),
     0xFF: OpCode("SET 7, A", 2, 8, "set", args=[7, "A"]),
 }
+
+# Dense 256-entry tables remove dict hashing from CPU.fetch hot path.
+OPCODE_TABLE: tuple[OpCode, ...] = tuple(
+    OPCODES.get(i, OpCode(f"ILLEGAL {i}", 1, 4, "nop")) for i in range(256)
+)
+CB_PREFIXED_TABLE: tuple[OpCode, ...] = tuple(
+    CB_PREFIXED.get(i, OpCode(f"ILLEGAL CB {i}", 2, 8, "nop")) for i in range(256)
+)

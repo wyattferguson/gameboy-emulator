@@ -18,7 +18,7 @@ from gbemu.constants import (
 )
 from gbemu.ctypes import Bitwise, CallableDict
 from gbemu.mmu import MMU
-from gbemu.opcodes import CB_PREFIXED, OPCODES, OpCode
+from gbemu.opcodes import CB_PREFIXED_TABLE, OPCODE_TABLE, OpCode
 from gbemu.timer import Timer
 from gbemu.utils import hex_to_signed, to_u16
 
@@ -70,15 +70,12 @@ class CPU:
         op_value = self.mmu[self.pc]
         if op_value == 0xCB:
             cb_opcode = self.mmu[(self.pc + 1)]
-            instruction = CB_PREFIXED.get(cb_opcode)
+            instruction = CB_PREFIXED_TABLE[cb_opcode]
             self.cb_prefixed = True
         else:
-            instruction = OPCODES.get(op_value)
+            instruction = OPCODE_TABLE[op_value]
             self.cb_prefixed = False
-
-        self.instruction = (
-            instruction if instruction is not None else OpCode(f"ILLEGAL {op_value}", 1, 4, "nop")
-        )
+        self.instruction = instruction
 
     def decode(self) -> None:
         """Decode instruction and its arguments."""
