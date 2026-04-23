@@ -2,7 +2,34 @@
 
 ## Installation
 
+This project uses `uv` with PyPy as the default interpreter.
+
+```powershell
+uv venv
+uv sync
+```
+
+`uv venv` will create `.venv` with PyPy automatically via the project's `.python-version` file.
+
 ## How to use
+
+Run the emulator:
+
+```powershell
+task run
+```
+
+Run the test suite:
+
+```powershell
+task tests
+```
+
+Run performance tests:
+
+```powershell
+task perf
+```
 
 ## Included Roms
 

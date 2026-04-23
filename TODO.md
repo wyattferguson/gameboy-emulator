@@ -154,12 +154,12 @@ Items are grouped by subsystem and ordered roughly by impact on compatibility.
 
 ## 14. Performance
 
-**Status:** Pure Python. Runs adequately on modern hardware for DMG-only ROMs but has no headroom for CGB double-speed or heavier test suites.
+**Status:** PyPy is now the default runtime. DMG performance is improved, but there is still limited headroom for CGB double-speed or heavier test suites.
 
 - [ ] **Profile hot paths** — Run `cProfile` on `cpu.cycle()`, `ppu.update()`, and `mmu.__getitem__` to find the biggest bottlenecks.
 - [ ] **MMU access optimization** — The current `__getitem__` / `__setitem__` path has many branching checks. Consider caching read/write handlers per address range.
 - [ ] **Cython or mypyc compilation (optional)** — Compile the CPU and MMU modules to C extensions for a significant speed boost without changing Python source.
-- [ ] **PyPy compatibility (optional)** — Verify the codebase runs under PyPy for JIT-based speedup with no code changes.
+- [ ] **PyPy JIT tuning** — Profile hot loops under PyPy and adjust object layout or dispatch patterns that block JIT optimization.
 
 ---
 

@@ -6,8 +6,8 @@ description = "A gameboy emulator created with python"
 authors = [{ name = "Wyatt Ferguson", email = "wyattxdev@duck.com" }]
 readme = "README.md"
 license = {file = "LICENSE"}
-keywords = ["python"]
-requires-python = ">=3.13,<4"
+keywords = ["gameboy", "emulator", "gb", "DMG", "gbemu"]
+requires-python = ">=3.11,<4"
 
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -15,13 +15,16 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: Utilities",
 ]
 
 dependencies = [
     "click>=8.1.8",
-    "pygame>=2.6.1",
+    "pygame>=2.6.1; implementation_name != 'pypy'",
+    "pygame-ce>=2.5.0; implementation_name == 'pypy'",
 ]
 
 [dependency-groups]
@@ -30,6 +33,8 @@ dev = [
     "pytest>=9.0.2",
     "ruff>=0.15.1",
     "taskipy>=1.14.1",
+    "cython>=3.2.4",
+    "setuptools>=82.0.1",
 ]
 
 [project.urls]
@@ -45,6 +50,9 @@ build-backend = "uv_build"
 [project.scripts]
 gbemu = "gbemu.__main__:run"
 
+[tool.uv]
+python-preference = "only-managed"
+
 [tool.taskipy.tasks]
 format = {cmd = "ruff format ./src/gbemu/", help = "Format code using ruff"}
 lint = {cmd = "ruff check --fix ./src/gbemu/", help = "Lint and auto-fix code using ruff"}
@@ -52,12 +60,11 @@ type = {cmd = "ty check", help = "Typecheck code using ty" }
 tests = {cmd = "pytest --verbose -s --color=yes -m \"not performance\" tests", help = "Run tests using pytest"}
 perf = {cmd = "pytest --verbose -s --color=yes -m performance tests", help = "Run performance tests."}
 run = {cmd = "gbemu", help = "Run the emulator"}
-run-pypy = {cmd = "pypy -m ensurepip --upgrade && pypy -m pip install --upgrade pip setuptools wheel && pypy -m pip install click loguru pygame-ce && pypy -c \"import sys; sys.path.insert(0, 'src'); from gbemu.__main__ import run; run()\"", help = "Bootstrap pip, install deps, and run the emulator with PyPy"}
 
 [tool.ruff]
 line-length = 100
 indent-width = 4
-target-version = "py313"
+target-version = "py311"
 exclude = [
     ".git",
     ".venv",
