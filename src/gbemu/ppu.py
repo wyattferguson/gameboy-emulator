@@ -189,7 +189,7 @@ class PPU:
         self.scan_line = 0
         self.window_line = 0
         self._window_line_latched_for_scanline = False
-        self._set_mode(PPUMode.OAM)
+        self._set_mode(PPUMode.HBLANK)
         self.mmu.set_ppu_bus_access(oam_locked=False, vram_locked=False)
         self.mmu.memory[M_LCD_Y_COORDINATE] = 0
         self._sync_lyc_status()

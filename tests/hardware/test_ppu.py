@@ -124,7 +124,7 @@ def test_ppu_lcd_disabled_resets_state() -> None:
     ppu.update(4)
 
     assert ppu.scan_line == 0, "LY should reset to 0 when LCD disabled"
-    assert ppu.mode == PPUMode.OAM, "Mode should reset to OAM when LCD disabled"
+    assert ppu.mode == PPUMode.HBLANK, "Mode should reset to HBlank (0) when LCD disabled"
     assert ppu.mode_cycles == 0, "Mode cycles should reset when LCD disabled"
     assert mmu[M_LCD_Y_COORDINATE] == 0, "MMU LY should be 0 when LCD disabled"
 

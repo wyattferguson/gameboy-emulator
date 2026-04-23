@@ -2,7 +2,7 @@ import pygame as pg
 
 from gbemu.ctypes import Color
 
-DEFAULT_ROM = "./roms/tetris.gb"
+DEFAULT_ROM = "./roms/sml.gb"
 
 DEBUG = False
 HEADLESS = False
@@ -27,22 +27,15 @@ SHOW_FPS_OVERLAY: bool = True
 FPS_BG_COLOR: Color = (0, 0, 0)
 FPS_COLOR: Color = (255, 255, 255)
 
-
 # Keyboard mapping to joypad bit mask and line-select (dpad=True, buttons=False)
 KEYMAP: dict[int, tuple[int, bool]] = {
-    pg.K_UP: (0b0100, True),
     pg.K_w: (0b0100, True),
-    pg.K_DOWN: (0b1000, True),
     pg.K_s: (0b1000, True),
-    pg.K_LEFT: (0b0010, True),
-    pg.K_RIGHT: (0b0001, True),
+    pg.K_a: (0b0010, True),
     pg.K_d: (0b0001, True),
-    pg.K_a: (0b0001, False),
     pg.K_j: (0b0001, False),
-    pg.K_b: (0b0010, False),
     pg.K_k: (0b0010, False),
     pg.K_RETURN: (0b1000, False),
-    pg.K_LSHIFT: (0b0100, False),
     pg.K_RSHIFT: (0b0100, False),
 }
 
@@ -84,13 +77,13 @@ CGB_FLAG: dict[str, str] = {
     "C0": "CGB+DMG",
 }
 
-MMU_SIZE: dict[int, str] = {
-    0x00: "None",
-    0x01: "Unused",
-    0x02: "8 KB",
-    0x03: "32 KB",
-    0x04: "128 KB",
-    0x05: "64 KB",
+BANKS: dict[int, int] = {
+    0x00: 0,
+    0x01: 1,
+    0x02: 1,
+    0x03: 4,
+    0x04: 16,
+    0x05: 64,
 }
 
 DESTINATION_CODE: dict[int, str] = {

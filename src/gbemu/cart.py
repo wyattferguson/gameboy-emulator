@@ -17,7 +17,6 @@ from gbemu.config import (
     CGB_FLAG,
     DEFAULT_ROM,
     DESTINATION_CODE,
-    MMU_SIZE,
     NEW_LICENSEE,
     OLD_LICENSEE,
 )
@@ -31,12 +30,12 @@ from gbemu.constants import (
     H_NEW_LICENSEE_END,
     H_NEW_LICENSEE_START,
     H_OLD_LICENSEE,
-    H_RAM_SIZE,
     H_ROM_SIZE,
     H_SGB_FLAG,
     H_TITLE_END,
     H_TITLE_START,
     H_VERSION,
+    MMU_ROM_BANK_SIZE,
 )
 
 
@@ -52,7 +51,7 @@ class Cart:
         self.sgb_flag = 0
         self.cart_type = "Unknown"
         self.rom_size = 0
-        self.mmu_size = "Unknown"
+        self.banks = 0
         self.destination = "Unknown"
         self.version = 0
         self.licensee = "Unknown"
@@ -75,7 +74,7 @@ class Cart:
             self.sgb_flag = rom[H_SGB_FLAG]
             self.cart_type = CART_TYPE.get(rom[H_CART_TYPE], "Unknown")
             self.rom_size = 32 * (1 << rom[H_ROM_SIZE])
-            self.mmu_size = MMU_SIZE.get(rom[H_RAM_SIZE], "Unknown")
+            self.banks = max(1, len(rom) // MMU_ROM_BANK_SIZE)
             self.destination = DESTINATION_CODE.get(rom[H_DESTINATION], "Unknown")
             self.version = rom[H_VERSION]
             self.licensee = (
@@ -142,7 +141,7 @@ class Cart:
             f"Licensee: {self.licensee}\n"
             f"CGB Flag: {self.cgb_flag}\n"
             f"ROM Size: {self.rom_size} KB\n"
-            f"MMU Size: {self.mmu_size}\n"
+            f"Banks: {self.banks}\n"
             f"Cart Type: {self.cart_type}\n"
             f"Version: {self.version}\n"
             f"Destination Code: {self.destination}\n"

@@ -32,6 +32,7 @@ class CPU:
         self.interrupts: bool = False
         self._ime_delay: int = 0
         self.halted: bool = False
+        self.stopped: bool = False
         self.cb_prefixed: bool = False
         self.reg = CallableDict(
             {
@@ -69,7 +70,7 @@ class CPU:
         """Fetch instruction from memory at PC."""
         op_value = self.mmu[self.pc]
         if op_value == 0xCB:
-            cb_opcode = self.mmu[(self.pc + 1)]
+            cb_opcode = self.mmu[(self.pc + 1) & 0xFFFF]
             instruction = CB_PREFIXED_TABLE[cb_opcode]
             self.cb_prefixed = True
         else:
@@ -83,13 +84,15 @@ class CPU:
         self.args = list(base_args or [])  # ty:ignore[invalid-assignment]
         if self.instruction.length > 1 and not self.cb_prefixed:
             if self.instruction.length == 2:
-                immediate = self.mmu[(self.pc + 1)]
+                immediate = self.mmu[(self.pc + 1) & 0xFFFF]
             elif self.instruction.length == 3:
-                low = self.mmu[(self.pc + 1)]
-                high = self.mmu[(self.pc + 2)]
+                low = self.mmu[(self.pc + 1) & 0xFFFF]
+                high = self.mmu[(self.pc + 2) & 0xFFFF]
                 immediate = (high << 8) | low
             else:
-                b = bytes(self.mmu[(self.pc + i)] for i in range(1, self.instruction.length))
+                b = bytes(
+                    self.mmu[(self.pc + i) & 0xFFFF] for i in range(1, self.instruction.length)
+                )
                 immediate = int.from_bytes(b, byteorder="little")
             self.args.append(immediate)
 
@@ -112,7 +115,7 @@ class CPU:
     def insert_instruction(self, instruction: bytearray) -> None:
         """Insert instruction into MMU at current PC. Used for Testing."""
         for i, byte in enumerate(instruction):
-            self.mmu[self.pc + i] = byte
+            self.mmu.memory[self.pc + i] = byte
 
     def reg16(self, register_a: str, register_b: str) -> int:
         """Get value of 16-bit register pair."""
@@ -130,6 +133,12 @@ class CPU:
         """Execute one instruction and return elapsed CPU cycles."""
         pending_interrupts = self._pending_interrupts()
 
+        # STOP keeps CPU and LCD idle until any interrupt becomes pending.
+        if self.stopped and pending_interrupts == 0:
+            return self._commit_cycles(4)
+        if self.stopped and pending_interrupts != 0:
+            self.stopped = False
+
         # HALT keeps CPU idle until an interrupt becomes pending.
         if self.halted and pending_interrupts == 0:
             return self._commit_cycles(4)
@@ -145,7 +154,7 @@ class CPU:
         self.execute()
         self.cb_prefixed = False
         if self.instruction.pc_inc:
-            self.pc += self.instruction.length
+            self.pc = (self.pc + self.instruction.length) & 0xFFFF
 
         if self._ime_delay > 0:
             self._ime_delay -= 1
