@@ -28,6 +28,7 @@ from gbemu.constants import (
     MEMORY_SIZE,
     MMU_ECHO_END,
     MMU_ECHO_START,
+    MMU_ROM_BANK_SIZE,
     MMU_ROM_END,
     MMU_UNUSABLE_END,
     MMU_UNUSABLE_START,
@@ -47,14 +48,31 @@ class MMU:
         self._memory = [0] * self.size
         self._boot_rom_mapped = True
         self._cart = cart if (cart is not None and cart.rom is not None) else None
+
         if self._cart and self._cart.rom is not None:
             self._memory[0:MMU_ROM_END] = self._cart.rom[0:MMU_ROM_END]
+
         self._memory[0 : len(BIOS)] = BIOS  # load system bios
         self._oam_locked = False
         self._vram_locked = False
         self._joypad_refresh_hook: Callable[[], None] | None = None
+
         # JOYP powers up as all high (no selection, no keys pressed).
         self._memory[M_JOYPAD] = 0xFF
+
+    def load_bank(self, bank_num: int) -> None:
+        """Load the specified ROM bank into memory."""
+        if self._cart is None or self._cart.rom is None:
+            return  # No cartridge loaded; ignore bank load requests.
+
+        # Assumes a fixed bank size of 16KB.
+        start_address = MMU_ROM_END + 1
+        end_address = start_address + MMU_ROM_BANK_SIZE
+        rom_start = bank_num * MMU_ROM_BANK_SIZE
+        rom_end = rom_start + MMU_ROM_BANK_SIZE
+
+        # Load the specified bank into memory.
+        self._memory[start_address:end_address] = self._cart.rom[rom_start:rom_end]
 
     def register_joypad_refresh_hook(self, hook: Callable[[], None]) -> None:
         """Register a callback invoked when JOYP select lines are written."""
@@ -64,9 +82,6 @@ class MMU:
         """Set CPU-visible OAM/VRAM bus lock state based on active PPU mode."""
         self._oam_locked = oam_locked
         self._vram_locked = vram_locked
-
-    def __len__(self) -> int:
-        return self.size
 
     @property
     def memory(self) -> list[int]:
@@ -114,57 +129,71 @@ class MMU:
     def __setitem__(self, address: int, value: int) -> None:
         """Write one byte, applying IO semantics and mapped-region rules."""
         value &= 0xFF
+
+        # Try IO register handlers first (cheapest branch for common path)
+        if self._handle_io_write(address, value):
+            return
+
+        # Check protected regions
+        if self._is_write_protected(address):
+            return
+
+        # Handle mirrored WRAM/echo regions
+        if self._handle_wram_echo_write(address, value):
+            return
+
+        # Check PPU bus locks
+        if self._is_ppu_locked(address):
+            return
+
+        self._memory[address] = value
+
+    def _handle_io_write(self, address: int, value: int) -> bool:
+        """Handle IO register writes. Return True if handled."""
         memory = self._memory
 
-        # IO register semantics first: exact-address checks are the cheapest branch
-        # shape for the common MMU write path.
         if address == M_DIVIDER:
             memory[address] = 0
-            return
+            return True
         if address == M_JOYPAD:
-            # Only select bits 4-5 are writable; other bits are hardware-driven.
             memory[address] = (memory[address] & 0xCF) | (value & 0x30)
-            if self._joypad_refresh_hook is not None:
+            if self._joypad_refresh_hook:
                 self._joypad_refresh_hook()
-            return
+            return True
         if address == M_LCD_STATUS:
             memory[address] = (memory[address] & 0x07) | (value & 0xF8)
-            return
+            return True
         if address == M_BOOT_ROM_MAPPING_CONTROL:
             memory[address] = value
             self._unmap_boot_rom_if_needed(value)
-            return
+            return True
         if address == M_OAM_DMA_SOURCE_START:
             memory[address] = value
             src = value * 0x100
-            # DMA copies 160 bytes from page xx00-xx9F into OAM immediately.
             memory[M_OAM_START : M_OAM_END + 1] = memory[src : src + self._DMA_LENGTH]
-            return
+            return True
+        return False
 
-        # Cartridge ROM and unusable ranges ignore CPU writes.
-        if MMU_UNUSABLE_START <= address <= MMU_UNUSABLE_END:
-            return
-        if self._cart is not None and address <= MMU_ROM_END:
-            return
+    def _is_write_protected(self, address: int) -> bool:
+        """Check if address is in a write-protected region."""
+        return MMU_UNUSABLE_START <= address <= MMU_UNUSABLE_END or (
+            self._cart is not None and address <= MMU_ROM_END
+        )
 
-        # C000-DDFF work RAM is mirrored at E000-FDFF (echo RAM).
+    def _handle_wram_echo_write(self, address: int, value: int) -> bool:
+        """Handle WRAM/echo mirroring. Return True if handled."""
         if MMU_WRAM_START <= address <= MMU_WRAM_END:
-            memory[address] = value
-            # Echo RAM mirrors WRAM with a fixed +0x2000 offset.
-            memory[address + self._ECHO_OFFSET] = value
-            return
+            self._memory[address] = value
+            self._memory[address + self._ECHO_OFFSET] = value
+            return True
         if MMU_ECHO_START <= address <= MMU_ECHO_END:
-            memory[address] = value
-            # Writes to the echo region mirror back into WRAM.
-            memory[address - self._ECHO_OFFSET] = value
-            return
+            self._memory[address] = value
+            self._memory[address - self._ECHO_OFFSET] = value
+            return True
+        return False
 
-        # During mode 2/3, CPU writes to OAM are ignored.
-        if self._oam_locked and M_OAM_START <= address <= M_OAM_END:
-            return
-
-        # During mode 3, CPU writes to VRAM are ignored.
-        if self._vram_locked and M_VRAM_START <= address <= M_VRAM_END:
-            return
-
-        memory[address] = value
+    def _is_ppu_locked(self, address: int) -> bool:
+        """Check if PPU bus locks prevent this write."""
+        return (self._oam_locked and M_OAM_START <= address <= M_OAM_END) or (
+            self._vram_locked and M_VRAM_START <= address <= M_VRAM_END
+        )

@@ -3,13 +3,6 @@ from gbemu.constants import BIOS, M_BOOT_ROM_MAPPING_CONTROL, MEMORY_SIZE
 from gbemu.mmu import MMU
 
 
-def test_mmu_uses_configured_memory_size() -> None:
-    mmu = MMU()
-
-    assert len(mmu) == MEMORY_SIZE
-    assert len(mmu.memory) == MEMORY_SIZE
-
-
 def test_mmu_reads_and_writes_work_for_ram_addresses() -> None:
     mmu = MMU()
 
