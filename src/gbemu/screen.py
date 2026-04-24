@@ -89,7 +89,7 @@ class Screen:
             return
 
         overlay = self._fps_font.render(
-            f"{self._fps_value:5.0f} FPS",
+            f"{self._fps_value:.2f} FPS",
             True,
             FPS_COLOR,
             FPS_BG_COLOR,

@@ -2,7 +2,7 @@ import pygame as pg
 
 from gbemu.ctypes import Color
 
-DEFAULT_ROM = "./roms/sml.gb"
+DEFAULT_ROM = "./roms/2048.gb"
 
 DEBUG = False
 HEADLESS = False

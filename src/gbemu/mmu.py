@@ -35,7 +35,6 @@ from gbemu.constants import (
     MMU_WRAM_END,
     MMU_WRAM_START,
 )
-from gbemu.mappers import MemoryMapper, create_mapper
 
 
 class MMU:
@@ -48,7 +47,8 @@ class MMU:
         self.size = size
         self._memory = [0] * self.size
         self._boot_rom_mapped = True
-        self._cart = cart if (cart is not None and cart.rom is not None) else None
+        # Default MMU() to a no-ROM cart; emulator runtime passes an explicit Cart.
+        self._cart: Cart = cart if cart is not None else Cart(filename="__no_cart__.gb")
 
         if self._cart and self._cart.rom is not None:
             # Map the full 0000-7FFF cartridge ROM region on startup.
@@ -58,13 +58,11 @@ class MMU:
         self._oam_locked = False
         self._vram_locked = False
         self._joypad_refresh_hook: Callable[[], None] | None = None
-        self._mapper: MemoryMapper | None = create_mapper(self._cart)
 
         # JOYP powers up as all high (no selection, no keys pressed).
         self._memory[M_JOYPAD] = 0xFF
 
-        if self._mapper is not None:
-            self._mapper.initialize(self._memory)
+        self._cart.initialize_mapping(self._memory)
 
         self._overlay_boot_rom()
 
@@ -75,9 +73,7 @@ class MMU:
 
     def load_bank(self, value: int = 0) -> None:
         """Force a ROM bank remap through the active mapper."""
-        if self._mapper is None:
-            return
-        self._mapper.load_bank(value, self._memory)
+        self._cart.load_bank(value, self._memory)
         self._overlay_boot_rom()
 
     def register_joypad_refresh_hook(self, hook: Callable[[], None]) -> None:
@@ -124,27 +120,21 @@ class MMU:
 
     def _unmap_boot_rom_if_needed(self, value: int) -> None:
         """Apply one-way FF50 boot-ROM unmap behavior when a cartridge is present."""
-        if value == 0 or not self._boot_rom_mapped or self._cart is None:
+        if value == 0 or not self._boot_rom_mapped or self._cart is None or self._cart.rom is None:
             return
 
         self._boot_rom_mapped = False
-        rom = self._cart.rom
-        if rom is not None:
-            self._memory[0 : len(BIOS)] = rom[0 : len(BIOS)]
-        if self._mapper is not None:
-            self._mapper.initialize(self._memory)
+        self._memory[0 : len(BIOS)] = self._cart.rom[0 : len(BIOS)]
+        self._cart.initialize_mapping(self._memory)
 
     def __setitem__(self, address: int, value: int) -> None:
         """Write one byte, applying IO semantics and mapped-region rules."""
         value &= 0xFF
 
         # Bank switching request
-        if address < 0x8000:
-            if self._mapper is not None:
-                self._mapper.handle_write(address, value, self._memory)
-                self._overlay_boot_rom()
-                return
-            # No cartridge loaded: allow direct writes (test/debug support).
+        if address < 0x8000 and self._cart.handle_mapper_write(address, value, self._memory):
+            self._overlay_boot_rom()
+            return
 
         # Try IO register handlers first (cheapest branch for common path)
         if self._handle_io_write(address, value):
@@ -193,7 +183,7 @@ class MMU:
     def _is_write_protected(self, address: int) -> bool:
         """Check if address is in a write-protected region."""
         return MMU_UNUSABLE_START <= address <= MMU_UNUSABLE_END or (
-            self._cart is not None and address <= MMU_ROM_END
+            self._cart is not None and self._cart.rom is not None and address <= MMU_ROM_END
         )
 
     def _handle_wram_echo_write(self, address: int, value: int) -> bool:

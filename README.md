@@ -2,21 +2,23 @@
 
 ## Installation
 
-This project uses `uv` with PyPy as the default interpreter.
+This project uses `uv` with PyPy as the default interpreter for best performance, but it should work with CPython as well. To set up the virtual environment and install dependencies, run:
 
 ```powershell
 uv venv
 uv sync
 ```
 
-`uv venv` will create `.venv` with PyPy automatically via the project's `.python-version` file.
-
 ## How to use
+
+By default the emulator will attempt to load `./roms/2048.gb` on startup, but you can specify any rom path with the `-r` flag.
 
 Run the emulator:
 
 ```powershell
 task run
+
+task run -r path/to/rom.gb
 ```
 
 Run the test suite:
@@ -34,9 +36,17 @@ task perf
 ## Included Roms
 
 - `2048.gb` - A 2048 clone I made, full source is availible in the [Github Repo](https://github.com/wyattferguson/2048-gb)
-- `hello.gb` - A very simple rom that just boots and display a sprite hello message.
-- `roms/tests/` a collection of roms with different specific bugs, these are run during testing with pytest.
-- `roms/verification/` a collection of roms to verify the accuracy of all the systems instructions and timings.
+- `hello.gb` - A very simple rom that just boots and displays a sprite hello message.
+
+## Controls
+
+Mapped controls can be changed in `src/gbemu/config.py`. Default mappings are:
+
+- D-Pad: W, A, S, D
+- A: J
+- B: K
+- Start: Enter
+- Select: Right Shift
 
 ## References
 

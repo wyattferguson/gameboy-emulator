@@ -1,3 +1,4 @@
+from gbemu.cart import Cart
 from gbemu.cpu import CPU
 from gbemu.mmu import MMU
 
@@ -7,7 +8,8 @@ REGISTER_ORDER = ("B", "C", "D", "E", "H", "L", "HL", "A")
 
 def make_cpu() -> CPU:
     """Create a CPU with a fresh MMU for tests."""
-    return CPU(MMU())
+    cart = Cart(filename="nonexistent.gb")  # Use no cart for tests to allow memory writes
+    return CPU(MMU(cart=cart))
 
 
 def cycle_instruction(cpu: CPU, *instruction: int) -> int:

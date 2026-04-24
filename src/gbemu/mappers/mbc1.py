@@ -1,38 +1,8 @@
-"""Cartridge memory mapper implementations used by the MMU."""
+from typing import TYPE_CHECKING
 
-from __future__ import annotations
-
-from typing import Protocol
-
-from gbemu.cart import Cart
+if TYPE_CHECKING:
+    from gbemu.cart import Cart
 from gbemu.constants import MMU_ROM_BANK_SIZE
-
-
-class MemoryMapper(Protocol):
-    """Mapper interface for ROM control writes and bank remapping."""
-
-    def initialize(self, memory: list[int]) -> None:
-        """Apply initial mapper state to MMU memory windows."""
-
-    def handle_write(self, address: int, value: int, memory: list[int]) -> None:
-        """Handle writes in 0000-7FFF cartridge control region."""
-
-    def load_bank(self, value: int, memory: list[int]) -> None:
-        """Compatibility helper to force a ROM bank selection."""
-
-
-class RomOnlyMapper:
-    """No-op mapper for plain ROM cartridges."""
-
-    def initialize(self, memory: list[int]) -> None:  # noqa: ARG002
-        return
-
-    def handle_write(self, address: int, value: int, memory: list[int]) -> None:  # noqa: ARG002
-        # ROM-only cartridges ignore writes in 0000-7FFF.
-        return
-
-    def load_bank(self, value: int, memory: list[int]) -> None:  # noqa: ARG002
-        return
 
 
 class MBC1Mapper:
@@ -41,7 +11,7 @@ class MBC1Mapper:
     _BANK0_START = 0x0000
     _BANK1_START = 0x4000
 
-    def __init__(self, cart: Cart) -> None:
+    def __init__(self, cart: "Cart") -> None:
         self._cart = cart
         self._rom_bank_low5 = 1
         self._rom_bank_high2 = 0
@@ -91,14 +61,3 @@ class MBC1Mapper:
         if len(chunk) != MMU_ROM_BANK_SIZE:
             return
         memory[dst_start : dst_start + MMU_ROM_BANK_SIZE] = chunk
-
-
-def create_mapper(cart: Cart | None) -> MemoryMapper | None:
-    """Create a mapper instance matching cartridge metadata."""
-    if cart is None or cart.rom is None:
-        return None
-
-    if cart.cart_type.startswith("MBC1"):
-        return MBC1Mapper(cart)
-
-    return RomOnlyMapper()

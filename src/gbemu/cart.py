@@ -1,16 +1,5 @@
-"""
-
-This module loads cartridge ROM data and decodes metadata from the Game Boy header.
-
-Step-by-step:
-1. Open and read ROM bytes from disk.
-2. Validate checksum and log integrity issues.
-3. Decode title, manufacturer, licensee, and hardware flags.
-4. Expose guarded byte-level read/write helpers.
-5. Provide formatted cartridge info for debug and diagnostics.
-"""
-
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from gbemu.config import (
     CART_TYPE,
@@ -37,6 +26,10 @@ from gbemu.constants import (
     H_VERSION,
     MMU_ROM_BANK_SIZE,
 )
+from gbemu.mappers.mappers import get_mapper
+
+if TYPE_CHECKING:
+    from gbemu.mappers.mappers import MemoryMapper
 
 
 class Cart:
@@ -55,11 +48,14 @@ class Cart:
         self.destination = "Unknown"
         self.version = 0
         self.licensee = "Unknown"
+        self.mapper: MemoryMapper | None = None
 
         if self.rom is None:
             return
 
         self._decode_header(self.rom)
+
+        self.mapper = get_mapper(self)
 
     def _decode_header(self, rom: bytearray) -> None:
         """Decode cartridge metadata fields from ROM header bytes."""
@@ -100,6 +96,25 @@ class Cart:
                 return bytearray(f.read())
         except Exception:
             return None
+
+    def initialize_mapping(self, memory: list[int]) -> None:
+        """Apply mapper state to MMU windows when a ROM is present."""
+        if self.mapper is None or self.rom is None:
+            return
+        self.mapper.initialize(memory)
+
+    def handle_mapper_write(self, address: int, value: int, memory: list[int]) -> bool:
+        """Handle MBC control writes for 0000-7FFF when cartridge ROM exists."""
+        if self.mapper is None or self.rom is None:
+            return False
+        self.mapper.handle_write(address, value, memory)
+        return True
+
+    def load_bank(self, value: int, memory: list[int]) -> None:
+        """Force a mapper bank selection when cartridge ROM exists."""
+        if self.mapper is None or self.rom is None:
+            return
+        self.mapper.load_bank(value, memory)
 
     def _verify_checksum(self, rom: bytearray) -> bool:
         """Calculate and verify the ROM checksum."""

@@ -83,7 +83,7 @@ class PPU:
         self._line_sprites: list[Tile] = []
         self.scan_line = 0
         self.frame = 0
-        self.mode = PPUMode.OAM
+        self.mode: PPUMode = PPUMode.OAM
         self.mode_cycles = 0
         self.window_line = 0
 
