@@ -26,10 +26,10 @@ from gbemu.constants import (
     H_VERSION,
     MMU_ROM_BANK_SIZE,
 )
-from gbemu.mappers.mappers import get_mapper
+from gbemu.mappers.mapper import get_mapper
 
 if TYPE_CHECKING:
-    from gbemu.mappers.mappers import MemoryMapper
+    from gbemu.mappers.mapper import MemoryMapper
 
 
 class Cart:
@@ -145,19 +145,3 @@ class Cart:
             return
 
         self.rom[address] = value & 0xFF
-
-    def __str__(self) -> str:
-        """Render formatted cartridge metadata for logs/debug output."""
-        return (
-            "Cartridge Info:\n"
-            f"Filename: {self.filename}\n"
-            f"Title: {self.title}\n"
-            f"Manufacturer Code: {self.manufacturer_code}\n"
-            f"Licensee: {self.licensee}\n"
-            f"CGB Flag: {self.cgb_flag}\n"
-            f"ROM Size: {self.rom_size} KB\n"
-            f"Banks: {self.banks}\n"
-            f"Cart Type: {self.cart_type}\n"
-            f"Version: {self.version}\n"
-            f"Destination Code: {self.destination}\n"
-        )

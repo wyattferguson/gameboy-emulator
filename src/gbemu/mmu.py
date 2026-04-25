@@ -1,15 +1,3 @@
-"""
-
-This module implements the memory management unit with DMG-mapped read/write behavior.
-
-Step-by-step:
-1. Allocate the 64KB memory space and map boot/cartridge data.
-2. Apply special register semantics for JOYP, DIV, STAT, DMA, and boot unmap.
-3. Enforce address-space rules for ROM, WRAM echo, and unusable ranges.
-4. Gate OAM/VRAM access based on active PPU bus lock state.
-5. Provide byte/slice interfaces used by CPU and peripherals.
-"""
-
 from collections.abc import Callable
 from typing import overload
 
