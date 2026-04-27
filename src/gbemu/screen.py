@@ -1,15 +1,3 @@
-"""
-
-This module manages framebuffer composition and pygame presentation for DMG palette output.
-
-Step-by-step:
-1. Initialize software buffers and pygame display surfaces.
-2. Accept scanline writes as DMG color IDs.
-3. Translate palette slots into RGB bytes in the frame buffer.
-4. Scale and blit the frame surface to the output window.
-5. Optionally render FPS overlay diagnostics each presented frame.
-"""
-
 import itertools
 
 import pygame as pg

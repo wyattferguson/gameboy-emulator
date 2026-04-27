@@ -36,6 +36,7 @@ task perf
 ## Included Roms
 
 - `2048.gb` - A 2048 clone I made, full source is availible in the [Github Repo](https://github.com/wyattferguson/2048-gb)
+- `gameoflife.gb` - A port of Game of Life I made, full source is availible in the [Github Repo](https://github.com/wyattferguson/gameoflife-gb)
 - `hello.gb` - A very simple rom that just boots and displays a sprite hello message.
 
 ## Controls

@@ -1,14 +1,3 @@
-"""
-CPU core, including instruction flow and interrupt handling.
-
-Step-by-step:
-1. Fetch opcode bytes from memory at the program counter.
-2. Decode instruction metadata and immediate operands.
-3. Execute opcode handlers that mutate registers, flags, and memory.
-4. Service interrupts and HALT behavior according to IME/IF/IE state.
-5. Commit elapsed cycles to timer-driven hardware progression.
-"""
-
 from typing import Any
 
 from gbemu.constants import (

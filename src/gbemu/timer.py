@@ -1,10 +1,3 @@
-"""DMG timer: DIV, TIMA, TMA, and TAC register emulation.
-
-DIV increments at a fixed 16384 Hz (every 256 CPU cycles) regardless of TAC.
-TIMA increments at a TAC-selected frequency; on overflow it reloads from TMA
-and requests a timer interrupt (IF bit 2).
-"""
-
 from gbemu.constants import (
     M_DIVIDER,
     M_INTERRUPT_FLAG,
