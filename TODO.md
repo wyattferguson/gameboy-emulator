@@ -1,6 +1,4 @@
-# gbemu — TODO
-
----
+# TODO List
 
 ## 1. MBC / Bank Switching
 
@@ -8,22 +6,7 @@
 - **MBC5** — Extends ROM addressing to 64 banks and RAM to 16 banks. Used by most late-era games.
 - **Cart RAM (SRAM) persistence** — Save external RAM to a `.sav` file on write and reload it on startup so battery-backed saves survive across sessions.
 
----
-
-## 2. APU (Audio)
-
-- **Channel 1 — Pulse + Sweep** — Implement frequency sweep (`NR10`), duty cycle (`NR11`), envelope (`NR12`), frequency low/high (`NR13`/`NR14`), and length counter. Output a square wave to the left/right mixer.
-- **Channel 2 — Pulse** — Same as Channel 1 without the sweep unit (`NR21`–`NR24`).
-- **Channel 3 — Wave** — Arbitrary 32-nibble waveform read from Wave RAM (`FF30`–`FF3F`). Registers `NR30`–`NR34` control enable, length, output level, and frequency.
-- **Channel 4 — Noise** — Linear-feedback shift register (LFSR) with programmable clock divider and width (`NR41`–`NR44`).
-- **Master volume / mixer** — Implement `NR50` (master volume L/R) and `NR51` (channel-to-terminal routing).
-- **Frame sequencer** — 512 Hz clock that drives length counters (256 Hz), volume envelopes (64 Hz), and frequency sweep (128 Hz).
-- **Pygame audio output** — Open a pygame mixer stream and push synthesized samples each frame. Sync sample rate to emulator timing to avoid underruns.
-- **NR52 power control** — Writing 0 to bit 7 of `NR52` should reset all channel registers.
-
----
-
-## 3. PPU Accuracy
+## 2. PPU Accuracy
 
 **Status:** Scanline renderer is functional but uses simplified fixed-cycle mode timings and a direct scanline approach rather than a pixel FIFO.
 
@@ -35,18 +18,14 @@
 - **LY=LYC coincidence flag on disable/enable** — When LCD is re-enabled, LY is reset to 0 and the coincidence check should fire immediately if LYC is also 0.
 - **STAT interrupt blocking** — The STAT interrupt line is open-drain; simultaneous source enables can prevent a rising edge. Implement the STAT interrupt blocking behavior.
 
----
-
-## 4. OAM DMA
+## 3. OAM DMA
 
 **Status:** OAM DMA (`FF46` write) is instant — it copies 160 bytes immediately without locking the CPU bus.
 
 - **DMA bus lock** — During DMA transfer the CPU may only access `FF80`–`FFFE` (HRAM). Lock all other reads/writes for 160 machine cycles (640 T-cycles) after `FF46` is written.
 - **DMA source validation** — DMA source addresses above `DF00` produce undefined behavior on hardware; add a warning for out-of-range sources.
 
----
-
-## 5. HALT / STOP Behavior
+## 4. HALT / STOP Behavior
 
 **Status:** `halt` sets `self.halted = True` and `stop` sets `self.stopped = True` but neither is fully accurate.
 
@@ -54,9 +33,7 @@
 - **HALT wake-up** — Exiting HALT should resume execution at the instruction after HALT and service the interrupt if IME was enabled.
 - **STOP behavior** — `STOP` should halt both the CPU and LCD, clear the DIV register, and wait for a joypad button press before resuming. Currently it only sets a flag.
 
----
-
-## 6. Timer Edge Cases
+## 5. Timer Edge Cases
 
 **Status:** DIV and TIMA timers are implemented but several hardware quirks are missing.
 
@@ -64,8 +41,6 @@
 - **TIMA overflow delay** — After TIMA overflows, there is a 4-cycle window before TMA is reloaded and the interrupt is requested. Writing TIMA during this window cancels the reload.
 - **TAC multiplexer bits** — TIMA should tick on the falling edge of the internal counter bit selected by TAC (bits 9, 3, 5, 7 for speeds 0–3), not by counting CPU cycles directly.
 
----
-
-## 9. Cartridge
+## 6. Cartridge
 
 - **Checksum validation** — Verify the header checksum (`014D`) and global checksum (`014E`–`014F`) on load; warn if they fail.

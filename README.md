@@ -1,4 +1,12 @@
-# :video_game: gbemu - Python Gameboy Emulator
+<p align="center">
+<img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzR1NnA0aHZzcWFvY2w1OGJzdnRiY243cnl1MjFzN291aDk2Z2VkZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/VHFIfibSOqdIAnEkyd/giphy.gif" alt="animated" />
+</p>
+
+# :joystick: gbemu - Python Gameboy Emulator
+
+Hi! This is my workin' progress gameboy emulator created in pure python. The emulator is mostly functional with a smattering of edge case bugs listed in the `TODO.md`. The big missing feature is audio, but emulating the APU is something Im not all that concered with right now. Most early gameboy games run with the 2 mappers I have so far my goal is to complete the MBC3 because that would give support for a good chunk of all games.
+
+Right now the if you run it using the standard python interepter you hit a performance bottleneck pretty quick on any lower spec PC's, so I've used pypy as the default to get out a good performance gain. Idealy in the future once I rework the MMU it would just be a cython build.
 
 ## Installation
 
