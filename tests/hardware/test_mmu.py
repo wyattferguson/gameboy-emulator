@@ -1,5 +1,14 @@
 from gbemu.cart import Cart
-from gbemu.constants import BIOS, M_BOOT_ROM_MAPPING_CONTROL, MEMORY_SIZE, MMU_ROM_BANK_SIZE
+from gbemu.constants import (
+    BIOS,
+    H_CART_TYPE,
+    H_HEADER_CHECKSUM,
+    H_TITLE_START,
+    M_BOOT_ROM_MAPPING_CONTROL,
+    MEMORY_SIZE,
+    MMU_ROM_BANK_SIZE,
+)
+from gbemu.mappers.mbc1 import MBC1Mapper
 from gbemu.mmu import MMU
 
 
@@ -52,7 +61,7 @@ def test_mmu_boot_rom_overlays_cartridge_startup_region() -> None:
 
 
 def test_mmu_boot_rom_overlays_mbc1_cartridge_startup_region() -> None:
-    cart = Cart("roms/sml.gb")
+    cart = Cart("roms/hello.gb")
     mmu = MMU(cart)
 
     assert mmu[0x0000] == BIOS[0]
@@ -99,12 +108,26 @@ def test_mmu_mbc1_bank_writes_do_not_hide_boot_rom_before_ff50() -> None:
     assert mmu[0x00FF] == BIOS[0xFF]
 
 
-def test_mmu_mbc1_ff50_unmap_restores_current_rom_mapping() -> None:
-    cart = Cart("roms/sml2.gb")
-    cart.rom = bytearray(MMU_ROM_BANK_SIZE * 64)
+def _make_mbc1_cart() -> Cart:
+    """Build a Cart with MBC1 mapper for testing."""
+    rom = bytearray(MMU_ROM_BANK_SIZE * 64)
     for bank in range(64):
-        cart.rom[bank * MMU_ROM_BANK_SIZE] = bank
+        rom[bank * MMU_ROM_BANK_SIZE] = bank
+    rom[H_CART_TYPE] = 0x01  # MBC1
+    checksum = 0
+    for addr in range(H_TITLE_START, H_HEADER_CHECKSUM):
+        checksum = checksum - rom[addr] - 1
+    rom[H_HEADER_CHECKSUM] = checksum & 0xFF
 
+    cart = Cart("roms/nonexistent.gb")
+    cart.rom = rom
+    cart._decode_header(rom)
+    cart.mapper = MBC1Mapper(cart)
+    return cart
+
+
+def test_mmu_mbc1_ff50_unmap_restores_current_rom_mapping() -> None:
+    cart = _make_mbc1_cart()
     mmu = MMU(cart)
 
     mmu[0x4000] = 0x01

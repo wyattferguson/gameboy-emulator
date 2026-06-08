@@ -5,19 +5,14 @@ Color = tuple[int, int, int]
 ColorExt = tuple[int, int, int, int]
 
 
-class CallableDict(dict):
-    """Run callable values when accessed."""
-
-    _PAIR_KEYS = frozenset(("AF", "BC", "DE", "HL"))
+class RegisterDict(dict):
+    """Handle 8bit or 16bit registers seamlessly."""
 
     def __getitem__(self, key: str) -> int:
         if len(key) == 1 or key == "SP":
             return super().__getitem__(key)
 
-        val = super().__getitem__(key)
-        if callable(val):
-            return val()
-        return val
+        return self._get_register_pair(key)
 
     def __setitem__(self, key: str, value: int) -> None:
         if len(key) == 1:
@@ -28,15 +23,13 @@ class CallableDict(dict):
             super().__setitem__("SP", value & 0xFFFF)
             return
 
-        if key in self._PAIR_KEYS:
-            self._set_register_pair(key, value)
-            return
+        self._set_register_pair(key, value)
 
-        existing_value = super().get(key)
-        if callable(existing_value):
-            self._set_register_pair(key, value)
-        else:
-            super().__setitem__(key, value & 0xFF)
+    def _get_register_pair(self, pair: str) -> int:
+        """Combine two 8-bit register entries into a single 16-bit value."""
+        high: int = super().__getitem__(pair[0])
+        low: int = super().__getitem__(pair[1])
+        return (high << 8) | low
 
     def _set_register_pair(self, pair: str, value: int) -> None:
         """Split a 16-bit value into high/low 8-bit register entries."""

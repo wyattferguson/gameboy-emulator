@@ -5,7 +5,7 @@ from gbemu.constants import (
     M_INTERRUPT_FLAG,
     SP_START,
 )
-from gbemu.ctypes import Bitwise, CallableDict
+from gbemu.ctypes import Bitwise, RegisterDict, StrEnum
 from gbemu.mmu import MMU
 from gbemu.opcodes import CB_PREFIXED_TABLE, OPCODE_TABLE, OpCode
 from gbemu.timer import Timer
@@ -23,7 +23,7 @@ class CPU:
         self.halted: bool = False
         self.stopped: bool = False
         self.cb_prefixed: bool = False
-        self.reg = CallableDict(
+        self.reg = RegisterDict(
             {
                 "A": 0,
                 "B": 0,
@@ -33,10 +33,10 @@ class CPU:
                 "F": 0,
                 "H": 0,
                 "L": 0,
-                "HL": lambda: self.reg16("H", "L"),
-                "BC": lambda: self.reg16("B", "C"),
-                "DE": lambda: self.reg16("D", "E"),
-                "AF": lambda: self.reg16("A", "F"),
+                "HL": 0,
+                "BC": 0,
+                "DE": 0,
+                "AF": 0,
                 "SP": SP_START,  # stack pointer
             },
         )
@@ -493,7 +493,10 @@ class CPU:
 
     def push(self, register: str | int) -> None:
         """Push value onto stack."""
-        value = self.reg[register] if isinstance(register, str) else register
+        if isinstance(register, str) and register == "AF":
+            value = self.reg16("A", "F")
+        else:
+            value = self.reg[register] if isinstance(register, str) else register
         self._push_u16(value)
 
     def rst(self, addr: int, msb: int = 0) -> None:
