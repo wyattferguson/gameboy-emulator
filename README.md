@@ -1,10 +1,7 @@
 <div align="center">
 <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzR1NnA0aHZzcWFvY2w1OGJzdnRiY243cnl1MjFzN291aDk2Z2VkZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/VHFIfibSOqdIAnEkyd/giphy.gif" alt="animated" /><br>
-  <h1># :joystick:  gbemu</h1>
-  <p><strong>Python Gameboy Emulator.</strong></p>
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
+  <h1>:joystick:  GBemu - Python Gameboy Emulator</h1>
+  [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 </div>
 
 ---
