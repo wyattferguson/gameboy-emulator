@@ -1,12 +1,13 @@
 <div align="center">
 <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzR1NnA0aHZzcWFvY2w1OGJzdnRiY243cnl1MjFzN291aDk2Z2VkZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/VHFIfibSOqdIAnEkyd/giphy.gif" alt="animated" /><br>
   <h1>:joystick:  GBemu</h1>
-  <p><strong>Python Gameboy Emulator.</strong></p>
+  <p><strong>A Python Gameboy Emulator.</strong></p>
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 </div>
 
+---
 
 This is my workin' progress gameboy emulator created in pure python. The emulator is mostly functional with a smattering of edge case bugs listed in the `TODO.md`. The big missing feature is audio, but emulating the APU is something Im not all that concered with right now. Most early gameboy games run with the 2 mappers I have so far my goal is to complete the MBC3 because that would give support for a good chunk of all games.
 
